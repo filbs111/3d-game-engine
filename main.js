@@ -206,19 +206,21 @@ var camParams = {
 };
 
 var lastFrameTime = null;
-var boxPos=[0,0,-5];
+var playerPos=[0,0,5];
+var boxPos=[0,0,0];
+var groundPos=[0,-11,0];
 function drawScene(frameTime){
 	requestAnimationFrame(drawScene);
 
     //TODO iterate mechanics using controls
 
-    var forwardBack = -keyThing.keystate(87)+keyThing.keystate(83);	//vertical W,S = up, down
+    var forwardBack = keyThing.keystate(87)-keyThing.keystate(83);	//vertical W,S = up, down
     var leftRight = keyThing.keystate(65)-keyThing.keystate(68);    //lateral A,D
 
     if (lastFrameTime){
         var timeChange = frameTime-lastFrameTime;
-        boxPos[2]-=timeChange*forwardBack*0.005;
-        boxPos[0]+=timeChange*leftRight*0.005;
+        playerPos[2]-=timeChange*forwardBack*0.005;
+        playerPos[0]-=timeChange*leftRight*0.005;
     }
     lastFrameTime=frameTime;
 
@@ -240,6 +242,7 @@ function drawScene(frameTime){
     //set camera position
     mat4.identity(mvMatrix);
     mat4.translate(mvMatrix, boxPos);
+    mat4.translate(mvMatrix, playerPos.map(x=>-x));
 
 
     mat4.rotateY(mvMatrix, boxRotation);
@@ -257,5 +260,17 @@ function drawScene(frameTime){
 
     bind2dTextureIfRequired(bricktex);
     drawObjectFromBuffers(cubeBuffers, activeProg);
+
+
+
+    //draw ground
+    mat4.identity(mvMatrix);
+    mat4.translate(mvMatrix, groundPos);
+    mat4.translate(mvMatrix, playerPos.map(x=>-x));
+
+    mat4.scale(mvMatrix,[10,10,10]);
+    drawObjectFromBuffers(cubeBuffers, activeProg);
+
+
 }
 
