@@ -114,7 +114,7 @@ function initShaders(shaderProgs){
 	var initShaderTimeStart = performance.now();
 	var shaderProgNoVariationsList = {
 		flat:["flat-vs", "flat-fs"],
-		// texmap:["texmap-vs", "texmap-fs"],
+		texmap:["texmap-vs", "texmap-fs"],
 	};
 
 	console.log("loading shaders...");

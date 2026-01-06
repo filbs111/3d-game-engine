@@ -234,7 +234,7 @@ function drawScene(frameTime){
 
 
     //draw cube
-    var activeProg = shaderPrograms.flat;
+    var activeProg = shaderPrograms.texmap;
     gl.useProgram(activeProg);
     enableDisableAttributes(activeProg);
 
@@ -243,7 +243,7 @@ function drawScene(frameTime){
 	gl.disable(gl.CULL_FACE);
 
 
-   // bind2dTextureIfRequired(bricktex);
+    bind2dTextureIfRequired(bricktex);
     drawObjectFromBuffers(cubeBuffers, activeProg);
 }
 
