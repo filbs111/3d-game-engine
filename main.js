@@ -205,10 +205,23 @@ var camParams = {
     far:1000
 };
 
+var lastFrameTime = null;
+var boxPos=[0,0,-5];
 function drawScene(frameTime){
 	requestAnimationFrame(drawScene);
 
     //TODO iterate mechanics using controls
+
+    var forwardBack = -keyThing.keystate(87)+keyThing.keystate(83);	//vertical W,S = up, down
+    var leftRight = keyThing.keystate(65)-keyThing.keystate(68);    //lateral A,D
+
+    if (lastFrameTime){
+        var timeChange = frameTime-lastFrameTime;
+        boxPos[2]-=timeChange*forwardBack*0.005;
+        boxPos[0]+=timeChange*leftRight*0.005;
+    }
+    lastFrameTime=frameTime;
+
 
     //console.log("drawing scene");
     
@@ -226,8 +239,7 @@ function drawScene(frameTime){
     
     //set camera position
     mat4.identity(mvMatrix);
-    mat4.translate(mvMatrix, [0, 0, -5]);
-    //mat4.translate(mvMatrix, [-10, 0, 0]);
+    mat4.translate(mvMatrix, boxPos);
 
 
     mat4.rotateY(mvMatrix, boxRotation);
