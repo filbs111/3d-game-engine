@@ -207,6 +207,7 @@ var camParams = {
 
 var lastFrameTime = null;
 var playerPos=[0,0,5];
+var playerRotation=0;
 var boxPos=[0,0,0];
 var groundPos=[0,-11,0];
 function drawScene(frameTime){
@@ -217,13 +218,21 @@ function drawScene(frameTime){
     var forwardBack = keyThing.keystate(87)-keyThing.keystate(83);	//vertical W,S = up, down
     var leftRight = keyThing.keystate(65)-keyThing.keystate(68);    //lateral A,D
 
+    var cosSin = [Math.cos(playerRotation), Math.sin(playerRotation)];
+    var xMove = forwardBack*cosSin[0] + leftRight*cosSin[1];
+    var zMove = -forwardBack*cosSin[1] + leftRight*cosSin[0];
+
+    var turnInput = keyThing.leftKey() - keyThing.rightKey();
+
     if (lastFrameTime){
         var timeChange = frameTime-lastFrameTime;
-        playerPos[2]-=timeChange*forwardBack*0.005;
-        playerPos[0]-=timeChange*leftRight*0.005;
+        playerPos[2]-=timeChange*xMove*0.005;
+        playerPos[0]-=timeChange*zMove*0.005;
+        playerRotation -= timeChange*turnInput*0.005;
     }
     lastFrameTime=frameTime;
 
+    
 
     //console.log("drawing scene");
     
@@ -239,16 +248,8 @@ function drawScene(frameTime){
 
     var boxRotation = frameTime / 1000;
     
-    //set camera position
-    mat4.identity(mvMatrix);
-    mat4.translate(mvMatrix, boxPos);
-    mat4.translate(mvMatrix, playerPos.map(x=>-x));
-
-
-    mat4.rotateY(mvMatrix, boxRotation);
-
-
-    //draw cube
+    
+    
     var activeProg = shaderPrograms.texmap;
     gl.useProgram(activeProg);
     enableDisableAttributes(activeProg);
@@ -257,20 +258,26 @@ function drawScene(frameTime){
 	gl.enable(gl.DEPTH_TEST);
 	gl.disable(gl.CULL_FACE);
 
-
     bind2dTextureIfRequired(bricktex);
-    drawObjectFromBuffers(cubeBuffers, activeProg);
+    
 
+    //draw cube
+    mat4.identity(mvMatrix);    //set camera position
+    mat4.rotateY(mvMatrix, playerRotation);
+    mat4.translate(mvMatrix, boxPos);
+    mat4.translate(mvMatrix, playerPos.map(x=>-x));
+    mat4.rotateY(mvMatrix, boxRotation);
+    
+    drawObjectFromBuffers(cubeBuffers, activeProg);
 
 
     //draw ground
     mat4.identity(mvMatrix);
+    mat4.rotateY(mvMatrix, playerRotation);
     mat4.translate(mvMatrix, groundPos);
     mat4.translate(mvMatrix, playerPos.map(x=>-x));
 
     mat4.scale(mvMatrix,[10,10,10]);
     drawObjectFromBuffers(cubeBuffers, activeProg);
-
-
 }
 
