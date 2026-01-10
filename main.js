@@ -276,6 +276,10 @@ function drawScene(frameTime){
         playerRotation -= timeChange*turnInput*0.005;
         playerElevation -= timeChange*elevationInput*0.005;
 
+        //cap elevation
+        playerElevation=Math.min(playerElevation, Math.PI/2);
+        playerElevation=Math.max(playerElevation, -Math.PI/2);
+
         //TODO fixed timestep mechanics
         
         playerPos[2]+=playerVel[2]*timeChange;
