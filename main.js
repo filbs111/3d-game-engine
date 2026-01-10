@@ -224,7 +224,7 @@ var camParams = {
 
 var lastFrameTime = null;
 var playerPos=[0,0,5];
-var playerEyePos=[0,0.7,0]; //relative to player centre which is 1m above ground.  1.7m, typical eye height
+var playerEyePos=[0,0.7,-0.1]; //relative to player centre which is 1m above ground.  1.7m, typical eye height
 var playerVel=[0,0,0];
 var playerAcc=[0,0,0];
 var preDragPlayerAcc=[0,0,0];
@@ -329,6 +329,27 @@ function drawScene(frameTime){
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
 
+    drawArm(-1);    //left arm
+    drawArm(1);     //right arm
+
+    function drawArm(handedness){   //handedness 1=right, -1=left
+        mat4.identity(cameraMat);
+        mat4.rotateX(cameraMat, playerElevation);
+        mat4.translate(cameraMat, playerEyePos.map(x=>-x));
+
+        mat4.set(cameraMat, mvMatrix);
+        mat4.translate(mvMatrix, [0.2*handedness,0.5,0]);  //shoulder
+
+        mat4.rotateX(mvMatrix, -playerElevation + handedness*0.05);    //match elevation of arms relative to body
+                                        //+handedness is to shift right arm up, left down
+        mat4.rotateY(mvMatrix, 0.18*handedness); //turn shoulder about up vector
+        mat4.translate(mvMatrix, [0,0,-0.5]);    //move forwards by 0.5 for elbow
+
+        mat4.scale(mvMatrix,[0.05,0.05,0.5]); //10cm x 10cm x 1m
+        drawObjectFromBuffers(cubeBuffers, activeProg);
+    }
+
+
     setupCameraMatrix();
 
     //draw cube
@@ -355,7 +376,7 @@ function setupCameraMatrix(){
     var accTurnAngle = Math.atan2(playerAcc[2],playerAcc[0]);
     var accTilt = Math.atan(accMag*1_000_000/9.88);
     mat4.rotateY(cameraMat, -accTurnAngle);
-    mat4.rotateZ(cameraMat, accTilt * 0.75);    //0.5 is fudge to make more reasonable (tilt by 22.5 deg at 1g acc instead of 45)
+    mat4.rotateZ(cameraMat, accTilt * 0.75);    //0.75 is fudge to make more reasonable (tilt by 22.5 deg at 1g acc instead of 45)
     mat4.rotateY(cameraMat, accTurnAngle);
         //TODO smooth jerk (derivative of acceleration)
 
