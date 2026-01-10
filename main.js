@@ -232,6 +232,13 @@ var playerRotation=0;
 var playerElevation=0;
 var boxPos=[0,0,0];
 var groundPos=[0,-11,0];
+
+
+var armElevationMultiplier=1.5; //elevate arms more than player look direction. 
+    // - suspect this is natural - head isn't 90 deg
+    //back when pointing gun upward.
+     // NOTE could make gimbal lock situation worse - perhaps better use pointing direction and scale look elevation...
+
 function drawScene(frameTime){
 	requestAnimationFrame(drawScene);
 
@@ -288,10 +295,9 @@ function drawScene(frameTime){
 
     playerRotation-=mouseInfo.pendingMovement[0];
     playerElevation-=mouseInfo.pendingMovement[1];
-    //NOTE sinmple decoupled pitch, turn. perhaps better to have "free flight" rotation with auto-levelling - 
+    //NOTE simple decoupled pitch, turn. perhaps better to have "free flight" rotation with auto-levelling - 
     // ie turn when elevated results in tilted view - perhaps similar to head movement preceding body movement - 
     // when body catches up and face in same compass direction as looking direction, view levels out.
-
 
     //console.log("drawing scene");
     
@@ -337,7 +343,7 @@ function drawScene(frameTime){
     mat4.set(cameraMat, mvMatrix);
     mat4.translate(mvMatrix, [0,0.5,0]);
 
-    mat4.rotateX(mvMatrix, -playerElevation);    //match elevation of arms relative to body
+    mat4.rotateX(mvMatrix, -playerElevation*armElevationMultiplier);    //match elevation of arms relative to body
     mat4.translate(mvMatrix, [0,0.05,-1]);    //1m - end of arm, up by 5cm
 
     mat4.scale(mvMatrix,[0.025,0.1,0.1]); //5cm x 20cm x 20cm
@@ -355,7 +361,7 @@ function drawScene(frameTime){
         mat4.set(cameraMat, mvMatrix);
         mat4.translate(mvMatrix, [0.2*handedness,0.5,0]);  //shoulder
 
-        mat4.rotateX(mvMatrix, -playerElevation + handedness*0.06);    //match elevation of arms relative to body
+        mat4.rotateX(mvMatrix, -playerElevation*armElevationMultiplier + handedness*0.06);    //match elevation of arms relative to body
                                         //+handedness is to shift right arm up, left down
         mat4.rotateY(mvMatrix, 0.2*handedness); //turn shoulder about up vector
         mat4.translate(mvMatrix, [0,0,-0.5]);    //move forwards by 0.5 for elbow
