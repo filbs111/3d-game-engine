@@ -329,6 +329,21 @@ function drawScene(frameTime){
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
 
+    //draw gun
+    mat4.identity(cameraMat);
+    mat4.rotateX(cameraMat, playerElevation);
+    mat4.translate(cameraMat, playerEyePos.map(x=>-x));
+
+    mat4.set(cameraMat, mvMatrix);
+    mat4.translate(mvMatrix, [0,0.5,0]);
+
+    mat4.rotateX(mvMatrix, -playerElevation);    //match elevation of arms relative to body
+    mat4.translate(mvMatrix, [0,0.05,-1]);    //1m - end of arm, up by 5cm
+
+    mat4.scale(mvMatrix,[0.025,0.1,0.1]); //5cm x 20cm x 20cm
+    drawObjectFromBuffers(cubeBuffers, activeProg);
+
+
     drawArm(-1);    //left arm
     drawArm(1);     //right arm
 
@@ -340,9 +355,9 @@ function drawScene(frameTime){
         mat4.set(cameraMat, mvMatrix);
         mat4.translate(mvMatrix, [0.2*handedness,0.5,0]);  //shoulder
 
-        mat4.rotateX(mvMatrix, -playerElevation + handedness*0.05);    //match elevation of arms relative to body
+        mat4.rotateX(mvMatrix, -playerElevation + handedness*0.06);    //match elevation of arms relative to body
                                         //+handedness is to shift right arm up, left down
-        mat4.rotateY(mvMatrix, 0.18*handedness); //turn shoulder about up vector
+        mat4.rotateY(mvMatrix, 0.2*handedness); //turn shoulder about up vector
         mat4.translate(mvMatrix, [0,0,-0.5]);    //move forwards by 0.5 for elbow
 
         mat4.scale(mvMatrix,[0.05,0.05,0.5]); //10cm x 10cm x 1m
