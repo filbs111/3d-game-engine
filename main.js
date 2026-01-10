@@ -219,7 +219,7 @@ var camParams = {
 };
 
 var lastFrameTime = null;
-var playerPos=[0,0,5];
+var playerPos=[0,0.7,5];    //z=0.7 - 0 is currently 1m above floor. +70 = 1.7m, typical eye height
 var playerVel=[0,0,0];
 var playerRotation=0;
 var playerElevation=0;
@@ -263,7 +263,7 @@ function drawScene(frameTime){
         playerPos[2]+=playerVel[2]*timeChange;
         playerPos[0]+=playerVel[0]*timeChange;
 
-        udpateSpeedInfo(playerVel, [sideAcc,0,fwdAcc]);
+        updateSpeedInfo(playerVel, [sideAcc,0,fwdAcc]);
     }
     lastFrameTime=frameTime;
 
@@ -330,7 +330,7 @@ function drawScene(frameTime){
     drawObjectFromBuffers(cubeBuffers, activeProg);
 }
 
-function udpateSpeedInfo(vel, acc){
+function updateSpeedInfo(vel, acc){
     //world scale is metres
     //vel is in metres per millisecond
     var velMag = Math.hypot.apply(null, vel);
