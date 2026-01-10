@@ -307,27 +307,23 @@ function drawScene(frameTime){
 
     bind2dTextureIfRequired(bricktex);
     
-
     //draw cube
-    mat4.identity(mvMatrix);    //set camera position
-    mat4.rotateX(mvMatrix, playerElevation);
-    mat4.rotateY(mvMatrix, playerRotation);
-    mat4.translate(mvMatrix, boxPos);
-    mat4.translate(mvMatrix, playerPos.map(x=>-x));
+    setupDrawMatrixForObjectAtPosition(boxPos);
     mat4.rotateY(mvMatrix, boxRotation);
-    
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
-
     //draw ground
+    setupDrawMatrixForObjectAtPosition(groundPos);
+    mat4.scale(mvMatrix,[10,10,10]);
+    drawObjectFromBuffers(cubeBuffers, activeProg);
+}
+
+function setupDrawMatrixForObjectAtPosition(objPos){
     mat4.identity(mvMatrix);
     mat4.rotateX(mvMatrix, playerElevation);
     mat4.rotateY(mvMatrix, playerRotation);
-    mat4.translate(mvMatrix, groundPos);
+    mat4.translate(mvMatrix, objPos);
     mat4.translate(mvMatrix, playerPos.map(x=>-x));
-
-    mat4.scale(mvMatrix,[10,10,10]);
-    drawObjectFromBuffers(cubeBuffers, activeProg);
 }
 
 function updateSpeedInfo(vel, acc){
