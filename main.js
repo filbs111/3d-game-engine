@@ -12,6 +12,7 @@
 
 var shaderPrograms={};
 var cubeBuffers={};
+var cameraMat = mat4.create();
 var mvMatrix = mat4.create();
 var pMatrix = mat4.create();
 
@@ -307,6 +308,8 @@ function drawScene(frameTime){
 
     bind2dTextureIfRequired(bricktex);
     
+    setupCameraMatrix();
+
     //draw cube
     setupDrawMatrixForObjectAtPosition(boxPos);
     mat4.rotateY(mvMatrix, boxRotation);
@@ -318,12 +321,16 @@ function drawScene(frameTime){
     drawObjectFromBuffers(cubeBuffers, activeProg);
 }
 
+function setupCameraMatrix(){
+    mat4.identity(cameraMat);
+    mat4.rotateX(cameraMat, playerElevation);
+    mat4.rotateY(cameraMat, playerRotation);
+    mat4.translate(cameraMat, playerPos.map(x=>-x));
+}
+
 function setupDrawMatrixForObjectAtPosition(objPos){
-    mat4.identity(mvMatrix);
-    mat4.rotateX(mvMatrix, playerElevation);
-    mat4.rotateY(mvMatrix, playerRotation);
+    mat4.set(cameraMat, mvMatrix);
     mat4.translate(mvMatrix, objPos);
-    mat4.translate(mvMatrix, playerPos.map(x=>-x));
 }
 
 function updateSpeedInfo(vel, acc){
