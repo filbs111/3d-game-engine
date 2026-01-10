@@ -15,6 +15,12 @@ var cubeBuffers={};
 var mvMatrix = mat4.create();
 var pMatrix = mat4.create();
 
+var mouseInfo = {
+	x:0,
+	y:0,
+	pendingMovement:[0,0],
+};
+
 function init(){
 
     //escape escapes pointer lock and exit fullscreen
@@ -66,6 +72,13 @@ function init(){
 			pointerLocked=false;
 	  }
 	}, false);
+
+    canvas.addEventListener("mousemove", function(evt){
+		if (pointerLocked){
+			mouseInfo.pendingMovement[0]+=-0.001* evt.movementX;	//TODO screen resolution dependent sensitivity.
+			mouseInfo.pendingMovement[1]+=-0.001* evt.movementY;
+		}
+	});
 
 
     initGL();
@@ -236,6 +249,20 @@ function drawScene(frameTime){
     lastFrameTime=frameTime;
 
 
+    var amountToMove = new Array(2);
+    var fractionToKeep = 0.9;
+    for (var cc=0;cc<2;cc++){
+        amountToMove[cc]=mouseInfo.pendingMovement[cc]*(1-fractionToKeep);
+        mouseInfo.pendingMovement[cc]*=fractionToKeep;  //TODO if keep this, framerate independence.
+    }
+
+    playerRotation-=mouseInfo.pendingMovement[0];
+    playerElevation-=mouseInfo.pendingMovement[1];
+    //NOTE sinmple decoupled pitch, turn. perhaps better to have "free flight" rotation with auto-levelling - 
+    // ie turn when elevated results in tilted view - perhaps similar to head movement preceding body movement - 
+    // when body catches up and face in same compass direction as looking direction, view levels out.
+
+
     //console.log("drawing scene");
     
     //clear colour
@@ -258,7 +285,6 @@ function drawScene(frameTime){
 
     gl.disable(gl.BLEND);
 	gl.enable(gl.DEPTH_TEST);
-	gl.disable(gl.CULL_FACE);
 
     bind2dTextureIfRequired(bricktex);
     
