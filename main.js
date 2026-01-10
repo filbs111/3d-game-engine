@@ -217,7 +217,7 @@ var enableDisableAttributes = (function generateEnableDisableAttributesFunc(){
 
 
 var camParams = {
-    vfov:60,
+    vfov:80,
     near:0.1,
     far:1000
 };
@@ -317,6 +317,18 @@ function drawScene(frameTime){
 
     bind2dTextureIfRequired(bricktex);
     
+
+    //draw a block for player's core.
+    //copy 1st part of setupCameraMatrix
+    mat4.identity(cameraMat);
+    mat4.rotateX(cameraMat, playerElevation);
+    mat4.translate(cameraMat, playerEyePos.map(x=>-x));
+
+    mat4.set(cameraMat, mvMatrix);
+    mat4.scale(mvMatrix,[0.2,0.2,0.1]); //40 cm wide, 40cm tall, 20cm deep. top is like bottom of rib cage
+    drawObjectFromBuffers(cubeBuffers, activeProg);
+
+
     setupCameraMatrix();
 
     //draw cube
@@ -333,16 +345,17 @@ function drawScene(frameTime){
 function setupCameraMatrix(){
     mat4.identity(cameraMat);
     mat4.rotateX(cameraMat, playerElevation);
-    mat4.rotateY(cameraMat, playerRotation);
-
+    
     mat4.translate(cameraMat, playerEyePos.map(x=>-x));
+
+    mat4.rotateY(cameraMat, playerRotation);
 
     //tilt by player acceleration
     var accMag = Math.hypot.apply(null, playerAcc);
     var accTurnAngle = Math.atan2(playerAcc[2],playerAcc[0]);
     var accTilt = Math.atan(accMag*1_000_000/9.88);
     mat4.rotateY(cameraMat, -accTurnAngle);
-    mat4.rotateZ(cameraMat, accTilt * 0.5);    //0.5 is fudge to make more reasonable (tilt by 22.5 deg at 1g acc instead of 45)
+    mat4.rotateZ(cameraMat, accTilt * 0.75);    //0.5 is fudge to make more reasonable (tilt by 22.5 deg at 1g acc instead of 45)
     mat4.rotateY(cameraMat, accTurnAngle);
         //TODO smooth jerk (derivative of acceleration)
 
