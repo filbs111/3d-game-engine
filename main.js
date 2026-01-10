@@ -220,7 +220,8 @@ var camParams = {
 };
 
 var lastFrameTime = null;
-var playerPos=[0,0.7,5];    //z=0.7 - 0 is currently 1m above floor. +70 = 1.7m, typical eye height
+var playerPos=[0,0,5];
+var playerEyePos=[0,0.7,0]; //relative to player centre which is 1m above ground.  1.7m, typical eye height
 var playerVel=[0,0,0];
 var playerAcc=[0,0,0];
 var preDragPlayerAcc=[0,0,0];
@@ -331,6 +332,8 @@ function setupCameraMatrix(){
     mat4.rotateX(cameraMat, playerElevation);
     mat4.rotateY(cameraMat, playerRotation);
 
+    mat4.translate(cameraMat, playerEyePos.map(x=>-x));
+
     //tilt by player acceleration
     var accMag = Math.hypot.apply(null, playerAcc);
     var accTurnAngle = Math.atan2(playerAcc[2],playerAcc[0]);
@@ -338,8 +341,8 @@ function setupCameraMatrix(){
     mat4.rotateY(cameraMat, -accTurnAngle);
     mat4.rotateZ(cameraMat, accTilt * 0.5);    //0.5 is fudge to make more reasonable (tilt by 22.5 deg at 1g acc instead of 45)
     mat4.rotateY(cameraMat, accTurnAngle);
+        //TODO smooth jerk (derivative of acceleration)
 
-    //shift upwards BEFORE tilt? (make player rotate about middle, not about the eyes)
     mat4.translate(cameraMat, playerPos.map(x=>-x));
 }
 
