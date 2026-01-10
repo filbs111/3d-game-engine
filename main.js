@@ -234,30 +234,36 @@ function drawScene(frameTime){
     var leftRight = keyThing.keystate(65)-keyThing.keystate(68);    //lateral A,D
 
     var cosSin = [Math.cos(playerRotation), Math.sin(playerRotation)];
-    var xMove = forwardBack*cosSin[0] + leftRight*cosSin[1];
-    var zMove = -forwardBack*cosSin[1] + leftRight*cosSin[0];
+    var moveMultiplier = (forwardBack==0 || leftRight==0) ? 1: 0.7071
+
+    var xMove = moveMultiplier*(forwardBack*cosSin[0] + leftRight*cosSin[1]);
+    var zMove = moveMultiplier*(-forwardBack*cosSin[1] + leftRight*cosSin[0]);
 
     var turnInput = keyThing.leftKey() - keyThing.rightKey();
     var elevationInput = keyThing.upKey() - keyThing.downKey();
 
     if (lastFrameTime){
         var timeChange = frameTime-lastFrameTime;
-        playerVel[2]-=timeChange*xMove*0.000025;
-        playerVel[0]-=timeChange*zMove*0.000025;
+
+        var sideAcc = xMove*0.00001;
+        var fwdAcc = zMove*0.00001;
+
+        playerVel[2]-=timeChange*sideAcc;
+        playerVel[0]-=timeChange*fwdAcc;
         playerRotation -= timeChange*turnInput*0.005;
         playerElevation -= timeChange*elevationInput*0.005;
 
         //decay player velocity
         //NOTE not necessarily correct! 
         //TODO fixed timestep mechanics
-        var velMultiply = Math.exp(-0.002*timeChange);
+        var velMultiply = Math.exp(-0.001*timeChange);
         playerVel[2]*=velMultiply;
         playerVel[0]*=velMultiply;
 
         playerPos[2]+=playerVel[2]*timeChange;
         playerPos[0]+=playerVel[0]*timeChange;
 
-        udpateSpeedInfo(playerVel);
+        udpateSpeedInfo(playerVel, [sideAcc,0,fwdAcc]);
     }
     lastFrameTime=frameTime;
 
@@ -324,7 +330,7 @@ function drawScene(frameTime){
     drawObjectFromBuffers(cubeBuffers, activeProg);
 }
 
-function udpateSpeedInfo(vel){
+function udpateSpeedInfo(vel, acc){
     //world scale is metres
     //vel is in metres per millisecond
     var velMag = Math.hypot.apply(null, vel);
@@ -332,8 +338,16 @@ function udpateSpeedInfo(vel){
     var speedKmPerH = speedMetresPerSecond*3.6;
     var speedMilesPerHour = speedKmPerH/1.6;
 
-    document.getElementById("speedinfo").innerHTML = "" + 
+    var accMag = Math.hypot.apply(null, acc);
+    var accMetresPerSecondSquared = accMag*1_000_000;
+    var accGees = accMetresPerSecondSquared/9.81;
+
+    document.getElementById("speedinfo").innerHTML = 
+        "speed: " + 
         speedMetresPerSecond.toFixed(2) + "m/s " + 
         speedKmPerH.toFixed(2) + "km/h " +
-        speedMilesPerHour.toFixed(2)+"mph";
+        speedMilesPerHour.toFixed(2)+"mph ," +
+        "acceleration: " +
+        accMetresPerSecondSquared.toFixed(2) + "m/s^2 " + 
+        accGees.toFixed(2) + "g";
 }
