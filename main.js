@@ -222,6 +222,7 @@ var camParams = {
 var lastFrameTime = null;
 var playerPos=[0,0.7,5];    //z=0.7 - 0 is currently 1m above floor. +70 = 1.7m, typical eye height
 var playerVel=[0,0,0];
+var playerAcc=[0,0,0];
 var playerRotation=0;
 var playerElevation=0;
 var boxPos=[0,0,0];
@@ -246,25 +247,23 @@ function drawScene(frameTime){
     if (lastFrameTime){
         var timeChange = frameTime-lastFrameTime;
 
-        var sideAcc = xMove*0.00001;
-        var fwdAcc = zMove*0.00001;
+        playerAcc = [zMove,0,xMove].map(xx=>xx*-0.00001);
 
-        playerVel[2]-=timeChange*sideAcc;
-        playerVel[0]-=timeChange*fwdAcc;
+        //add drag proportional to speed.
+        playerAcc[0]-=playerVel[0]*0.001;
+        playerAcc[2]-=playerVel[2]*0.001;
+
+        playerVel[2]+=timeChange*playerAcc[2];
+        playerVel[0]+=timeChange*playerAcc[0];
         playerRotation -= timeChange*turnInput*0.005;
         playerElevation -= timeChange*elevationInput*0.005;
 
-        //decay player velocity
-        //NOTE not necessarily correct! 
         //TODO fixed timestep mechanics
-        var velMultiply = Math.exp(-0.001*timeChange);
-        playerVel[2]*=velMultiply;
-        playerVel[0]*=velMultiply;
-
+        
         playerPos[2]+=playerVel[2]*timeChange;
         playerPos[0]+=playerVel[0]*timeChange;
 
-        updateSpeedInfo(playerVel, [sideAcc,0,fwdAcc]);
+        updateSpeedInfo(playerVel, playerAcc);
     }
     lastFrameTime=frameTime;
 
@@ -291,7 +290,6 @@ function drawScene(frameTime){
    	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 
-   
 
     mat4.perspective(camParams.vfov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 
 
@@ -325,6 +323,16 @@ function setupCameraMatrix(){
     mat4.identity(cameraMat);
     mat4.rotateX(cameraMat, playerElevation);
     mat4.rotateY(cameraMat, playerRotation);
+
+    //tilt by player acceleration
+    var accMag = Math.hypot.apply(null, playerAcc);
+    var accTurnAngle = Math.atan2(playerAcc[2],playerAcc[0]);
+    var accTilt = Math.atan(accMag*1_000_000/9.88);
+    mat4.rotateY(cameraMat, -accTurnAngle);
+    mat4.rotateZ(cameraMat, accTilt * 0.5);    //0.5 is fudge to make more reasonable (tilt by 22.5 deg at 1g acc instead of 45)
+    mat4.rotateY(cameraMat, accTurnAngle);
+
+    //shift upwards BEFORE tilt? (make player rotate about middle, not about the eyes)
     mat4.translate(cameraMat, playerPos.map(x=>-x));
 }
 
