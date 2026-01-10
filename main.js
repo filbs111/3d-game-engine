@@ -217,14 +217,15 @@ var enableDisableAttributes = (function generateEnableDisableAttributesFunc(){
 
 
 var camParams = {
-    vfov:80,
-    near:0.1,
+    vfov:120,
+    near:0.01,
     far:1000
 };
 
 var lastFrameTime = null;
 var playerPos=[0,0,5];
-var playerEyePos=[0,0.7,-0.1]; //relative to player centre which is 1m above ground.  1.7m, typical eye height
+var playerEyePosFromNeck=[0,0.2,-0.2]; //20cm above and ahead of neck, so 1.7m above groun d, 10cm forwards
+var playerNeckPos=[0,0.5,0.1];  //relative to player centre which is 1m above ground.  1.5m above ground, 10cm back
 var playerVel=[0,0,0];
 var playerAcc=[0,0,0];
 var preDragPlayerAcc=[0,0,0];
@@ -234,10 +235,11 @@ var boxPos=[0,0,0];
 var groundPos=[0,-11,0];
 
 
-var armElevationMultiplier=1.5; //elevate arms more than player look direction. 
+var armElevationMultiplier=1.4; //elevate arms more than player look direction. 
     // - suspect this is natural - head isn't 90 deg
     //back when pointing gun upward.
      // NOTE could make gimbal lock situation worse - perhaps better use pointing direction and scale look elevation...
+var torsoElevationMultiplier=0.3;   //torso doesn't elevate as much as view. neck does remaining rotation
 
 function drawScene(frameTime){
 	requestAnimationFrame(drawScene);
@@ -277,8 +279,9 @@ function drawScene(frameTime){
         playerElevation -= timeChange*elevationInput*0.005;
 
         //cap elevation
-        playerElevation=Math.min(playerElevation, Math.PI/2);
-        playerElevation=Math.max(playerElevation, -Math.PI/2);
+        playerElevation=Math.min(playerElevation, 0.7*Math.PI/2);   //pointing down!
+        playerElevation=Math.max(playerElevation, -0.7*Math.PI/2);
+            //0.7 because arms move more than view.
 
         //TODO fixed timestep mechanics
         
@@ -331,8 +334,10 @@ function drawScene(frameTime){
     //draw a block for player's core.
     //copy 1st part of setupCameraMatrix
     mat4.identity(cameraMat);
-    mat4.rotateX(cameraMat, playerElevation);
-    mat4.translate(cameraMat, playerEyePos.map(x=>-x));
+    mat4.rotateX(cameraMat, (1-torsoElevationMultiplier)*playerElevation);
+    mat4.translate(cameraMat, playerEyePosFromNeck.map(x=>-x));
+    mat4.rotateX(cameraMat, torsoElevationMultiplier*playerElevation);
+    mat4.translate(cameraMat, playerNeckPos.map(x=>-x));
 
     mat4.set(cameraMat, mvMatrix);
     mat4.scale(mvMatrix,[0.2,0.2,0.1]); //40 cm wide, 40cm tall, 20cm deep. top is like bottom of rib cage
@@ -341,13 +346,13 @@ function drawScene(frameTime){
 
     //draw gun
     mat4.identity(cameraMat);
-    mat4.rotateX(cameraMat, playerElevation);
-    mat4.translate(cameraMat, playerEyePos.map(x=>-x));
+    mat4.rotateX(cameraMat, (1-torsoElevationMultiplier)*playerElevation);
+    mat4.translate(cameraMat, playerEyePosFromNeck.map(x=>-x));
 
     mat4.set(cameraMat, mvMatrix);
-    mat4.translate(mvMatrix, [0,0.5,0]);
+    mat4.translate(mvMatrix, [0,0,-0.2]);
 
-    mat4.rotateX(mvMatrix, -playerElevation*armElevationMultiplier);    //match elevation of arms relative to body
+    mat4.rotateX(mvMatrix, playerElevation*(torsoElevationMultiplier - armElevationMultiplier));
     mat4.translate(mvMatrix, [0,0.05,-1]);    //1m - end of arm, up by 5cm
 
     mat4.scale(mvMatrix,[0.025,0.1,0.1]); //5cm x 20cm x 20cm
@@ -359,13 +364,13 @@ function drawScene(frameTime){
 
     function drawArm(handedness){   //handedness 1=right, -1=left
         mat4.identity(cameraMat);
-        mat4.rotateX(cameraMat, playerElevation);
-        mat4.translate(cameraMat, playerEyePos.map(x=>-x));
+        mat4.rotateX(cameraMat, (1-torsoElevationMultiplier)*playerElevation);
+        mat4.translate(cameraMat, playerEyePosFromNeck.map(x=>-x));
 
         mat4.set(cameraMat, mvMatrix);
-        mat4.translate(mvMatrix, [0.2*handedness,0.5,0]);  //shoulder
+        mat4.translate(mvMatrix, [0.2*handedness,0,-0.2]);  //shoulder
 
-        mat4.rotateX(mvMatrix, -playerElevation*armElevationMultiplier + handedness*0.06);    //match elevation of arms relative to body
+        mat4.rotateX(mvMatrix, playerElevation*(torsoElevationMultiplier - armElevationMultiplier) + handedness*0.06);
                                         //+handedness is to shift right arm up, left down
         mat4.rotateY(mvMatrix, 0.2*handedness); //turn shoulder about up vector
         mat4.translate(mvMatrix, [0,0,-0.5]);    //move forwards by 0.5 for elbow
@@ -386,13 +391,21 @@ function drawScene(frameTime){
     setupDrawMatrixForObjectAtPosition(groundPos);
     mat4.scale(mvMatrix,[10,10,10]);
     drawObjectFromBuffers(cubeBuffers, activeProg);
+
+    //draw a tower to indicate up direction
+    setupDrawMatrixForObjectAtPosition([0,0,10]);
+    mat4.scale(mvMatrix,[1,100,1]);
+    drawObjectFromBuffers(cubeBuffers, activeProg);
+
 }
 
 function setupCameraMatrix(){
     mat4.identity(cameraMat);
-    mat4.rotateX(cameraMat, playerElevation);
-    
-    mat4.translate(cameraMat, playerEyePos.map(x=>-x));
+
+    mat4.rotateX(cameraMat, (1-torsoElevationMultiplier)*playerElevation);
+    mat4.translate(cameraMat, playerEyePosFromNeck.map(x=>-x));
+    mat4.rotateX(cameraMat, torsoElevationMultiplier*playerElevation);
+    mat4.translate(cameraMat, playerNeckPos.map(x=>-x));
 
     mat4.rotateY(cameraMat, playerRotation);
 
