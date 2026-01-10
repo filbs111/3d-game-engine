@@ -223,6 +223,7 @@ var lastFrameTime = null;
 var playerPos=[0,0.7,5];    //z=0.7 - 0 is currently 1m above floor. +70 = 1.7m, typical eye height
 var playerVel=[0,0,0];
 var playerAcc=[0,0,0];
+var preDragPlayerAcc=[0,0,0];
 var playerRotation=0;
 var playerElevation=0;
 var boxPos=[0,0,0];
@@ -247,7 +248,13 @@ function drawScene(frameTime){
     if (lastFrameTime){
         var timeChange = frameTime-lastFrameTime;
 
-        playerAcc = [zMove,0,xMove].map(xx=>xx*-0.00001);
+        var accMultiply = Math.exp(-0.002*timeChange);
+        var preDragPlayerAccTarget = [zMove,0,xMove].map(xx=>xx*-0.00001);
+       
+        preDragPlayerAcc[0] = preDragPlayerAcc[0]*accMultiply + (1-accMultiply)*preDragPlayerAccTarget[0];
+        preDragPlayerAcc[2] = preDragPlayerAcc[2]*accMultiply + (1-accMultiply)*preDragPlayerAccTarget[2];
+
+        playerAcc = preDragPlayerAcc.map(x=>x); //copy
 
         //add drag proportional to speed.
         playerAcc[0]-=playerVel[0]*0.001;
