@@ -242,8 +242,8 @@ function drawScene(frameTime){
 
     if (lastFrameTime){
         var timeChange = frameTime-lastFrameTime;
-        playerVel[2]-=timeChange*xMove*0.00003;
-        playerVel[0]-=timeChange*zMove*0.00003;
+        playerVel[2]-=timeChange*xMove*0.000025;
+        playerVel[0]-=timeChange*zMove*0.000025;
         playerRotation -= timeChange*turnInput*0.005;
         playerElevation -= timeChange*elevationInput*0.005;
 
@@ -256,6 +256,8 @@ function drawScene(frameTime){
 
         playerPos[2]+=playerVel[2]*timeChange;
         playerPos[0]+=playerVel[0]*timeChange;
+
+        udpateSpeedInfo(playerVel);
     }
     lastFrameTime=frameTime;
 
@@ -322,3 +324,16 @@ function drawScene(frameTime){
     drawObjectFromBuffers(cubeBuffers, activeProg);
 }
 
+function udpateSpeedInfo(vel){
+    //world scale is metres
+    //vel is in metres per millisecond
+    var velMag = Math.hypot.apply(null, vel);
+    var speedMetresPerSecond = velMag*1000;
+    var speedKmPerH = speedMetresPerSecond*3.6;
+    var speedMilesPerHour = speedKmPerH/1.6;
+
+    document.getElementById("speedinfo").innerHTML = "" + 
+        speedMetresPerSecond.toFixed(2) + "m/s " + 
+        speedKmPerH.toFixed(2) + "km/h " +
+        speedMilesPerHour.toFixed(2)+"mph";
+}
