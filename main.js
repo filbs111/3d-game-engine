@@ -220,6 +220,7 @@ var camParams = {
 
 var lastFrameTime = null;
 var playerPos=[0,0,5];
+var playerVel=[0,0,0];
 var playerRotation=0;
 var playerElevation=0;
 var boxPos=[0,0,0];
@@ -241,10 +242,20 @@ function drawScene(frameTime){
 
     if (lastFrameTime){
         var timeChange = frameTime-lastFrameTime;
-        playerPos[2]-=timeChange*xMove*0.005;
-        playerPos[0]-=timeChange*zMove*0.005;
+        playerVel[2]-=timeChange*xMove*0.00003;
+        playerVel[0]-=timeChange*zMove*0.00003;
         playerRotation -= timeChange*turnInput*0.005;
         playerElevation -= timeChange*elevationInput*0.005;
+
+        //decay player velocity
+        //NOTE not necessarily correct! 
+        //TODO fixed timestep mechanics
+        var velMultiply = Math.exp(-0.002*timeChange);
+        playerVel[2]*=velMultiply;
+        playerVel[0]*=velMultiply;
+
+        playerPos[2]+=playerVel[2]*timeChange;
+        playerPos[0]+=playerVel[0]*timeChange;
     }
     lastFrameTime=frameTime;
 
