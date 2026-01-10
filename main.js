@@ -22,6 +22,9 @@ var mouseInfo = {
 	pendingMovement:[0,0],
 };
 
+var pointerLocked=false;
+
+
 function init(){
 
     //escape escapes pointer lock and exit fullscreen
