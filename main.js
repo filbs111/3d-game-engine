@@ -335,19 +335,7 @@ function drawScene(frameTime){
     
 
     //draw a block for player's core.
-    //copy 1st part of setupCameraMatrix
-    /*
-    mat4.identity(cameraMat);
-    mat4.rotateX(cameraMat, (1-torsoElevationMultiplier)*playerElevation);
-    mat4.translate(cameraMat, playerEyePosFromNeck.map(x=>-x));
-    mat4.rotateX(cameraMat, torsoElevationMultiplier*playerElevation);
-    mat4.translate(cameraMat, playerNeckPos.map(x=>-x));
-
-    mat4.set(cameraMat, mvMatrix);
-    mat4.scale(mvMatrix,[0.2,0.2,0.1]); //40 cm wide, 40cm tall, 20cm deep. top is like bottom of rib cage
-    drawObjectFromBuffers(cubeBuffers, activeProg);
-    */
-
+    
     //for ease of use, and to allowing straightforward drawing of player objects for different cameras, 
     // calculate matrices of cameras (view) and objects (model) in same way,
     // and when rendering, invert camera matrix.
@@ -365,6 +353,12 @@ function drawScene(frameTime){
 
     mat4.rotateY(torsoMatrix, -playerRotation);
 
+
+    if (document.getElementById("externalcam").checked){
+        mat4.identity(cameraMat);
+    }else{
+        setCameraMatrixToEyes(torsoMatrix);
+    }
 
     drawCubeWithScale(activeProg, torsoMatrix, [0.2,0.2,0.1]);  //40 cm wide, 40cm tall, 20cm deep. top is like bottom of rib cage
 
@@ -398,9 +392,6 @@ function drawScene(frameTime){
         drawCubeWithScale(activeProg, armMat, [0.05,0.05,0.5]); //10cm x 10cm x 1m
     }
 
-
-    setupCameraMatrix();
-
     //draw cube
     setupDrawMatrixForObjectAtPosition(boxPos);
     mat4.rotateY(mvMatrix, boxRotation);
@@ -418,31 +409,16 @@ function drawScene(frameTime){
 
 }
 
-function setupCameraMatrix(){
+function setCameraMatrixToEyes(torsoMatrix){
+    var eyeMat = mat4.create(torsoMatrix);
+    mat4.rotateX(eyeMat, -playerElevation*torsoElevationMultiplier);
+    mat4.translate(eyeMat, playerNeckPos);
+    mat4.rotateX(eyeMat, -playerElevation*(1-torsoElevationMultiplier));
+    mat4.translate(eyeMat, playerEyePosFromNeck);
 
-    mat4.identity(cameraMat);
+    mat4.set(eyeMat, cameraMat);
 
-    if (document.getElementById("externalcam").checked){
-        return;
-    }
-    
-    mat4.rotateX(cameraMat, (1-torsoElevationMultiplier)*playerElevation);
-    mat4.translate(cameraMat, playerEyePosFromNeck.map(x=>-x));
-    mat4.rotateX(cameraMat, torsoElevationMultiplier*playerElevation);
-    mat4.translate(cameraMat, playerNeckPos.map(x=>-x));
-
-    mat4.rotateY(cameraMat, playerRotation);
-
-    //tilt by player acceleration
-    var accMag = Math.hypot.apply(null, playerAcc);
-    var accTurnAngle = Math.atan2(playerAcc[2],playerAcc[0]);
-    var accTilt = Math.atan(accMag*1_000_000/9.88);
-    mat4.rotateY(cameraMat, -accTurnAngle);
-    mat4.rotateZ(cameraMat, accTilt * 0.75);    //0.75 is fudge to make more reasonable (tilt by 22.5 deg at 1g acc instead of 45)
-    mat4.rotateY(cameraMat, accTurnAngle);
-        //TODO smooth jerk (derivative of acceleration)
-
-    mat4.translate(cameraMat, playerPos.map(x=>-x));
+    mat4.inverse(cameraMat);    //note .transpose won't work like does in 3sphere games, because these are standard 3d gfx mats, not SO4s.
 }
 
 function setupDrawMatrixForObjectAtPosition(objPos){
@@ -473,10 +449,6 @@ function updateSpeedInfo(vel, acc){
 }
 
 function drawCubeWithScale(shaderProg, objMatrix, scaleVec){
-        
-    setupCameraMatrix();    //NOTE that to draw camera object, would want to use transpose of this.
-        //TODO don't call this repeatedly!
-
     mat4.set(cameraMat, mvMatrix);
     mat4.multiply(mvMatrix, objMatrix);   //mvMatrix model view
 
