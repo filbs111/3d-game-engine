@@ -333,7 +333,6 @@ function drawScene(frameTime){
 
 
     
-
     //draw a block for player's core.
     
     //for ease of use, and to allowing straightforward drawing of player objects for different cameras, 
@@ -353,15 +352,27 @@ function drawScene(frameTime){
 
     mat4.rotateY(torsoMatrix, -playerRotation);
 
+    //defer drawing until calculate camera
+
+
+    var eyeMat = mat4.create(torsoMatrix);
+    mat4.rotateX(eyeMat, -playerElevation*torsoElevationMultiplier);
+    mat4.translate(eyeMat, playerNeckPos);
+    mat4.rotateX(eyeMat, -playerElevation*(1-torsoElevationMultiplier));
+    mat4.translate(eyeMat, playerEyePosFromNeck);
 
     if (document.getElementById("externalcam").checked){
         mat4.identity(cameraMat);
     }else{
-        setCameraMatrixToEyes(torsoMatrix);
+        mat4.set(eyeMat, cameraMat);
+        mat4.inverse(cameraMat);    //note .transpose won't work like does in 3sphere games, because these are standard 3d gfx mats, not SO4s.
     }
 
-    drawCubeWithScale(activeProg, torsoMatrix, [0.2,0.2,0.1]);  //40 cm wide, 40cm tall, 20cm deep. top is like bottom of rib cage
+    //draw eye
+    drawCubeWithScale(activeProg, eyeMat, [0.05,0.05,0.05]);    //10cm cube
 
+    // draw torso
+    drawCubeWithScale(activeProg, torsoMatrix, [0.2,0.2,0.1]);  //40 cm wide, 40cm tall, 20cm deep. top is like bottom of rib cage
 
     //draw gun
     var gunMat = mat4.create(torsoMatrix);
@@ -370,14 +381,10 @@ function drawScene(frameTime){
     mat4.translate(gunMat, [0,0,-0.2]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
     mat4.rotateX(gunMat, -playerElevation*(armElevationMultiplier-torsoElevationMultiplier));
     mat4.translate(gunMat, [0,0.05,-1]);    //1m - end of arm, up by 5cm
-
     drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
-
-    //draw gun
     
     drawArm2(activeProg, torsoMatrix, 1);   //right arm
     drawArm2(activeProg, torsoMatrix, -1);  //left arm
-
 
     function drawArm2(activeProg, torsoMatrix, handedness){
         var armMat = mat4.create(torsoMatrix);
