@@ -331,8 +331,12 @@ function drawScene(frameTime){
     bind2dTextureIfRequired(bricktex);
     
 
+
+    
+
     //draw a block for player's core.
     //copy 1st part of setupCameraMatrix
+    /*
     mat4.identity(cameraMat);
     mat4.rotateX(cameraMat, (1-torsoElevationMultiplier)*playerElevation);
     mat4.translate(cameraMat, playerEyePosFromNeck.map(x=>-x));
@@ -342,6 +346,28 @@ function drawScene(frameTime){
     mat4.set(cameraMat, mvMatrix);
     mat4.scale(mvMatrix,[0.2,0.2,0.1]); //40 cm wide, 40cm tall, 20cm deep. top is like bottom of rib cage
     drawObjectFromBuffers(cubeBuffers, activeProg);
+    */
+
+    //for ease of use, and to allowing straightforward drawing of player objects for different cameras, 
+    // calculate matrices of cameras (view) and objects (model) in same way,
+    // and when rendering, invert camera matrix.
+   
+    var torsoMatrix = mat4.identity();
+    mat4.translate(torsoMatrix, playerPos);
+    //tilt by player acceleration
+    var accMag = Math.hypot.apply(null, playerAcc);
+    var accTurnAngle = Math.atan2(playerAcc[2],playerAcc[0]);
+    var accTilt = Math.atan(accMag*1_000_000/9.88);
+    mat4.rotateY(torsoMatrix, -accTurnAngle);
+    mat4.rotateZ(torsoMatrix, -accTilt * 0.75);    //0.75 is fudge to make more reasonable (tilt by 22.5 deg at 1g acc instead of 45)
+    mat4.rotateY(torsoMatrix, accTurnAngle);
+        //TODO smooth jerk (derivative of acceleration)
+
+    mat4.rotateY(torsoMatrix, -playerRotation);
+
+
+    drawCubeWithScale(activeProg, torsoMatrix, [0.2,0.2,0.1]);  //40 cm wide, 40cm tall, 20cm deep. top is like bottom of rib cage
+
 
 
     //draw gun
@@ -446,4 +472,16 @@ function updateSpeedInfo(vel, acc){
         "acceleration: " +
         accMetresPerSecondSquared.toFixed(2) + "m/s^2 " + 
         accGees.toFixed(2) + "g";
+}
+
+function drawCubeWithScale(shaderProg, objMatrix, scaleVec){
+        
+    setupCameraMatrix();    //NOTE that to draw camera object, would want to use transpose of this.
+        //TODO don't call this repeatedly!
+
+    mat4.set(cameraMat, mvMatrix);
+    mat4.multiply(mvMatrix, objMatrix);   //mvMatrix model view
+
+    mat4.scale(mvMatrix, scaleVec);
+    drawObjectFromBuffers(cubeBuffers, shaderProg);
 }
