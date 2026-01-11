@@ -418,12 +418,11 @@ function drawScene(frameTime){
 
 }
 
-var useStaticCamera = false;
 function setupCameraMatrix(){
 
     mat4.identity(cameraMat);
 
-    if (useStaticCamera){
+    if (document.getElementById("externalcam").checked){
         return;
     }
     
