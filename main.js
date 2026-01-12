@@ -88,7 +88,7 @@ function init(){
 
     initGL();
     initShaders(shaderPrograms);initShaders=null;
-    initTexture();
+    initTextures();
     initBuffers();
 	getLocationsForShadersUsingPromises(
 		()=>{
@@ -104,8 +104,10 @@ function init(){
 }
 
 var bricktex;
-function initTexture(){
-    bricktex = makeTexture("img/brick-tex.jpg",gl.RGB,gl.UNSIGNED_SHORT_5_6_5); 
+var cubemapTexture;
+function initTextures(){
+    bricktex = makeTexture("img/brick-tex.jpg",gl.RGB,gl.UNSIGNED_SHORT_5_6_5);
+    cubemapTexture = loadCubeMap("img/skyboxes/sp2/sp2_");
 }
 
 function initBuffers(){
@@ -165,6 +167,14 @@ function prepBuffersForDrawing(bufferObj, shaderProg){
 	}
 
 	gl.uniformMatrix4fv(shaderProg.uniforms.uPMatrix, false, pMatrix);
+
+    if (shaderProg.uniforms.uSamplerCube){
+		gl.activeTexture(gl.TEXTURE4);
+		gl.uniform1i(shaderProg.uniforms.uSamplerCube, 4);	//??
+		gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture)
+		//bind2dTextureIfRequired(cubemapTexture, gl.TEXTURE_CUBE_MAP);
+	}
+
 }
 function drawObjectFromPreppedBuffers(bufferObj, shaderProg){
     if (shaderProg.uniforms.uMVMatrix){
@@ -218,9 +228,9 @@ var enableDisableAttributes = (function generateEnableDisableAttributesFunc(){
 
 
 var camParams = {
-    vfov:120,
+    vfov:110,
     near:0.01,
-    far:1000
+    far:20000
 };
 
 var lastFrameTime = null;
@@ -321,19 +331,13 @@ function drawScene(frameTime){
     var boxRotation = frameTime / 1000;
     
     
-    
-    var activeProg = shaderPrograms.texmap;
-    gl.useProgram(activeProg);
-    enableDisableAttributes(activeProg);
 
     gl.disable(gl.BLEND);
 	gl.enable(gl.DEPTH_TEST);
 
-    bind2dTextureIfRequired(bricktex);
-    
-
 
     
+
     //draw a block for player's core.
     
     //for ease of use, and to allowing straightforward drawing of player objects for different cameras, 
@@ -368,6 +372,32 @@ function drawScene(frameTime){
         mat4.set(eyeMat, cameraMat);
         mat4.inverse(cameraMat);    //note .transpose won't work like does in 3sphere games, because these are standard 3d gfx mats, not SO4s.
     }
+
+
+    //skybox
+    var activeProg = shaderPrograms.simpleCubemap;
+	gl.useProgram(activeProg);
+	//draw skybox. maybe efficient to do in screen space. 
+	//for now just make very big
+	mat4.set(cameraMat,mvMatrix);
+	var skyboxScale = 10000;
+	mat4.scale(mvMatrix, [skyboxScale,skyboxScale,-skyboxScale]);
+	gl.uniformMatrix4fv(activeProg.uniforms.uMVMatrix, false, mvMatrix);        //set modelview matrix
+	//if (cubeBuffers.isLoaded){
+		drawObjectFromBuffers(cubeBuffers, activeProg);
+	//}
+
+
+
+    
+    activeProg = shaderPrograms.texmap;
+    gl.useProgram(activeProg);
+    enableDisableAttributes(activeProg);
+
+    bind2dTextureIfRequired(bricktex);
+
+
+
 
     //draw eye
     drawCubeWithScale(activeProg, eyeMat, [0.05,0.05,0.05]);    //10cm cube

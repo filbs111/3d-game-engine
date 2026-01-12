@@ -351,3 +351,62 @@ var timeMeasure = (function(){
         lastTime=timeNow;
     }
 })();
+
+
+//cube map code from http://www.humus.name/cubemapviewer.js (relatively unmodified)
+function loadCubeMap(base)
+{
+	var texture  = gl.createTexture();
+
+	console.log("texture created: " + texture);
+
+	skyboxImages = [];
+	gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture );
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	//gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+	// var faces = [["ft.jpg", gl.TEXTURE_CUBE_MAP_POSITIVE_X],
+	// 			//  ["bk.jpg", gl.TEXTURE_CUBE_MAP_NEGATIVE_X],
+	// 			//  ["planet.jpg", gl.TEXTURE_CUBE_MAP_NEGATIVE_X],
+	// 			 ["ash_uvgrid01.jpg", gl.TEXTURE_CUBE_MAP_NEGATIVE_X],
+	// 			 ["up.jpg", gl.TEXTURE_CUBE_MAP_POSITIVE_Y],
+	// 			 ["dn.jpg", gl.TEXTURE_CUBE_MAP_NEGATIVE_Y],
+	// 			//  ["rt.jpg", gl.TEXTURE_CUBE_MAP_POSITIVE_Z],
+	// 			 ["planet.jpg", gl.TEXTURE_CUBE_MAP_POSITIVE_Z],
+	// 			 ["lf.jpg", gl.TEXTURE_CUBE_MAP_NEGATIVE_Z]];
+
+
+	var faces = [["ft.png", gl.TEXTURE_CUBE_MAP_POSITIVE_X],
+				["bk.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_X],
+				["up.png", gl.TEXTURE_CUBE_MAP_POSITIVE_Y],
+				["dn.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_Y],
+				["rt.png", gl.TEXTURE_CUBE_MAP_POSITIVE_Z],
+				["lf.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_Z]];
+
+	//var image_counter=0;
+	for (var i = 0; i < faces.length; i++)
+	{
+		var face = faces[i][1];
+		var image = new Image();
+		image.onload = function (texture, face, image) {
+			return function () {
+				gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+				gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);				
+				gl.texImage2D(face, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+								
+				//image_counter++;
+				//if (image_counter == 6)
+				//{
+				//	gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+				//}		//no need for mipmap because skybox is usually magnified
+						//since 256x256, fov~90, screens <256 pix high uncommon
+				//requestAnimationFrame(draw);
+			}
+		}(texture, face, image);
+		image.src = base + faces[i][0];
+	}
+	return texture;
+}
