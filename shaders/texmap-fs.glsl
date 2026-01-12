@@ -10,5 +10,6 @@ void main(void) {
     //fragColor = texture(uSampler, vTextureCoord);
 
     vec3 fc = texture(uSampler, vTextureCoord).xyz;
-    fragColor = vec4(vec3(vLight)*fc,1.0);   //should be equivalent
+    vec3 preGamma = vec3(vLight)*fc;
+    fragColor = vec4(pow(preGamma, vec3(0.455)),1.0);
 }
