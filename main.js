@@ -14,6 +14,7 @@ var shaderPrograms={};
 var cubeBuffers={};
 var cameraMat = mat4.create();
 var mvMatrix = mat4.create();
+var mMatrix = mat4.create();
 var pMatrix = mat4.create();
 
 var mouseInfo = {
@@ -138,11 +139,6 @@ function texImage2DWithLogs(mssg, target, level, internalformat, width, height, 
 	gl.texImage2D(target, level, internalformat, width, height, border, format, type, offsetOrSource);
 }
 
-// function setMatrixUniforms(shaderProgram) {
-//     gl.uniformMatrix4fv(shaderProgram.uniforms.uPMatrix, false, pMatrix);
-//     gl.uniformMatrix4fv(shaderProgram.uniforms.uMVMatrix, false, mvMatrix);
-// }
-
 function drawObjectFromBuffers(bufferObj, shaderProg){
 	prepBuffersForDrawing(bufferObj, shaderProg);
 	drawObjectFromPreppedBuffers(bufferObj, shaderProg);
@@ -171,7 +167,12 @@ function prepBuffersForDrawing(bufferObj, shaderProg){
 	gl.uniformMatrix4fv(shaderProg.uniforms.uPMatrix, false, pMatrix);
 }
 function drawObjectFromPreppedBuffers(bufferObj, shaderProg){
-	gl.uniformMatrix4fv(shaderProg.uniforms.uMVMatrix, false, mvMatrix);
+    if (shaderProg.uniforms.uMVMatrix){
+	    gl.uniformMatrix4fv(shaderProg.uniforms.uMVMatrix, false, mvMatrix);
+    }else{
+        gl.uniformMatrix4fv(shaderProg.uniforms.uMMatrix, false, mMatrix);
+        gl.uniformMatrix4fv(shaderProg.uniforms.uVMatrix, false, cameraMat);  //TODO set less frequently
+    }
 	gl.drawElements(gl.TRIANGLES, bufferObj.vertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 }
 
@@ -401,17 +402,17 @@ function drawScene(frameTime){
 
     //draw cube
     setupDrawMatrixForObjectAtPosition(boxPos);
-    mat4.rotateY(mvMatrix, boxRotation);
+    mat4.rotateY(mMatrix, boxRotation);
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
     //draw ground
     setupDrawMatrixForObjectAtPosition(groundPos);
-    mat4.scale(mvMatrix,[10,10,10]);
+    mat4.scale(mMatrix,[10,10,10]);
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
     //draw a tower to indicate up direction
     setupDrawMatrixForObjectAtPosition([0,0,10]);
-    mat4.scale(mvMatrix,[1,100,1]);
+    mat4.scale(mMatrix,[1,100,1]);
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
 }
@@ -429,8 +430,8 @@ function setCameraMatrixToEyes(torsoMatrix){
 }
 
 function setupDrawMatrixForObjectAtPosition(objPos){
-    mat4.set(cameraMat, mvMatrix);
-    mat4.translate(mvMatrix, objPos);
+    mat4.identity(mMatrix);
+    mat4.translate(mMatrix, objPos);
 }
 
 function updateSpeedInfo(vel, acc){
@@ -456,9 +457,8 @@ function updateSpeedInfo(vel, acc){
 }
 
 function drawCubeWithScale(shaderProg, objMatrix, scaleVec){
-    mat4.set(cameraMat, mvMatrix);
-    mat4.multiply(mvMatrix, objMatrix);   //mvMatrix model view
+    mat4.set(objMatrix, mMatrix);
 
-    mat4.scale(mvMatrix, scaleVec);
+    mat4.scale(mMatrix, scaleVec);
     drawObjectFromBuffers(cubeBuffers, shaderProg);
 }
