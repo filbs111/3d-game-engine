@@ -244,6 +244,12 @@ var playerElevation=0;
 var boxPos=[0,0.1,0];   //move up a bit to sit above mirror plane
 var groundPos=[0,-11,0];
 
+//static camera position
+var staticCamera = mat4.identity();
+mat4.rotateX(staticCamera, -0.2); //elevate
+mat4.translate(staticCamera,[0,0,9]);  //move back
+mat4.rotateX(staticCamera, -0.2); //elevate more
+
 
 var armElevationMultiplier=1.4; //elevate arms more than player look direction. 
     // - suspect this is natural - head isn't 90 deg
@@ -363,13 +369,15 @@ function drawScene(frameTime){
     mat4.rotateX(eyeMat, -playerElevation*(1-torsoElevationMultiplier));
     mat4.translate(eyeMat, playerEyePosFromNeck);
 
+
+
     var unmirroredCameraMat = mat4.create();
     if (document.getElementById("externalcam").checked){
-        mat4.identity(unmirroredCameraMat);
+        mat4.set(staticCamera, unmirroredCameraMat);
     }else{
         mat4.set(eyeMat, unmirroredCameraMat);
-        mat4.inverse(unmirroredCameraMat);    //note .transpose won't work like does in 3sphere games, because these are standard 3d gfx mats, not SO4s.
     }
+    mat4.inverse(unmirroredCameraMat);    //note .transpose won't work like does in 3sphere games, because these are standard 3d gfx mats, not SO4s.
     
     drawSingleScene(unmirroredCameraMat, true, eyeMat, torsoMatrix, boxRotation);
     gl.clear(gl.DEPTH_BUFFER_BIT);
@@ -476,6 +484,11 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, torso
     mat4.scale(mMatrix,[1,100,1]);
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
+
+    //draw external camera (will be invisible if external camera checked because cull backfaces)
+    mat4.set(staticCamera, mMatrix);
+    mat4.scale(mMatrix,[0.2,0.2,0.4]);
+    drawObjectFromBuffers(cubeBuffers, activeProg);
 
     var activeProg = shaderPrograms.simpleCubemap;
     gl.useProgram(activeProg);
