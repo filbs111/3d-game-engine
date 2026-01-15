@@ -147,7 +147,6 @@ function drawObjectFromBuffers(bufferObj, shaderProg){
 }
 function prepBuffersForDrawing(bufferObj, shaderProg){
 
-    
 	gl.bindBuffer(gl.ARRAY_BUFFER, bufferObj.vertexPositionBuffer);
     gl.vertexAttribPointer(shaderProg.attributes.aVertexPosition, bufferObj.vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 	
@@ -242,7 +241,7 @@ var playerAcc=[0,0,0];
 var preDragPlayerAcc=[0,0,0];
 var playerRotation=0;
 var playerElevation=0;
-var boxPos=[0,0,0];
+var boxPos=[0,0.1,0];   //move up a bit to sit above mirror plane
 var groundPos=[0,-11,0];
 
 
@@ -334,8 +333,6 @@ function drawScene(frameTime){
 
     gl.disable(gl.BLEND);
 	gl.enable(gl.DEPTH_TEST);
-
-
     
 
     //draw a block for player's core.
@@ -366,45 +363,52 @@ function drawScene(frameTime){
     mat4.rotateX(eyeMat, -playerElevation*(1-torsoElevationMultiplier));
     mat4.translate(eyeMat, playerEyePosFromNeck);
 
+    var unmirroredCameraMat = mat4.create();
     if (document.getElementById("externalcam").checked){
-        mat4.identity(cameraMat);
+        mat4.identity(unmirroredCameraMat);
     }else{
-        mat4.set(eyeMat, cameraMat);
-        mat4.inverse(cameraMat);    //note .transpose won't work like does in 3sphere games, because these are standard 3d gfx mats, not SO4s.
+        mat4.set(eyeMat, unmirroredCameraMat);
+        mat4.inverse(unmirroredCameraMat);    //note .transpose won't work like does in 3sphere games, because these are standard 3d gfx mats, not SO4s.
     }
     
-    if (document.getElementById("mirroringroundplane").checked){
+    drawSingleScene(unmirroredCameraMat, true, eyeMat, torsoMatrix, boxRotation);
+    gl.clear(gl.DEPTH_BUFFER_BIT);
+    drawSingleScene(unmirroredCameraMat, false, eyeMat, torsoMatrix, boxRotation);    
+}
+
+
+function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, torsoMatrix, boxRotation){
+        //NOTE passing in eyeMat, torsoMatrix, boxRotation is awkward. 
+        //TODO create scene description and use for render?
+
+    mat4.set(unmirroredCameraMat, cameraMat);
+
+    if (mirrorInGroundPlane){
        var groundHeight = 1;
        mat4.translate(cameraMat, [0,-groundHeight,0]);  //unnecessary if put ground to y=0
        mat4.scale(cameraMat, [1,-1,1]);
        mat4.translate(cameraMat, [0,groundHeight,0]);   //""
        gl.cullFace(gl.FRONT);
+        //TODO set clip plane
+
     }else{
-        gl.cullFace(gl.BACK);
+       gl.cullFace(gl.BACK);
     }
 
-    //skybox
-    var activeProg = shaderPrograms.simpleCubemap;
-	gl.useProgram(activeProg);
-	//draw skybox. maybe efficient to do in screen space. 
-	//for now just make very big
-	mat4.set(cameraMat,mvMatrix);
-	var skyboxScale = 10000;
-	mat4.scale(mvMatrix, [skyboxScale,skyboxScale,-skyboxScale]);
-	gl.uniformMatrix4fv(activeProg.uniforms.uMVMatrix, false, mvMatrix);        //set modelview matrix
-	//if (cubeBuffers.isLoaded){
-		drawObjectFromBuffers(cubeBuffers, activeProg);
-	//}
 
-
-
-    
     activeProg = shaderPrograms.texmap;
     gl.useProgram(activeProg);
     enableDisableAttributes(activeProg);
-
     bind2dTextureIfRequired(bricktex);
 
+    //draw ground blocker object if in not mirror mode, so don't overwrite view through mirror.
+    if (!mirrorInGroundPlane){
+        gl.colorMask(false, false, false, false);
+        setupDrawMatrixForObjectAtPosition([groundPos[0],groundPos[1]+10, groundPos[2]]);    //top face of cube
+        mat4.scale(mMatrix,[10,0,10]);
+        drawObjectFromBuffers(cubeBuffers, activeProg);
+        gl.colorMask(true, true, true, true);
+    }
 
     //draw eye
     drawCubeWithScale(activeProg, eyeMat, [0.05,0.05,0.05]);    //10cm cube
@@ -460,15 +464,35 @@ function drawScene(frameTime){
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
     //draw ground
-    setupDrawMatrixForObjectAtPosition(groundPos);
-    mat4.scale(mMatrix,[10,10,10]);
-    drawObjectFromBuffers(cubeBuffers, activeProg);
+    // TODO draw ground partially transparent.
+    if (!mirrorInGroundPlane){
+        setupDrawMatrixForObjectAtPosition(groundPos);
+        mat4.scale(mMatrix,[10,9.99,10]);   //9.99 so the blocker mirror plane is drawn in front! 
+        drawObjectFromBuffers(cubeBuffers, activeProg);
+    }
 
     //draw a tower to indicate up direction
     setupDrawMatrixForObjectAtPosition([0,0,10]);
     mat4.scale(mMatrix,[1,100,1]);
     drawObjectFromBuffers(cubeBuffers, activeProg);
+
+
+    var activeProg = shaderPrograms.simpleCubemap;
+    gl.useProgram(activeProg);
+
+    //skybox
+	//draw skybox. maybe efficient to do in screen space. 
+	//for now just make very big
+	var skyboxScale = 10000;
+    mat4.set(cameraMat,mvMatrix);
+    setupDrawMatrixForObjectAtPosition([0,0,0]);
+	mat4.scale(mvMatrix, [skyboxScale,skyboxScale,-skyboxScale]);
+	gl.uniformMatrix4fv(activeProg.uniforms.uMVMatrix, false, mvMatrix);        //set modelview matrix
+	//if (cubeBuffers.isLoaded){
+		drawObjectFromBuffers(cubeBuffers, activeProg);
+	//}
 }
+
 
 function setupDrawMatrixForObjectAtPosition(objPos){
     mat4.identity(mMatrix);
@@ -503,7 +527,3 @@ function drawCubeWithScale(shaderProg, objMatrix, scaleVec){
     mat4.scale(mMatrix, scaleVec);
     drawObjectFromBuffers(cubeBuffers, shaderProg);
 }
-
-// function drawSceneFromCamera(cameraMat){
-
-// }
