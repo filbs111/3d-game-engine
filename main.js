@@ -372,7 +372,16 @@ function drawScene(frameTime){
         mat4.set(eyeMat, cameraMat);
         mat4.inverse(cameraMat);    //note .transpose won't work like does in 3sphere games, because these are standard 3d gfx mats, not SO4s.
     }
-
+    
+    if (document.getElementById("mirroringroundplane").checked){
+       var groundHeight = 1;
+       mat4.translate(cameraMat, [0,-groundHeight,0]);  //unnecessary if put ground to y=0
+       mat4.scale(cameraMat, [1,-1,1]);
+       mat4.translate(cameraMat, [0,groundHeight,0]);   //""
+       gl.cullFace(gl.FRONT);
+    }else{
+        gl.cullFace(gl.BACK);
+    }
 
     //skybox
     var activeProg = shaderPrograms.simpleCubemap;
@@ -395,8 +404,6 @@ function drawScene(frameTime){
     enableDisableAttributes(activeProg);
 
     bind2dTextureIfRequired(bricktex);
-
-
 
 
     //draw eye
@@ -496,3 +503,7 @@ function drawCubeWithScale(shaderProg, objMatrix, scaleVec){
     mat4.scale(mMatrix, scaleVec);
     drawObjectFromBuffers(cubeBuffers, shaderProg);
 }
+
+// function drawSceneFromCamera(cameraMat){
+
+// }
