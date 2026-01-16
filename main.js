@@ -249,6 +249,7 @@ var staticCamera = mat4.identity();
 mat4.rotateX(staticCamera, -0.2); //elevate
 mat4.translate(staticCamera,[0,0,9]);  //move back
 mat4.rotateX(staticCamera, -0.2); //elevate more
+var statCamPos = staticCamera.slice(12,15);
 
 
 var armElevationMultiplier=1.4; //elevate arms more than player look direction. 
@@ -339,8 +340,8 @@ function drawScene(frameTime){
 
     gl.disable(gl.BLEND);
 	gl.enable(gl.DEPTH_TEST);
-    
 
+    
     //draw a block for player's core.
     
     //for ease of use, and to allowing straightforward drawing of player objects for different cameras, 
@@ -369,7 +370,14 @@ function drawScene(frameTime){
     mat4.rotateX(eyeMat, -playerElevation*(1-torsoElevationMultiplier));
     mat4.translate(eyeMat, playerEyePosFromNeck);
 
-
+    if (document.getElementById("camfollowsplayer").checked){
+        mat4.identity(staticCamera);
+        mat4.translate(staticCamera, statCamPos);
+        var difference = [playerPos[0]-statCamPos[0], playerPos[1]-statCamPos[1], playerPos[2]-statCamPos[2]];
+        mat4.rotateY(staticCamera, Math.atan2(-difference[0], -difference[2]));   //pan
+        var distance = Math.hypot.apply(null, difference);
+        mat4.rotateX(staticCamera, Math.asin(difference[1]/distance)); //tilt (elevation)
+    }
 
     var unmirroredCameraMat = mat4.create();
     if (document.getElementById("externalcam").checked){
