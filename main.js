@@ -256,7 +256,7 @@ var armElevationMultiplier=1.4; //elevate arms more than player look direction.
     // - suspect this is natural - head isn't 90 deg
     //back when pointing gun upward.
      // NOTE could make gimbal lock situation worse - perhaps better use pointing direction and scale look elevation...
-var torsoElevationMultiplier=0.3;   //torso doesn't elevate as much as view. neck does remaining rotation
+var torsoElevationMultiplier=0.4;   //torso doesn't elevate as much as view. neck does remaining rotation
 
 function drawScene(frameTime){
 	requestAnimationFrame(drawScene);
@@ -364,10 +364,13 @@ function drawScene(frameTime){
     //defer drawing until calculate camera
 
 
-    var eyeMat = mat4.create(torsoMatrix);
-    mat4.rotateX(eyeMat, -playerElevation*torsoElevationMultiplier);
+    var upperTorsoMat = mat4.create(torsoMatrix);    
+    mat4.rotateX(upperTorsoMat, -playerElevation*torsoElevationMultiplier);
+    var eyeMat = mat4.create(upperTorsoMat);
+    mat4.translate(upperTorsoMat, [0,0.3,0]);
     mat4.translate(eyeMat, playerNeckPos);
     mat4.rotateX(eyeMat, -playerElevation*(1-torsoElevationMultiplier));
+    var neckMat = mat4.create(eyeMat);
     mat4.translate(eyeMat, playerEyePosFromNeck);
 
     if (document.getElementById("camfollowsplayer").checked){
@@ -387,14 +390,14 @@ function drawScene(frameTime){
     }
     mat4.inverse(unmirroredCameraMat);    //note .transpose won't work like does in 3sphere games, because these are standard 3d gfx mats, not SO4s.
     
-    drawSingleScene(unmirroredCameraMat, true, eyeMat, torsoMatrix, boxRotation);
+    drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation);
     gl.clear(gl.DEPTH_BUFFER_BIT);
-    drawSingleScene(unmirroredCameraMat, false, eyeMat, torsoMatrix, boxRotation);    
+    drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation);    
 }
 
 
-function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, torsoMatrix, boxRotation){
-        //NOTE passing in eyeMat, torsoMatrix, boxRotation is awkward. 
+function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation){
+        //NOTE passing in eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation is awkward. 
         //TODO create scene description and use for render?
 
     mat4.set(unmirroredCameraMat, cameraMat);
@@ -428,6 +431,12 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, torso
 
     //draw eye
     drawCubeWithScale(activeProg, eyeMat, [0.05,0.05,0.05]);    //10cm cube
+
+    //draw neck
+    drawCubeWithScale(activeProg, neckMat, [0.05,0.05,0.05]); 
+
+    //draw uppoer torso
+    drawCubeWithScale(activeProg, upperTorsoMat, [0.25,0.2,0.1]); 
 
     // draw torso
     drawCubeWithScale(activeProg, torsoMatrix, [0.2,0.2,0.1]);  //40 cm wide, 40cm tall, 20cm deep. top is like bottom of rib cage
