@@ -441,6 +441,22 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     // draw torso
     drawCubeWithScale(activeProg, torsoMatrix, [0.2,0.2,0.1]);  //40 cm wide, 40cm tall, 20cm deep. top is like bottom of rib cage
 
+
+    //draw legs. 
+    //TODO make movement correspond to movement speed and direction. 
+    //temporary - just constant animation.
+    var legSwing = 0.5*Math.sin(boxRotation*4);
+    var legMat = mat4.create(torsoMatrix);
+    mat4.rotateX(legMat, legSwing);
+    mat4.translate(legMat, [0.1,-0.5,0]);
+    drawCubeWithScale(activeProg, legMat, [0.1,0.5,0.1]);   //right leg
+
+    mat4.set(torsoMatrix, legMat);
+    mat4.rotateX(legMat, -legSwing);
+    mat4.translate(legMat, [-0.1,-0.5,0]);
+    drawCubeWithScale(activeProg, legMat, [0.1,0.5,0.1]);   //left leg
+
+
     //draw gun
     var gunMat = mat4.create(torsoMatrix);
     mat4.rotateX(gunMat, -playerElevation*torsoElevationMultiplier);
