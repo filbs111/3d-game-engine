@@ -330,9 +330,8 @@ function drawScene(frameTime){
     gl.clearColor(0,1,1,1); //cyan
    	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-
-
     mat4.perspective(camParams.vfov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 
+    pMatrix[9]=-0.33;       //shift centre of perspective one third up from centre to top of screen (so is 1/3 down screen top to bottom)
 
     var boxRotation = frameTime / 1000;
     
