@@ -123,7 +123,7 @@ function renderViewUsingCmap(){
     var zoom=1.5;
     var ratio = gl.viewportWidth/gl.viewportHeight;
     gl.uniform2f(activeShaderProgram.uniforms.uScaleXy, ratio*zoom, zoom);   //TODO apply zoom factor, (inverted?) screen dimens
-    gl.uniform2f(activeShaderProgram.uniforms.uOffsetXy, 0,0);
+    gl.uniform2f(activeShaderProgram.uniforms.uOffsetXy, 0,-0.33);
 
 	gl.disable(gl.CULL_FACE);   //?? bodge to try to get rendering to work!!!
 

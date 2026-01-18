@@ -12,5 +12,5 @@ void main(void) {
 
     //gl_Position = vec4(aVertexPosition + vec3(0.,0.,-1.), 1.0);
 
-    vPos = uOffsetXy + uScaleXy*aVertexPosition.xy;
+    vPos = uScaleXy * (uOffsetXy + aVertexPosition.xy);
 }
