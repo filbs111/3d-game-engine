@@ -119,6 +119,7 @@ function initShaders(shaderProgs){
 		fisheyeCubemap:["cubemap-fisheye-vs", "cubemap-fisheye-fs"],
 		fisheyeStereographic:["cubemap-fisheye-vs", "cubemap-fisheye-stereographic-fs"],
 		fisheyeEquidistant:["cubemap-fisheye-vs", "cubemap-fisheye-equidistant-fs"],
+		fisheyeEquisolid:["cubemap-fisheye-vs", "cubemap-fisheye-equisolid-fs"],
 		fisheyeOrthographic:["cubemap-fisheye-vs", "cubemap-fisheye-orthographic-fs"],
 	};
 

@@ -21,7 +21,8 @@ void main(void) {
     float ang = 2. * atan(fromCentre);
 
 
-    vec3 pos3d = vec3(normalize(vPos)*sin(ang), cos(ang));
+    //vec3 pos3d = vec3(normalize(vPos)*sin(ang), cos(ang));
+    vec3 pos3d = vec3(normalize(vPos), 1./tan(ang));     //proportional to above
 
     
     fragColor = texture(uSamplerCubeFisheye, -pos3d);
