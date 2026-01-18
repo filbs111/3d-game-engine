@@ -115,7 +115,10 @@ function rotateCameraForFace(mat, ii){
 }
 
 function renderViewUsingCmap(){
-    var activeShaderProgram = shaderPrograms.fisheyeCubemap;
+    var activeShaderProgram = document.getElementById("fisheyeselection_simple").checked ?
+        shaderPrograms.fisheyeCubemap:
+        shaderPrograms.fisheyeEquidistant;
+
     gl.useProgram(activeShaderProgram);
     enableDisableAttributes(activeShaderProgram);
         //?? which uniform for cubemap framebuffers

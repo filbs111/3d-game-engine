@@ -401,7 +401,7 @@ function drawScene(frameTime){
     mat4.inverse(unmirroredCameraMat);    //note .transpose won't work like does in 3sphere games, because these are standard 3d gfx mats, not SO4s.
     
 
-    if (document.getElementById("fisheye").checked){
+    if (!document.getElementById("fisheyeselection_off").checked){
 
         //draw cubemap about current camera.
         // but for simplicity, make initial version using cubemap for intermediate views. render 6 cameras for each cubemap side, then map from cubemap onto the screen.
@@ -411,12 +411,6 @@ function drawScene(frameTime){
         updateCubemap(unmirroredCameraMat, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation);
 
         renderViewUsingCmap();
-
-            //TODO use the cubemap framebuffers to render to the screen
-
-            //TODO options for different mappings
-                //preproduce rectilinear render
-                //different fisheye projections...
 
     }else{
         mat4.perspective(camParams.vfov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 

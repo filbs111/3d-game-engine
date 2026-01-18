@@ -117,6 +117,7 @@ function initShaders(shaderProgs){
 		texmap:["texmap-vs", "texmap-fs"],
 		simpleCubemap:["cubemap-vs", "cubemap-fs"],	//used for skybox
 		fisheyeCubemap:["cubemap-fisheye-vs", "cubemap-fisheye-fs"],
+		fisheyeEquidistant:["cubemap-fisheye-vs", "cubemap-fisheye-equidistant-fs"],
 	};
 
 	console.log("loading shaders...");
