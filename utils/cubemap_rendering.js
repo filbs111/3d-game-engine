@@ -120,7 +120,7 @@ function renderViewUsingCmap(){
     enableDisableAttributes(activeShaderProgram);
         //?? which uniform for cubemap framebuffers
 
-    var zoom=1.5;
+    var zoom=1.4;
     var ratio = gl.viewportWidth/gl.viewportHeight;
     gl.uniform2f(activeShaderProgram.uniforms.uScaleXy, ratio*zoom, zoom);   //TODO apply zoom factor, (inverted?) screen dimens
     gl.uniform2f(activeShaderProgram.uniforms.uOffsetXy, 0,-0.33);

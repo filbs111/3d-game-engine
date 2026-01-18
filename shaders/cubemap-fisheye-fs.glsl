@@ -8,7 +8,9 @@ out vec4 fragColor;
 void main(void) {
     //simple - reproduce rectilinear projection
 
-    vec3 pos3d = vec3(vPos, 1.0);
+    float simpleParabolicZCoord = 1.-0.15*dot(vPos,vPos);    //simple barrel distortion
+
+    vec3 pos3d = vec3(vPos, simpleParabolicZCoord);
     
     fragColor = texture(uSamplerCubeFisheye, -pos3d);
 }
