@@ -8,6 +8,7 @@
     <!-- <link rel='stylesheet' type='text/css' media='screen' href='main.css'> -->
     <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
     <script type="text/javascript" src="lib/gl-matrix-min.js"></script>
+    <script type="text/javascript" src="data/quad.js"></script>
     <script type="text/javascript" src="data/levelCubeData.js"></script>
     <script type="text/javascript" src="utils/keys.js"></script>
     <script type="text/javascript" src="utils/buffer_utils.js"></script>
@@ -16,6 +17,7 @@
     <script type="text/javascript" src="utils/texture_utils.js"></script>
     <script type="text/javascript" src="utils/webgl_utils.js"></script>
     <script type="text/javascript" src='main.js'></script>
+    <script type="text/javascript" src="utils/cubemap_rendering.js"></script>
 </head>
 <body onload="init()">
     <canvas id="mycanvas" width="0" height="0">CANVAS TO GO HERE</canvas>
@@ -27,6 +29,8 @@
     <label for="camfollowsplayertoggle">External Cam Follows Player</label>
     <input type="checkbox" id="doubleguns" name="doublegunstoggle"/>
     <label for="doublegunstoggle">Double Guns</label>
+    <input type="checkbox" id="fisheye" name="fisheyetoggle"/>
+    <label for="fisheyetoggle">Fisheye Lens</label>
 
     
   </div>

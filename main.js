@@ -12,6 +12,7 @@
 
 var shaderPrograms={};
 var cubeBuffers={};
+var quadBuffers={};
 var cameraMat = mat4.create();
 var mvMatrix = mat4.create();
 var mMatrix = mat4.create();
@@ -89,6 +90,7 @@ function init(){
     initGL();
     initShaders(shaderPrograms);initShaders=null;
     initTextures();
+    initCubemapFramebuffer(cubemapView);
     initBuffers();
 	getLocationsForShadersUsingPromises(
 		()=>{
@@ -112,6 +114,7 @@ function initTextures(){
 
 function initBuffers(){
     loadBufferData(cubeBuffers, levelCubeData);
+   	loadBufferData(quadBuffers, quadData);
 }
 
 var bind2dTextureIfRequired = (function createBind2dTextureIfRequiredFunction(){
@@ -165,20 +168,30 @@ function prepBuffersForDrawing(bufferObj, shaderProg){
 		gl.uniform1i(shaderProg.uniforms.uSampler, 0);
 	}
 
-	gl.uniformMatrix4fv(shaderProg.uniforms.uPMatrix, false, pMatrix);
+    if (shaderProg.uniforms.uPMatrix){
+	    gl.uniformMatrix4fv(shaderProg.uniforms.uPMatrix, false, pMatrix);
+    }
 
     if (shaderProg.uniforms.uSamplerCube){
 		gl.activeTexture(gl.TEXTURE4);
 		gl.uniform1i(shaderProg.uniforms.uSamplerCube, 4);	//??
-		gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture)
+		gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
 		//bind2dTextureIfRequired(cubemapTexture, gl.TEXTURE_CUBE_MAP);
 	}
+
+    if (shaderProg.uniforms.uSamplerCubeFisheye){
+        gl.activeTexture(gl.TEXTURE1);
+        gl.uniform1i(shaderProg.uniforms.uSamplerCubeFisheye, 1);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapView.cubemapTexture);
+//        		gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+
+    }
 
 }
 function drawObjectFromPreppedBuffers(bufferObj, shaderProg){
     if (shaderProg.uniforms.uMVMatrix){
 	    gl.uniformMatrix4fv(shaderProg.uniforms.uMVMatrix, false, mvMatrix);
-    }else{
+    }else if (shaderProg.uniforms.uMMatrix){
         gl.uniformMatrix4fv(shaderProg.uniforms.uMMatrix, false, mMatrix);
         gl.uniformMatrix4fv(shaderProg.uniforms.uVMatrix, false, cameraMat);  //TODO set less frequently
     }
@@ -330,9 +343,7 @@ function drawScene(frameTime){
     gl.clearColor(0,1,1,1); //cyan
    	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    mat4.perspective(camParams.vfov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 
-    pMatrix[9]=-0.33;       //shift centre of perspective one third up from centre to top of screen (so is 1/3 down screen top to bottom)
-
+    
     var boxRotation = frameTime / 1000;
     
     
@@ -389,9 +400,32 @@ function drawScene(frameTime){
     }
     mat4.inverse(unmirroredCameraMat);    //note .transpose won't work like does in 3sphere games, because these are standard 3d gfx mats, not SO4s.
     
-    drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation);
-    gl.clear(gl.DEPTH_BUFFER_BIT);
-    drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation);    
+
+    if (document.getElementById("fisheye").checked){
+
+        //draw cubemap about current camera.
+        // but for simplicity, make initial version using cubemap for intermediate views. render 6 cameras for each cubemap side, then map from cubemap onto the screen.
+        // NOTE can do this more efficiently, (what is best depends on FOV), by drawing to 1,2,or 4 panels (last is "quad view" used in 3-sphere project), but this is generally
+        // more complex.
+
+        updateCubemap(unmirroredCameraMat, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation);
+
+        renderViewUsingCmap();
+
+            //TODO use the cubemap framebuffers to render to the screen
+
+            //TODO options for different mappings
+                //preproduce rectilinear render
+                //different fisheye projections...
+
+    }else{
+        mat4.perspective(camParams.vfov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 
+        pMatrix[9]=-0.33;       //shift centre of perspective one third up from centre to top of screen (so is 1/3 down screen top to bottom)
+
+        drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation);
+        gl.clear(gl.DEPTH_BUFFER_BIT);
+        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation);    
+    }
 }
 
 
