@@ -117,7 +117,9 @@ function rotateCameraForFace(mat, ii){
 function renderViewUsingCmap(){
     var activeShaderProgram = document.getElementById("fisheyeselection_simple").checked ?
         shaderPrograms.fisheyeCubemap:
-        shaderPrograms.fisheyeEquidistant;
+        document.getElementById("fisheyeselection_equidistant").checked ?
+        shaderPrograms.fisheyeEquidistant:
+        shaderPrograms.fisheyeOrthographic;
 
     gl.useProgram(activeShaderProgram);
     enableDisableAttributes(activeShaderProgram);
