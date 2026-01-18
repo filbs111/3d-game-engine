@@ -117,6 +117,8 @@ function rotateCameraForFace(mat, ii){
 function renderViewUsingCmap(){
     var activeShaderProgram = document.getElementById("fisheyeselection_simple").checked ?
         shaderPrograms.fisheyeCubemap:
+        document.getElementById("fisheyeselection_stereographic").checked ?
+        shaderPrograms.fisheyeStereographic:
         document.getElementById("fisheyeselection_equidistant").checked ?
         shaderPrograms.fisheyeEquidistant:
         shaderPrograms.fisheyeOrthographic;

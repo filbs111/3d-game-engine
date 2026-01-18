@@ -117,6 +117,7 @@ function initShaders(shaderProgs){
 		texmap:["texmap-vs", "texmap-fs"],
 		simpleCubemap:["cubemap-vs", "cubemap-fs"],	//used for skybox
 		fisheyeCubemap:["cubemap-fisheye-vs", "cubemap-fisheye-fs"],
+		fisheyeStereographic:["cubemap-fisheye-vs", "cubemap-fisheye-stereographic-fs"],
 		fisheyeEquidistant:["cubemap-fisheye-vs", "cubemap-fisheye-equidistant-fs"],
 		fisheyeOrthographic:["cubemap-fisheye-vs", "cubemap-fisheye-orthographic-fs"],
 	};
