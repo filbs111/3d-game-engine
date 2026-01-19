@@ -122,10 +122,14 @@ function renderViewUsingCmap(){
         document.getElementById("fisheyeselection_thoby").checked ?             shaderPrograms.fisheyeThoby:
         document.getElementById("fisheyeselection_equisolid").checked ?         shaderPrograms.fisheyeEquisolid:
                                                                                 shaderPrograms.fisheyeOrthographic;
-
     gl.useProgram(activeShaderProgram);
     enableDisableAttributes(activeShaderProgram);
         //?? which uniform for cubemap framebuffers
+
+    if (document.getElementById("fisheyeselection_thoby").checked){
+        var k2 = parseFloat(document.getElementById("thobyk2").value);
+        gl.uniform1f(activeShaderProgram.uniforms.uK2, k2);
+    }
 
     var zoom=1.4;
     var ratio = gl.viewportWidth/gl.viewportHeight;
