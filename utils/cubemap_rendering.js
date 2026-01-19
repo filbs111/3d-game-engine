@@ -119,6 +119,7 @@ function renderViewUsingCmap(){
         document.getElementById("fisheyeselection_simple").checked ?            shaderPrograms.fisheyeCubemap:
         document.getElementById("fisheyeselection_stereographic").checked ?     shaderPrograms.fisheyeStereographic:
         document.getElementById("fisheyeselection_equidistant").checked ?       shaderPrograms.fisheyeEquidistant:
+        document.getElementById("fisheyeselection_thoby").checked ?             shaderPrograms.fisheyeThoby:
         document.getElementById("fisheyeselection_equisolid").checked ?         shaderPrograms.fisheyeEquisolid:
                                                                                 shaderPrograms.fisheyeOrthographic;
 
