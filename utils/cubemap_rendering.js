@@ -131,7 +131,8 @@ function renderViewUsingCmap(){
         gl.uniform1f(activeShaderProgram.uniforms.uK2, k2);
     }
 
-    var zoom=1.4;
+    var zoom = parseFloat(document.getElementById("fisheyezoom").value);    //larger number = more zoomed out
+
     var ratio = gl.viewportWidth/gl.viewportHeight;
     gl.uniform2f(activeShaderProgram.uniforms.uScaleXy, ratio*zoom, zoom);   //TODO apply zoom factor, (inverted?) screen dimens
     gl.uniform2f(activeShaderProgram.uniforms.uOffsetXy, 0,-0.33);
