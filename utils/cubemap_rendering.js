@@ -129,6 +129,11 @@ function renderViewUsingCmap(){
     enableDisableAttributes(activeShaderProgram);
         //?? which uniform for cubemap framebuffers
 
+    if (document.getElementById("fisheyeselection_simple").checked){
+        var ss = parseFloat(document.getElementById("simple_strength").value);
+        gl.uniform1f(activeShaderProgram.uniforms.uSimpleStrength, ss);
+    }
+
     if (document.getElementById("fisheyeselection_thoby").checked){
         var k2 = parseFloat(document.getElementById("thobyk2").value);
         gl.uniform1f(activeShaderProgram.uniforms.uK2, k2);
