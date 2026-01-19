@@ -122,7 +122,9 @@ function renderViewUsingCmap(){
         document.getElementById("fisheyeselection_thoby").checked ?             shaderPrograms.fisheyeThoby:
         document.getElementById("fisheyeselection_equisolid").checked ?         shaderPrograms.fisheyeEquisolid:
         document.getElementById("fisheyeselection_orthographic").checked ?      shaderPrograms.fisheyeOrthographic:
-                                                                                shaderPrograms.fisheyeTanktheta;
+        document.getElementById("fisheyeselection_tanktheta").checked ?         shaderPrograms.fisheyeTanktheta:
+                                                                                shaderPrograms.fisheyeSpecial;
+
     gl.useProgram(activeShaderProgram);
     enableDisableAttributes(activeShaderProgram);
         //?? which uniform for cubemap framebuffers
@@ -134,6 +136,11 @@ function renderViewUsingCmap(){
 
     if (document.getElementById("fisheyeselection_tanktheta").checked){
         var k = parseFloat(document.getElementById("tanktheta_k").value);
+        gl.uniform1f(activeShaderProgram.uniforms.uK, k);
+    }
+
+    if (document.getElementById("fisheyeselection_special").checked){
+        var k = parseFloat(document.getElementById("special_k").value);
         gl.uniform1f(activeShaderProgram.uniforms.uK, k);
     }
 

@@ -123,6 +123,7 @@ function initShaders(shaderProgs){
 		fisheyeThoby:["cubemap-fisheye-vs", "cubemap-fisheye-thoby-fs"],
 		fisheyeOrthographic:["cubemap-fisheye-vs", "cubemap-fisheye-orthographic-fs"],
 		fisheyeTanktheta:["cubemap-fisheye-vs", "cubemap-fisheye-tanktheta-fs"],
+		fisheyeSpecial:["cubemap-fisheye-vs", "cubemap-fisheye-special-fs"],
 	};
 
 	console.log("loading shaders...");
