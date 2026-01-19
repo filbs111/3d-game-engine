@@ -121,7 +121,8 @@ function renderViewUsingCmap(){
         document.getElementById("fisheyeselection_equidistant").checked ?       shaderPrograms.fisheyeEquidistant:
         document.getElementById("fisheyeselection_thoby").checked ?             shaderPrograms.fisheyeThoby:
         document.getElementById("fisheyeselection_equisolid").checked ?         shaderPrograms.fisheyeEquisolid:
-                                                                                shaderPrograms.fisheyeOrthographic;
+        document.getElementById("fisheyeselection_orthographic").checked ?      shaderPrograms.fisheyeOrthographic:
+                                                                                shaderPrograms.fisheyeTanktheta;
     gl.useProgram(activeShaderProgram);
     enableDisableAttributes(activeShaderProgram);
         //?? which uniform for cubemap framebuffers
@@ -129,6 +130,11 @@ function renderViewUsingCmap(){
     if (document.getElementById("fisheyeselection_thoby").checked){
         var k2 = parseFloat(document.getElementById("thobyk2").value);
         gl.uniform1f(activeShaderProgram.uniforms.uK2, k2);
+    }
+
+    if (document.getElementById("fisheyeselection_tanktheta").checked){
+        var k = parseFloat(document.getElementById("tanktheta_k").value);
+        gl.uniform1f(activeShaderProgram.uniforms.uK, k);
     }
 
     var zoom = parseFloat(document.getElementById("fisheyezoom").value);    //larger number = more zoomed out
