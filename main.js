@@ -550,6 +550,18 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     mat4.scale(mMatrix,[0.2,0.2,0.4]);
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
+
+    //draw x-hair.
+    //TODO bright colour, disable depth test/write? 
+    if (!mirrorInGroundPlane){ //drawing final scene
+        mat4.set(gunMat, mMatrix);
+        mat4.translate(mMatrix, [0,0,-100]);
+        mat4.scale(mMatrix,[1,1,1]); 
+        drawObjectFromBuffers(cubeBuffers, activeProg);
+    }
+    
+
+
     var activeProg = shaderPrograms.simpleCubemap;
     gl.useProgram(activeProg);
 
