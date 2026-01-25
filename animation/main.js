@@ -10,8 +10,6 @@ context.strokeStyle = "#bbb";
 
 /*
 TODO
-browse many files
-read order of rotations from data instead of hardcoding up front
 frame interpolation, slow motion option to test
 
 import into 3d FPS project
@@ -21,14 +19,6 @@ draw lines between mats in 3d - can make dotted and filled lines using many boxe
 */
 
 testToUnderstandGlMatrix();
-
-
-//seems rotation order varies, and order of specification matters.
-//assume that used consistently throughout whatever file. TODO support mixed.
-//var rotationMethods = [mat4.rotateZ, mat4.rotateX, mat4.rotateY];   //ZXY  apparently BVH rotation order is usually zxy, but examples vary!!!
-//var rotationMethods = [mat4.rotateX, mat4.rotateZ, mat4.rotateY];   //XZY - seen in "poser friendly"
-var rotationMethods = [mat4.rotateZ, mat4.rotateY, mat4.rotateX];   //ZYX
-// var rotationMethods = [mat4.rotateX, mat4.rotateY, mat4.rotateZ];   //XYZ
 
 
 var animationFileList = [
@@ -154,12 +144,10 @@ function generateMatricesListForPoints(bone, inputMat, frameIndex){
 
     //apply animation of this bone. TODO get order right!
     var animFrame = bone.frames[frameIndex];
-    if (bone.channels.length==6){
-        translateMatXyz(secondMat, animFrame.slice(0,3));
-        rotateMat(secondMat, animFrame.slice(3));
-    }else{
-        rotateMat(secondMat, animFrame);
-    }
+
+    bone.channels.forEach((chan,ii) => {
+        matFuncsLookup[chan](secondMat, animFrame[ii])
+    });
    
     matsToReturn.push({mat:secondMat, from:firstMat, id:bone.id, info:"after pose"});
 
@@ -184,14 +172,6 @@ function translateMatXyz(mat, xyz){
     mat4.translate(mat, xyz);
 }
 
-function rotateMat(mat, angles){
-    var rads = angles.map(x=>x*Math.PI/180);
-
-    rotationMethods[0](mat, rads[0]);
-    rotationMethods[1](mat, rads[1]);
-    rotationMethods[2](mat, rads[2]);
-}
-
 function posOnCanvas(pos, cameraTurnRads){
     var horiz = pos[0]*Math.cos(cameraTurnRads) + pos[2]*Math.sin(cameraTurnRads);
     var vert = -pos[1];
@@ -199,6 +179,16 @@ function posOnCanvas(pos, cameraTurnRads){
     var posOnCanvas = [horiz*10 + canvasHalfSize, vert*10 + canvasHalfSize];
     return posOnCanvas;
 }
+
+var matFuncsLookup = {
+    Xposition: (mat, amount) => mat4.translate(mat, [amount,0,0]),
+    Yposition: (mat, amount) => mat4.translate(mat, [0,amount,0]), 
+    Zposition: (mat, amount) => mat4.translate(mat, [0,0,amount]),
+    Xrotation: (mat, angDeg) => mat4.rotateX(mat, angDeg*Math.PI/180),
+    Yrotation: (mat, angDeg) => mat4.rotateY(mat, angDeg*Math.PI/180),
+    Zrotation: (mat, angDeg) => mat4.rotateZ(mat, angDeg*Math.PI/180)
+};
+
 
 function testToUnderstandGlMatrix(){
     
