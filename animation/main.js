@@ -1,16 +1,17 @@
 var canvas = document.querySelector("#mycanvas");
-canvas.width = 512;
-canvas.height = 512;
+
+var canvasHalfSize = 400;
+
+canvas.width = canvasHalfSize*2;
+canvas.height = canvasHalfSize*2;
 var context = canvas.getContext("2d");
 context.fillStyle = "blue";
-context.strokeStyle = "gray";
+context.strokeStyle = "#bbb";
 
 /*
 TODO
 browse many files
-include points for offset and colour differently
 read order of rotations from data instead of hardcoding up front
-draw lines between succesive matrices in skeleton ("bones")
 frame interpolation, slow motion option to test
 
 import into 3d FPS project
@@ -31,9 +32,12 @@ var animationData;
 var rotationMethods = [mat4.rotateZ, mat4.rotateY, mat4.rotateX];   //ZYX
 // var rotationMethods = [mat4.rotateX, mat4.rotateY, mat4.rotateZ];   //XYZ
 
-BVH.read('./cmuconvert-mb2-01-09/01/01_01.bvh', function(motion) { 
+
+
+//BVH.read('./cmuconvert-mb2-01-09/01/01_01.bvh', function(motion) { 
 //BVH.read('./cmuconvert-mb2-01-09/02/02_01.bvh', function(motion) { 
 // BVH.read('./Example1.bvh', function(motion) { 
+BVH.read('./cmuconvert141-144/144/144_01.bvh', function(motion) { 
 
     console.log(motion);
 
@@ -68,20 +72,25 @@ function drawAnimation(currentTime){
     var cameraTurnRads = parseFloat(document.getElementById("cameraturn").value) * Math.PI/180;
 
     animatedMats.forEach(matWithInfo => {
-        //console.log(mat);
-        var pos = matWithInfo.mat.slice(12,15);    //?
-        // var pos = [matWithInfo.mat[3], matWithInfo.mat[7], matWithInfo.mat[11]];
+        var posstart = matWithInfo.from.slice(12,15);
+        var posend = matWithInfo.mat.slice(12,15);
+        
+        var posOnCanvasStart = posOnCanvas(posstart, cameraTurnRads);
+        var posOnCanvasEnd = posOnCanvas(posend, cameraTurnRads);
 
-        // var matToInvert = mat4.create( matWithInfo.mat);
-        // mat4.inverse(matToInvert);
-        //var pos = matToInvert.slice(12,15);
+        if (matWithInfo.info == "after pose"){
+            context.setLineDash([3,7]);
+        }
 
-        var horiz = pos[0]*Math.cos(cameraTurnRads) + pos[2]*Math.sin(cameraTurnRads);
-        var vert = -pos[1];
+        context.beginPath(); // Start a new path
+        context.moveTo(posOnCanvasStart[0], posOnCanvasStart[1]);
+        context.lineTo(posOnCanvasEnd[0], posOnCanvasEnd[1]);
+        context.stroke(); // Render the path
 
-        var posOnCanvas = [horiz*7 + 256, vert*7 + 256];
-        positionsToDraw.push(posOnCanvas);
-        context.fillRect(posOnCanvas[0], posOnCanvas[1], 5,5);
+        context.setLineDash([]);
+
+        positionsToDraw.push(posOnCanvasEnd);
+        context.fillRect(posOnCanvasEnd[0], posOnCanvasEnd[1], 5,5);
     //    context.strokeText(matWithInfo.id, posOnCanvas[0], posOnCanvas[1]);
     });
 
@@ -100,27 +109,30 @@ function generateMatricesListForPoints(bone, inputMat, frameIndex){
 
     translateMatXyz(firstMat, [bone.offsetX, bone.offsetY, bone.offsetZ]);
 
+    if (bone.offsetX!=0 || bone.offsetY!=0 || bone.offsetZ!=0){
+        //add an extra mat. these are most of the lines that will be visible, because "from" position and "mat" position are different
+        //others that will be visible: things with nonzero translation in channel data, and leaf nodes (with endOffset)
+        matsToReturn.push({mat:firstMat, from:inputMat, id:bone.id, info:"constant offset" });
+    }
+
     var secondMat = mat4.create(firstMat);
 
     //apply animation of this bone. TODO get order right!
     var animFrame = bone.frames[frameIndex];
     if (bone.channels.length==6){
-        // rotateMatZyz(secondMat, animFrame.slice(3));
         translateMatXyz(secondMat, animFrame.slice(0,3));
         rotateMat(secondMat, animFrame.slice(3));
     }else{
         rotateMat(secondMat, animFrame);
     }
+   
+    matsToReturn.push({mat:secondMat, from:firstMat, id:bone.id, info:"after pose"});
 
     if (bone.hasEnd){
         var endMat = mat4.create(secondMat);
         translateMatXyz(endMat, [bone.endOffsetX, bone.endOffsetY, bone.endOffsetZ]);
-        matsToReturn.push({mat:endMat, id:bone.id, info:"after end offset"});
+        matsToReturn.push({mat:endMat, from:secondMat, id:bone.id, info:"after end offset"});
     }
-
-   
-    matsToReturn.push({mat:secondMat, id:bone.id, info:"after pose"});
-
 
     if (!bone.children || bone.children.length == 0){
         return matsToReturn;
@@ -145,6 +157,13 @@ function rotateMat(mat, angles){
     rotationMethods[2](mat, rads[2]);
 }
 
+function posOnCanvas(pos, cameraTurnRads){
+    var horiz = pos[0]*Math.cos(cameraTurnRads) + pos[2]*Math.sin(cameraTurnRads);
+    var vert = -pos[1];
+
+    var posOnCanvas = [horiz*10 + canvasHalfSize, vert*10 + canvasHalfSize];
+    return posOnCanvas;
+}
 
 function testToUnderstandGlMatrix(){
     
@@ -182,3 +201,4 @@ function testToUnderstandGlMatrix(){
         allSequentialMatrix
     });
 }
+
