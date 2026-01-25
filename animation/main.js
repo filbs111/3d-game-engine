@@ -11,7 +11,6 @@ browse many files
 include points for offset and colour differently
 read order of rotations from data instead of hardcoding up front
 draw lines between succesive matrices in skeleton ("bones")
-canvas camera controls
 frame interpolation, slow motion option to test
 
 import into 3d FPS project
@@ -66,6 +65,8 @@ function drawAnimation(currentTime){
 
     var positionsToDraw = [];
 
+    var cameraTurnRads = parseFloat(document.getElementById("cameraturn").value) * Math.PI/180;
+
     animatedMats.forEach(matWithInfo => {
         //console.log(mat);
         var pos = matWithInfo.mat.slice(12,15);    //?
@@ -75,7 +76,10 @@ function drawAnimation(currentTime){
         // mat4.inverse(matToInvert);
         //var pos = matToInvert.slice(12,15);
 
-        var posOnCanvas = [pos[0]*7 + 256, -pos[1]*7 + 256];
+        var horiz = pos[0]*Math.cos(cameraTurnRads) + pos[2]*Math.sin(cameraTurnRads);
+        var vert = -pos[1];
+
+        var posOnCanvas = [horiz*7 + 256, vert*7 + 256];
         positionsToDraw.push(posOnCanvas);
         context.fillRect(posOnCanvas[0], posOnCanvas[1], 5,5);
     //    context.strokeText(matWithInfo.id, posOnCanvas[0], posOnCanvas[1]);
