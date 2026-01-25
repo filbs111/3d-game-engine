@@ -22,8 +22,6 @@ draw lines between mats in 3d - can make dotted and filled lines using many boxe
 
 testToUnderstandGlMatrix();
 
-var animationData;
-
 
 //seems rotation order varies, and order of specification matters.
 //assume that used consistently throughout whatever file. TODO support mixed.
@@ -33,30 +31,68 @@ var rotationMethods = [mat4.rotateZ, mat4.rotateY, mat4.rotateX];   //ZYX
 // var rotationMethods = [mat4.rotateX, mat4.rotateY, mat4.rotateZ];   //XYZ
 
 
+var animationFileList = [
+    './cmuconvert-mb2-01-09/01/01_01.bvh',
+    './cmuconvert-mb2-01-09/02/02_01.bvh',
+    './cmuconvert141-144/144/144_01.bvh',
+];
 
-//BVH.read('./cmuconvert-mb2-01-09/01/01_01.bvh', function(motion) { 
-//BVH.read('./cmuconvert-mb2-01-09/02/02_01.bvh', function(motion) { 
-// BVH.read('./Example1.bvh', function(motion) { 
-BVH.read('./cmuconvert141-144/144/144_01.bvh', function(motion) { 
+var animations = animationFileList.map(animFilename=>{return {animFilename, loaded:false}});
+var selectNode = document.getElementById("animselect");
 
-    console.log(motion);
+animations.forEach((animData, ii) => {
+    let el = document.createElement("option");
+    el.textContent = animData.animFilename;
+    el.value = ii;
+    selectNode.appendChild(el);
+});
 
-    //in order to render this -  
-    // for drawing the skeleton as is - with the 0th frame disregarded or not (might be bind pose - does it matter?)
-    // use the static offsets defined in the skeleton to draw spots. 
-    // when drawing the animation - 
-    // should determine what order to apply rotations and offsets
-    // if want to do interpolation guess want quats but don't need for just drawing keyframes. 
-    
-    animationData = motion;
-    requestAnimationFrame(drawAnimation);
+var currentAnimSelection = 0;
+selectNode.options[0].selected = true;
 
-    // var animatedMats = generateMatricesListForPoints(motion.root, mat4.identity(), 123);
-    // console.log(animatedMats);
+selectNode.addEventListener('change', evt => {
+    console.log("made a selection");
+    console.log(evt);
+    currentAnimSelection = selectNode.value;
+    console.log("selected animation: " + currentAnimSelection);
+});
+
+
+requestAnimationFrame(drawAnimation);
+
+//just kick off loading all.
+//TODO if more files, load on demand
+animations.forEach((animData, ii) => {
+    BVH.read(animData.animFilename, function(motion) { 
+
+        console.log(motion);
+
+        //in order to render this -  
+        // for drawing the skeleton as is - with the 0th frame disregarded or not (might be bind pose - does it matter?)
+        // use the static offsets defined in the skeleton to draw spots. 
+        // when drawing the animation - 
+        // should determine what order to apply rotations and offsets
+        // if want to do interpolation guess want quats but don't need for just drawing keyframes. 
+        
+        animData.data = motion;
+        animData.loaded = true;
+
+        // var animatedMats = generateMatricesListForPoints(motion.root, mat4.identity(), 123);
+        // console.log(animatedMats);
+    });
 });
 
 function drawAnimation(currentTime){
     requestAnimationFrame(drawAnimation);
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (!animations[currentAnimSelection].loaded){
+        context.strokeText("loading...", canvasHalfSize, canvasHalfSize);
+        return;
+    }
+
+    var animationData = animations[currentAnimSelection].data;
 
     var maxAnimationFrameNum = animationData.numFrames;
     var frameDuration = animationData.frameTime * 1000;    //ms
@@ -65,7 +101,6 @@ function drawAnimation(currentTime){
     var animatedMats = generateMatricesListForPoints(animationData.root, mat4.identity(), animationFrame);
 
 
-    context.clearRect(0, 0, canvas.width, canvas.height);
 
     var positionsToDraw = [];
 
