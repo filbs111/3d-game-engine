@@ -7,7 +7,6 @@ context.strokeStyle = "gray";
 
 /*
 TODO
-loading frame data length, frame period from data loaded.
 browse many files
 include points for offset and colour differently
 read order of rotations from data instead of hardcoding up front
@@ -33,8 +32,8 @@ var animationData;
 var rotationMethods = [mat4.rotateZ, mat4.rotateY, mat4.rotateX];   //ZYX
 // var rotationMethods = [mat4.rotateX, mat4.rotateY, mat4.rotateZ];   //XYZ
 
-//BVH.read('./cmuconvert-mb2-01-09/01/01_01.bvh', function(motion) { 
-BVH.read('./cmuconvert-mb2-01-09/02/02_01.bvh', function(motion) { 
+BVH.read('./cmuconvert-mb2-01-09/01/01_01.bvh', function(motion) { 
+//BVH.read('./cmuconvert-mb2-01-09/02/02_01.bvh', function(motion) { 
 // BVH.read('./Example1.bvh', function(motion) { 
 
     console.log(motion);
@@ -56,11 +55,8 @@ BVH.read('./cmuconvert-mb2-01-09/02/02_01.bvh', function(motion) {
 function drawAnimation(currentTime){
     requestAnimationFrame(drawAnimation);
 
-    // var maxAnimationFrameNum = 2752;    //TODO from animation data.
-    var maxAnimationFrameNum = 344;
-
-    var frameDuration = 8.333;    //ms = 120fps    // ""
-
+    var maxAnimationFrameNum = animationData.numFrames;
+    var frameDuration = animationData.frameTime * 1000;    //ms
     var animationFrame = Math.floor((Math.floor(currentTime / frameDuration)) % maxAnimationFrameNum); //TODO ensure within bounds
 
     var animatedMats = generateMatricesListForPoints(animationData.root, mat4.identity(), animationFrame);
