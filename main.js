@@ -26,6 +26,8 @@ var mouseInfo = {
 
 var pointerLocked=false;
 
+var listerBuffers={};
+
 
 function init(){
 
@@ -97,6 +99,9 @@ function init(){
 			requestAnimationFrame(drawScene);	//in callback because need to wait until shaders loaded
 		}
 	);
+
+
+    loadBuffersFromObj2Or3File(listerBuffers, "./data/miscobjs/imported-lister.obj2", loadBufferData, 3);
 
 
     gl.enable(gl.DEPTH_TEST);
@@ -262,6 +267,9 @@ mat4.rotateX(staticCamera, -0.2); //elevate
 mat4.translate(staticCamera,[0,0,9]);  //move back
 mat4.rotateX(staticCamera, -0.2); //elevate more
 var statCamPos = staticCamera.slice(12,15);
+
+var carMatrix = mat4.identity();
+mat4.translate(carMatrix,[8,-0.47,6]); //right, down a bit, back
 
 
 var armElevationMultiplier=1.4; //elevate arms more than player look direction. 
@@ -577,6 +585,14 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         mat4.translate(mMatrix, [0,0,-100]);
         mat4.scale(mMatrix,[1,1,1]); 
         drawObjectFromBuffers(cubeBuffers, activeProg);
+    }
+    
+    //draw car
+    gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.002,0.006,0.02]);
+    mat4.set(carMatrix, mMatrix);
+    mat4.scale(mMatrix,[1,1,1]);
+    if (listerBuffers.isLoaded){
+        drawObjectFromBuffers(listerBuffers, activeProg);
     }
     
 
