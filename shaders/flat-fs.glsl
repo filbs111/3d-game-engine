@@ -2,12 +2,8 @@
 precision mediump float;
 
 out vec4 fragColor;
-in vec3 vColor;
+in vec3 vLightTimesColor;
 
 void main(void) {
-   // fragColor = vec4(1.0,0.0,0.0,1.0);
-
-    vec3 shiftedColor = vColor*vec3(0.5) + vec3(0.5);
-
-    fragColor = vec4(shiftedColor,1.0);
+    fragColor = vec4(pow(vLightTimesColor, vec3(0.455)),1.0);
 }

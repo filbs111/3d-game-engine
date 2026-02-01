@@ -459,6 +459,43 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         gl.colorMask(true, true, true, true);
     }
 
+
+    //draw cube
+    setupDrawMatrixForObjectAtPosition(boxPos);
+    mat4.rotateY(mMatrix, boxRotation);
+    drawObjectFromBuffers(cubeBuffers, activeProg);
+
+    //draw ground
+    // TODO draw ground partially transparent.
+    if (!mirrorInGroundPlane){
+        setupDrawMatrixForObjectAtPosition(groundPos);
+        mat4.scale(mMatrix,[10,9.99,10]);   //9.99 so the blocker mirror plane is drawn in front! 
+        drawObjectFromBuffers(cubeBuffers, activeProg);
+    }
+
+
+    activeProg = shaderPrograms.flat;
+    gl.useProgram(activeProg);
+    enableDisableAttributes(activeProg);
+
+    //draw a tower to indicate up direction
+    gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.25,0.25,0.25]);
+    setupDrawMatrixForObjectAtPosition([0,0,10]);
+    mat4.scale(mMatrix,[1,100,1]);
+    drawObjectFromBuffers(cubeBuffers, activeProg);
+
+
+    //draw external camera (will be invisible if external camera checked because cull backfaces)
+    mat4.set(staticCamera, mMatrix);
+    gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.8,0.8,0.8]);
+    mat4.scale(mMatrix,[0.2,0.2,0.4]);
+    drawObjectFromBuffers(cubeBuffers, activeProg);
+
+
+
+    gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.1,0.5,0.1]);
+
+
     //draw eye
     drawCubeWithScale(activeProg, eyeMat, [0.05,0.05,0.05]);    //10cm cube
 
@@ -529,33 +566,12 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         drawCubeWithScale(activeProg, armMat, [0.05,0.05,0.5]); //10cm x 10cm x 1m
     }
 
-    //draw cube
-    setupDrawMatrixForObjectAtPosition(boxPos);
-    mat4.rotateY(mMatrix, boxRotation);
-    drawObjectFromBuffers(cubeBuffers, activeProg);
+    
 
-    //draw ground
-    // TODO draw ground partially transparent.
-    if (!mirrorInGroundPlane){
-        setupDrawMatrixForObjectAtPosition(groundPos);
-        mat4.scale(mMatrix,[10,9.99,10]);   //9.99 so the blocker mirror plane is drawn in front! 
-        drawObjectFromBuffers(cubeBuffers, activeProg);
-    }
-
-    //draw a tower to indicate up direction
-    setupDrawMatrixForObjectAtPosition([0,0,10]);
-    mat4.scale(mMatrix,[1,100,1]);
-    drawObjectFromBuffers(cubeBuffers, activeProg);
-
-
-    //draw external camera (will be invisible if external camera checked because cull backfaces)
-    mat4.set(staticCamera, mMatrix);
-    mat4.scale(mMatrix,[0.2,0.2,0.4]);
-    drawObjectFromBuffers(cubeBuffers, activeProg);
-
-
+   
     //draw x-hair.
-    //TODO bright colour, disable depth test/write? 
+    gl.uniform3fv(activeProg.uniforms.uFlatColor, [2,0.1,0.1]);
+    //TODO disable lighting, disable depth test/write? 
     if (!mirrorInGroundPlane){ //drawing final scene
         mat4.set(gunMat, mMatrix);
         mat4.translate(mMatrix, [0,0,-100]);
