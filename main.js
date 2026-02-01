@@ -240,7 +240,6 @@ var enableDisableAttributes = (function generateEnableDisableAttributesFunc(){
 
 
 var camParams = {
-    vfov:110,
     near:0.01,
     far:20000
 };
@@ -413,7 +412,11 @@ function drawScene(frameTime){
         renderViewUsingCmap();
 
     }else{
-        mat4.perspective(camParams.vfov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 
+
+        var cameraZoom = parseFloat(document.getElementById("camerazoom").value); 
+        var vFov = 2* Math.atan(cameraZoom) * 180/Math.PI;
+
+        mat4.perspective(vFov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 
         pMatrix[9]=-0.33;       //shift centre of perspective one third up from centre to top of screen (so is 1/3 down screen top to bottom)
 
         drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation);
