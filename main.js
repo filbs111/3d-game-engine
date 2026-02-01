@@ -104,11 +104,31 @@ function init(){
     loadBuffersFromObj2Or3File(listerBuffers, "./data/miscobjs/imported-lister.obj2", loadBufferData, 3);
 
 
+    loadAnimationStuff();
+
+
+
     gl.enable(gl.DEPTH_TEST);
 	gl.enable(gl.CULL_FACE);
 
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 }
+
+var biovisionAnimation = {};
+function loadAnimationStuff(){
+    BVH.read("./animation/cmuconvert-mb2-01-09/01/01_01.bvh", function(motion) { 
+
+        console.log({
+            info:"loaded biovision hierarchy animation", 
+            motion
+        });
+        
+        biovisionAnimation.data = motion;
+        biovisionAnimation.loaded = true;
+    });
+}
+
+
 
 var bricktex;
 var cubemapTexture;
@@ -415,7 +435,7 @@ function drawScene(frameTime){
         // NOTE can do this more efficiently, (what is best depends on FOV), by drawing to 1,2,or 4 panels (last is "quad view" used in 3-sphere project), but this is generally
         // more complex.
 
-        updateCubemap(unmirroredCameraMat, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation);
+        updateCubemap(unmirroredCameraMat, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime);
 
         renderViewUsingCmap();
 
@@ -427,14 +447,14 @@ function drawScene(frameTime){
         mat4.perspective(vFov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 
         pMatrix[9]=-0.33;       //shift centre of perspective one third up from centre to top of screen (so is 1/3 down screen top to bottom)
 
-        drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation);
+        drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime);
         gl.clear(gl.DEPTH_BUFFER_BIT);
-        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation);    
+        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime);    
     }
 }
 
 
-function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation){
+function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime){
         //NOTE passing in eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation is awkward. 
         //TODO create scene description and use for render?
 
@@ -574,9 +594,11 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         drawCubeWithScale(activeProg, armMat, [0.05,0.05,0.5]); //10cm x 10cm x 1m
     }
 
-    
 
-   
+    //mocap data
+    drawBiovisionAnimation(biovisionAnimation, frameTime, activeProg);
+
+    
     //draw x-hair.
     gl.uniform3fv(activeProg.uniforms.uFlatColor, [2,0.1,0.1]);
     //TODO disable lighting, disable depth test/write? 
@@ -646,4 +668,34 @@ function drawCubeWithScale(shaderProg, objMatrix, scaleVec){
 
     mat4.scale(mMatrix, scaleVec);
     drawObjectFromBuffers(cubeBuffers, shaderProg);
+}
+
+
+function drawBiovisionAnimation(anim, currentTime, activeProg){
+
+    if (!biovisionAnimation.loaded){
+        return;
+    }
+
+    var animationData = anim.data;
+
+    var maxAnimationFrameNum = animationData.numFrames;
+    var frameDuration = animationData.frameTime * 1000;    //ms
+    var animationFrame = Math.floor((Math.floor(currentTime / frameDuration)) % maxAnimationFrameNum); //TODO ensure within bounds
+
+    // console.log({
+    //     currentTime,
+    //     maxAnimationFrameNum,
+    //     animationFrame
+    // });
+
+    var animatedMats = generateMatricesListForPoints(animationData.root, mat4.identity(), animationFrame);
+
+    animatedMats.forEach(matWithInfo => {
+        //a bone with matrices ends matWithInfo.mat , matWithInfo.from
+
+        mat4.set(matWithInfo.mat, mMatrix);
+        mat4.scale(mMatrix,[1,1,1].map(x=>x*0.5));
+        drawObjectFromBuffers(cubeBuffers, activeProg);
+    });
 }

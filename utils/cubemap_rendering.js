@@ -50,7 +50,7 @@ function initCubemapFramebuffer(view){
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
-function updateCubemap(unmirroredCameraMat, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation){
+function updateCubemap(unmirroredCameraMat, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime){
 
     gl.clearColor(1,0,1,1); //magenta (just to check whether these views end up screen...)
 
@@ -71,9 +71,9 @@ function updateCubemap(unmirroredCameraMat, eyeMat, neckMat, upperTorsoMat, tors
 
         //if (ii!=0){continue;}
 
-        drawSingleScene(copiedMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation);
+        drawSingleScene(copiedMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime);
         gl.clear(gl.DEPTH_BUFFER_BIT);
-        drawSingleScene(copiedMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation);    
+        drawSingleScene(copiedMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime);    
 	}
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
