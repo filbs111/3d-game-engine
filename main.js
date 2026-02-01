@@ -116,7 +116,7 @@ function init(){
 
 var biovisionAnimation = {};
 function loadAnimationStuff(){
-    BVH.read("./animation/cmuconvert-mb2-01-09/01/01_01.bvh", function(motion) { 
+    BVH.read("./animation/cmuconvert-mb2-01-09/02/02_01.bvh", function(motion) { 
 
         console.log({
             info:"loaded biovision hierarchy animation", 
@@ -289,7 +289,7 @@ mat4.rotateX(staticCamera, -0.2); //elevate more
 var statCamPos = staticCamera.slice(12,15);
 
 var carMatrix = mat4.identity();
-mat4.translate(carMatrix,[8,-0.47,6]); //right, down a bit, back
+mat4.translate(carMatrix,[8,-0.6,6]); //right, down a bit, back
 
 
 var armElevationMultiplier=1.4; //elevate arms more than player look direction. 
@@ -598,6 +598,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     //mocap data
     drawBiovisionAnimation(biovisionAnimation, frameTime, activeProg);
 
+
     
     //draw x-hair.
     gl.uniform3fv(activeProg.uniforms.uFlatColor, [2,0.1,0.1]);
@@ -612,7 +613,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     //draw car
     gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.002,0.006,0.02]);
     mat4.set(carMatrix, mMatrix);
-    mat4.scale(mMatrix,[1,1,1]);
+    mat4.scale(mMatrix,[1,1,1].map(x=>x*0.75));  //guess correct size - default seems far too big
     if (listerBuffers.isLoaded){
         drawObjectFromBuffers(listerBuffers, activeProg);
     }
@@ -691,11 +692,25 @@ function drawBiovisionAnimation(anim, currentTime, activeProg){
 
     var animatedMats = generateMatricesListForPoints(animationData.root, mat4.identity(), animationFrame);
 
+    //scale relative to world origin?
+    var correctiveScaleFactor = 0.065;
+    var animWorldPosition = [0,-1,5];
+    
+    mat4.translate(cameraMat, animWorldPosition);
+    mat4.scale(cameraMat, [1,1,1].map(x=>x*correctiveScaleFactor));
+
     animatedMats.forEach(matWithInfo => {
         //a bone with matrices ends matWithInfo.mat , matWithInfo.from
-
         mat4.set(matWithInfo.mat, mMatrix);
+
         mat4.scale(mMatrix,[1,1,1].map(x=>x*0.5));
+
+
         drawObjectFromBuffers(cubeBuffers, activeProg);
+
     });
+
+    //reset camera scale
+    mat4.scale(cameraMat, [1,1,1].map(x=>x/correctiveScaleFactor));
+    mat4.translate(cameraMat, animWorldPosition.map(x=>-x));
 }
