@@ -705,12 +705,29 @@ function drawBiovisionAnimation(anim, currentTime, activeProg){
 
     animatedMats.forEach(matWithInfo => {
         //a bone with matrices ends matWithInfo.mat , matWithInfo.from
+
         mat4.set(matWithInfo.mat, mMatrix);
-
         mat4.scale(mMatrix,[1,1,1].map(x=>x*0.5));
-
-
         drawObjectFromBuffers(cubeBuffers, activeProg);
+
+        //draw a dotted line taking rotation of end bone and translation along path from "from" mat to "mat" mat
+        var startPosition = matWithInfo.from.slice(12,15);
+        var endPosition = matWithInfo.mat.slice(12,15);
+        //TODO num points dependent on length 
+        var difference = endPosition.map((xx,ii)=> xx-startPosition[ii] );
+        var numsteps = 8;
+        for (var ii=0;ii<numsteps;ii++){
+            mat4.set(matWithInfo.from, mMatrix);
+
+            //mat4.translate(mMatrix, difference.map(xx=>ii*xx/numsteps));  //this doesn't work AFAIK because it's in local object frame.
+            mMatrix[12] +=difference[0]*ii/numsteps;
+            mMatrix[13] +=difference[1]*ii/numsteps;
+            mMatrix[14] +=difference[2]*ii/numsteps;
+
+            mat4.scale(mMatrix,[1,1,1].map(x=>x*0.5));
+            drawObjectFromBuffers(cubeBuffers, activeProg);
+        }
+
 
     });
 
