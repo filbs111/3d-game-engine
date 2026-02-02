@@ -472,7 +472,6 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
        gl.cullFace(gl.BACK);
     }
 
-
     activeProg = shaderPrograms.texmap;
     gl.useProgram(activeProg);
     enableDisableAttributes(activeProg);
@@ -500,6 +499,22 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         mat4.scale(mMatrix,[10,9.99,10]);   //9.99 so the blocker mirror plane is drawn in front! 
         drawObjectFromBuffers(cubeBuffers, activeProg);
     }
+
+
+    var activeProg = shaderPrograms.simpleCubemap;
+    gl.useProgram(activeProg);
+
+    //skybox
+	//draw skybox. maybe efficient to do in screen space. 
+	//for now just make very big
+	var skyboxScale = 10000;
+    mat4.set(cameraMat,mvMatrix);
+    setupDrawMatrixForObjectAtPosition([0,0,0]);
+	mat4.scale(mvMatrix, [skyboxScale,skyboxScale,-skyboxScale]);
+	gl.uniformMatrix4fv(activeProg.uniforms.uMVMatrix, false, mvMatrix);        //set modelview matrix
+	//if (cubeBuffers.isLoaded){
+		drawObjectFromBuffers(cubeBuffers, activeProg);
+	//}
 
 
     activeProg = shaderPrograms.flat;
@@ -600,16 +615,6 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
 
     
-    //draw x-hair.
-    gl.uniform3fv(activeProg.uniforms.uFlatColor, [2,0.1,0.1]);
-    //TODO disable lighting, disable depth test/write? 
-    if (!mirrorInGroundPlane){ //drawing final scene
-        mat4.set(gunMat, mMatrix);
-        mat4.translate(mMatrix, [0,0,-100]);
-        mat4.scale(mMatrix,[1,1,1]); 
-        drawObjectFromBuffers(cubeBuffers, activeProg);
-    }
-    
     //draw car
     gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.002,0.006,0.02]);
     mat4.set(carMatrix, mMatrix);
@@ -617,23 +622,22 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     if (listerBuffers.isLoaded){
         drawObjectFromBuffers(listerBuffers, activeProg);
     }
+
+
     
-
-
-    var activeProg = shaderPrograms.simpleCubemap;
-    gl.useProgram(activeProg);
-
-    //skybox
-	//draw skybox. maybe efficient to do in screen space. 
-	//for now just make very big
-	var skyboxScale = 10000;
-    mat4.set(cameraMat,mvMatrix);
-    setupDrawMatrixForObjectAtPosition([0,0,0]);
-	mat4.scale(mvMatrix, [skyboxScale,skyboxScale,-skyboxScale]);
-	gl.uniformMatrix4fv(activeProg.uniforms.uMVMatrix, false, mvMatrix);        //set modelview matrix
-	//if (cubeBuffers.isLoaded){
-		drawObjectFromBuffers(cubeBuffers, activeProg);
-	//}
+    //draw x-hair.
+    gl.disable(gl.DEPTH_TEST);
+    gl.depthMask(false);
+    gl.uniform3fv(activeProg.uniforms.uFlatColor, [2,0.1,0.1]);
+    //TODO disable lighting
+    if (!mirrorInGroundPlane){ //drawing final scene
+        mat4.set(gunMat, mMatrix);
+        mat4.translate(mMatrix, [0,0,-100]);
+        mat4.scale(mMatrix,[1,1,1]); 
+        drawObjectFromBuffers(cubeBuffers, activeProg);
+    }
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthMask(true);
 }
 
 
