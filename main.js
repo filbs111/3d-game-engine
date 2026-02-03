@@ -644,11 +644,13 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
 
 
-    //draw statue
-    activeProg = shaderPrograms.vertexColor;
+    // draw statue
+    activeProg = shaderPrograms.vertexColorWithEnvmap;
+        // activeProg = shaderPrograms.envmap;
+
     gl.useProgram(activeProg);
     enableDisableAttributes(activeProg);
-    gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.5,0.5,0.5]);
+    gl.uniform3fv(activeProg.uniforms.uFlatColor, [1,1,1].map(x=>0.05*x));
     mat4.set(lucyMatrix, mMatrix);
     mat4.scale(mMatrix,[1,1,1].map(x=>x*0.05));
     if (lucyBuffers.isLoaded){
