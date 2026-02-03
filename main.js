@@ -27,6 +27,7 @@ var mouseInfo = {
 var pointerLocked=false;
 
 var listerBuffers={};
+var lucyBuffers={};
 
 
 function init(){
@@ -102,7 +103,7 @@ function init(){
 
 
     loadBuffersFromObj2Or3File(listerBuffers, "./data/miscobjs/imported-lister.obj2", loadBufferData, 3);
-
+    loadBuffersFromObj5File(lucyBuffers, "./data/lucy-withvertcolor.obj5", loadBufferData, 6);
 
     loadAnimationStuff();
 
@@ -176,13 +177,25 @@ function drawObjectFromBuffers(bufferObj, shaderProg){
 function prepBuffersForDrawing(bufferObj, shaderProg){
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, bufferObj.vertexPositionBuffer);
-    gl.vertexAttribPointer(shaderProg.attributes.aVertexPosition, bufferObj.vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-	
-	if (bufferObj.vertexNormalBuffer && shaderProg.attributes.aVertexNormal){
-		gl.bindBuffer(gl.ARRAY_BUFFER, bufferObj.vertexNormalBuffer);
-		gl.vertexAttribPointer(shaderProg.attributes.aVertexNormal, bufferObj.vertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    if (shaderProg.attributes.aVertexColor){
+		//assume vertex coloured object has 3 pos, 3 colour (expect vertexPositionBuffer.itemSize = 6)
+		//TODO use byte for colour instead of float?
+		var iSize = bufferObj.vertexPositionBuffer.itemSize;
+		var numColors = iSize - 3;
+		gl.vertexAttribPointer(shaderProg.attributes.aVertexPosition, 3, gl.FLOAT, false, 4*iSize, 0);
+		gl.vertexAttribPointer(shaderProg.attributes.aVertexColor, numColors, gl.FLOAT, false, 4*iSize, 4*3);
+	}else{
+		//assume want to skip over colour if present.
+		var iSize = bufferObj.vertexPositionBuffer.itemSize;
+		gl.vertexAttribPointer(shaderProg.attributes.aVertexPosition, 3, gl.FLOAT, false, 4*iSize, 0);
 	}
-	
+
+    if (bufferObj.vertexNormalBuffer && shaderProg.attributes.aVertexNormal){
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufferObj.vertexNormalBuffer);
+        gl.vertexAttribPointer(shaderProg.attributes.aVertexNormal, bufferObj.vertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    }
+
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufferObj.vertexIndexBuffer);
 	
 	if (bufferObj.vertexTextureCoordBuffer && shaderProg.uniforms.uSampler){    
@@ -291,6 +304,9 @@ var statCamPos = staticCamera.slice(12,15);
 var carMatrix = mat4.identity();
 mat4.translate(carMatrix,[8,-0.6,6]); //right, down a bit, back
 
+var lucyMatrix = mat4.identity();
+mat4.translate(lucyMatrix,[-8,3,-6]); //left, up a bit, forwards
+mat4.rotateY(lucyMatrix, -1);   //clockwise
 
 var armElevationMultiplier=1.4; //elevate arms more than player look direction. 
     // - suspect this is natural - head isn't 90 deg
@@ -625,6 +641,21 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     setupDrawMatrixForObjectAtPosition(boxPos);
     mat4.rotateY(mMatrix, boxRotation);
     drawObjectFromBuffers(cubeBuffers, activeProg);
+
+
+
+    //draw statue
+    // activeProg = shaderPrograms.vertColorsWithEnvmap;
+    // gl.useProgram(activeProg);
+    // enableDisableAttributes(activeProg);
+    gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.5,0.5,0.5]);
+    mat4.set(lucyMatrix, mMatrix);
+    mat4.scale(mMatrix,[1,1,1].map(x=>x*0.05));
+    if (lucyBuffers.isLoaded){
+        drawObjectFromBuffers(lucyBuffers, activeProg);
+    }
+
+
 
     
     //draw x-hair.
