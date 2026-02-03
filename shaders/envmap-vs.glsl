@@ -18,10 +18,10 @@ void main(void) {
 
     //NOTE this is wierd because model matrix includes scale!
     // NOTE normalizing vector maybe is wrong for non-uniformly scaled objects. TODO fix, or just use unscaled objects.
-    vec4 transformedNormal = (uMMatrix * vec4(aVertexNormal, 0.0));
+    vec4 transformedNormal = normalize(uMMatrix * vec4(aVertexNormal, 0.0));
 
     //diffuse component
-    float light = 0.5+0.5*dot(normalize(transformedNormal), vec4(0.,1.,0.,0.));
+    float light = 0.5+0.5*dot(transformedNormal, vec4(0.,1.,0.,0.));
     vLightTimesColor = uFlatColor * vec3(light);
 
     //reflected vector - use this to blend env map in frag shader.
