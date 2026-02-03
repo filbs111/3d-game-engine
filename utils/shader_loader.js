@@ -114,6 +114,7 @@ function initShaders(shaderProgs){
 	var initShaderTimeStart = performance.now();
 	var shaderProgNoVariationsList = {
 		flat:["flat-vs", "flat-fs"],
+		vertexColor:["vertcolor-vs", "flat-fs"],
 		texmap:["texmap-vs", "texmap-fs"],
 		envmap:["envmap-vs", "envmap-fs"],
 		simpleCubemap:["cubemap-vs", "cubemap-fs"],	//used for skybox
