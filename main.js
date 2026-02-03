@@ -486,12 +486,6 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         gl.colorMask(true, true, true, true);
     }
 
-
-    //draw cube
-    setupDrawMatrixForObjectAtPosition(boxPos);
-    mat4.rotateY(mMatrix, boxRotation);
-    drawObjectFromBuffers(cubeBuffers, activeProg);
-
     //draw ground
     // TODO draw ground partially transparent.
     if (!mirrorInGroundPlane){
@@ -616,6 +610,9 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
     
     //draw car
+    activeProg = shaderPrograms.envmap;
+    gl.useProgram(activeProg);
+    enableDisableAttributes(activeProg);
     gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.002,0.006,0.02]);
     mat4.set(carMatrix, mMatrix);
     mat4.scale(mMatrix,[1,1,1].map(x=>x*0.75));  //guess correct size - default seems far too big
@@ -624,8 +621,16 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     }
 
 
+    //draw cube
+    setupDrawMatrixForObjectAtPosition(boxPos);
+    mat4.rotateY(mMatrix, boxRotation);
+    drawObjectFromBuffers(cubeBuffers, activeProg);
+
     
     //draw x-hair.
+    activeProg = shaderPrograms.flat;
+    gl.useProgram(activeProg);
+    enableDisableAttributes(activeProg);
     gl.disable(gl.DEPTH_TEST);
     gl.depthMask(false);
     gl.uniform3fv(activeProg.uniforms.uFlatColor, [2,0.1,0.1]);

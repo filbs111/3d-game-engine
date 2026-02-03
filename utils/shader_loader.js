@@ -115,6 +115,7 @@ function initShaders(shaderProgs){
 	var shaderProgNoVariationsList = {
 		flat:["flat-vs", "flat-fs"],
 		texmap:["texmap-vs", "texmap-fs"],
+		envmap:["envmap-vs", "envmap-fs"],
 		simpleCubemap:["cubemap-vs", "cubemap-fs"],	//used for skybox
 		fisheyeCubemap:["cubemap-fisheye-vs", "cubemap-fisheye-fs"],
 		fisheyeStereographic:["cubemap-fisheye-vs", "cubemap-fisheye-stereographic-fs"],
