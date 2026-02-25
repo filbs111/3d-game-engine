@@ -548,57 +548,58 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
     gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.1,0.5,0.1]);
 
-
-    //draw eye
-    drawCubeWithScale(activeProg, eyeMat, [0.05,0.05,0.05]);    //10cm cube
-
-    //draw neck
-    drawCubeWithScale(activeProg, neckMat, [0.05,0.05,0.05]); 
-
-    //draw uppoer torso
-    drawCubeWithScale(activeProg, upperTorsoMat, [0.25,0.2,0.1]); 
-
-    // draw torso
-    drawCubeWithScale(activeProg, torsoMatrix, [0.2,0.2,0.1]);  //40 cm wide, 40cm tall, 20cm deep. top is like bottom of rib cage
-
-
-    //draw legs. 
-    //TODO make movement correspond to movement speed and direction. 
-    //temporary - just constant animation.
-    var legSwing = 0.5*Math.sin(boxRotation*4);
-    var legMat = mat4.create(torsoMatrix);
-    mat4.rotateX(legMat, legSwing);
-    mat4.translate(legMat, [0.1,-0.5,0]);
-    drawCubeWithScale(activeProg, legMat, [0.1,0.5,0.1]);   //right leg
-
-    mat4.set(torsoMatrix, legMat);
-    mat4.rotateX(legMat, -legSwing);
-    mat4.translate(legMat, [-0.1,-0.5,0]);
-    drawCubeWithScale(activeProg, legMat, [0.1,0.5,0.1]);   //left leg
-
-
-    //draw gun
+    //setup gun mat (also used later for x-hair
     var gunMat = mat4.create(torsoMatrix);
     mat4.rotateX(gunMat, -playerElevation*torsoElevationMultiplier);
     mat4.translate(gunMat, playerNeckPos);
     mat4.translate(gunMat, [0,0,-0.2]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
     mat4.rotateX(gunMat, -playerElevation*(armElevationMultiplier-torsoElevationMultiplier));
     
-
     mat4.translate(gunMat, [0,0.05,-1]);    //1m - end of arm, up by 5cm
 
-    var doubleGuns = document.getElementById("doubleguns").checked;
-    if (doubleGuns){
-        mat4.translate(gunMat, [-0.2,0,0]);
-        drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
-        mat4.translate(gunMat, [0.4,0,0]);
-        drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
-    }else{
-        drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
-    }
+
+    if (document.getElementById("drawbody").checked){
+
+        //draw eye
+        drawCubeWithScale(activeProg, eyeMat, [0.05,0.05,0.05]);    //10cm cube
+
+        //draw neck
+        drawCubeWithScale(activeProg, neckMat, [0.05,0.05,0.05]); 
+
+        //draw uppoer torso
+        drawCubeWithScale(activeProg, upperTorsoMat, [0.25,0.2,0.1]); 
+
+        // draw torso
+        drawCubeWithScale(activeProg, torsoMatrix, [0.2,0.2,0.1]);  //40 cm wide, 40cm tall, 20cm deep. top is like bottom of rib cage
+
+
+        //draw legs. 
+        //TODO make movement correspond to movement speed and direction. 
+        //temporary - just constant animation.
+        var legSwing = 0.5*Math.sin(boxRotation*4);
+        var legMat = mat4.create(torsoMatrix);
+        mat4.rotateX(legMat, legSwing);
+        mat4.translate(legMat, [0.1,-0.5,0]);
+        drawCubeWithScale(activeProg, legMat, [0.1,0.5,0.1]);   //right leg
+
+        mat4.set(torsoMatrix, legMat);
+        mat4.rotateX(legMat, -legSwing);
+        mat4.translate(legMat, [-0.1,-0.5,0]);
+        drawCubeWithScale(activeProg, legMat, [0.1,0.5,0.1]);   //left leg    
     
-    drawArm2(activeProg, torsoMatrix, 1, doubleGuns);   //right arm
-    drawArm2(activeProg, torsoMatrix, -1, doubleGuns);  //left arm
+        var doubleGuns = document.getElementById("doubleguns").checked;
+        if (doubleGuns){
+            mat4.translate(gunMat, [-0.2,0,0]);
+            drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
+            mat4.translate(gunMat, [0.4,0,0]);
+            drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
+        }else{
+            drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
+        }
+    
+        drawArm2(activeProg, torsoMatrix, 1, doubleGuns);   //right arm
+        drawArm2(activeProg, torsoMatrix, -1, doubleGuns);  //left arm
+    }
 
     function drawArm2(activeProg, torsoMatrix, handedness, doubleGuns){
         var armMat = mat4.create(torsoMatrix);
