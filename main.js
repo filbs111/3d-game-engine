@@ -328,6 +328,7 @@ var armElevationMultiplier=1.4; //elevate arms more than player look direction.
 var torsoElevationMultiplier=0.4;   //torso doesn't elevate as much as view. neck does remaining rotation
 
 var gunTurn=0;
+var gunElevTemp=0;
 
 function drawScene(frameTime){
 	requestAnimationFrame(drawScene);
@@ -415,17 +416,19 @@ function drawScene(frameTime){
     playerElevation=Math.max(playerElevation, -0.8*Math.PI/2);
         //0.7 because arms move more than view.
 
-
     var fireButtonDepressedNow = mouseInfo.buttons&1;
 
     if (fireButtonDepressedNow && !fireButtonDepressed){     //fire gun
 
         //jerk gun. TODO temporary jerk (decay towards where was aiming before)
         gunTurn+= 0.1*gaussRand();
-        playerElevation+= 0.1*gaussRand();
+        gunElevTemp+= 0.1*gaussRand();
     }
 
     fireButtonDepressed = fireButtonDepressedNow;
+
+    playerElevation-=gunElevTemp*gunTurnFractionToTurn;
+    gunElevTemp*=1 - gunTurnFractionToTurn;
 
 
 
@@ -604,7 +607,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     mat4.rotateX(gunMat, -playerElevation*torsoElevationMultiplier);
     mat4.translate(gunMat, playerNeckPos);
     mat4.translate(gunMat, [0,0,-0.2]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
-    mat4.rotateX(gunMat, -playerElevation*(armElevationMultiplier-torsoElevationMultiplier));
+    mat4.rotateX(gunMat, -playerElevation*(armElevationMultiplier-torsoElevationMultiplier) + gunElevTemp);
     
     mat4.rotateY(gunMat, gunTurn);
 
@@ -656,7 +659,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
     function drawArm2(activeProg, torsoMatrix, handedness, doubleGuns){
         var armMat = mat4.create(torsoMatrix);
-        mat4.rotateX(armMat, -playerElevation*torsoElevationMultiplier);
+        mat4.rotateX(armMat, -playerElevation*torsoElevationMultiplier + gunElevTemp);
         mat4.translate(armMat, playerNeckPos);
         mat4.translate(armMat, [0.2*handedness,0,-0.2]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
         
