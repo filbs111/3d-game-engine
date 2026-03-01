@@ -392,7 +392,10 @@ function drawScene(frameTime){
     gunTurn = Math.min(gunTurnLimitRadians, gunTurn);
 
     var gunTurnFractionToTurn = 0.04;   //TODO dependence on update interval.
-    playerRotation-=gunTurn*gunTurnFractionToTurn;  //TODO account for elevation (currently pointing direction retained when turning while pointing horizontally)
+
+    var adjustment = 1.0/(0.1 + Math.cos(playerElevation)); //can go infinite when pointed up so add fudge factor in denominator
+
+    playerRotation-=gunTurn*adjustment*gunTurnFractionToTurn;  //TODO adjust elevation to keep gun pointed in same direction
     gunTurn*=1 - gunTurnFractionToTurn;
 
 
