@@ -112,6 +112,8 @@ function init(){
     gl.enable(gl.DEPTH_TEST);
 	gl.enable(gl.CULL_FACE);
 
+    gl.depthFunc(gl.LEQUAL);    //if don't do this on linux brave, can't see background, though it is in range! seems like precision of depth buffer is less.
+
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 }
 
@@ -278,7 +280,7 @@ var enableDisableAttributes = (function generateEnableDisableAttributesFunc(){
 
 
 var camParams = {
-    near:0.01,
+    near:0.1,
     far:20000
 };
 
@@ -513,6 +515,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
     var activeProg = shaderPrograms.simpleCubemap;
     gl.useProgram(activeProg);
+    enableDisableAttributes(activeProg);
 
     //skybox
 	//draw skybox. maybe efficient to do in screen space. 
