@@ -29,6 +29,7 @@ var pointerLocked=false;
 var listerBuffers={};
 var lucyBuffers={};
 
+var fireButtonDepressed = 0;
 
 function init(){
 
@@ -87,6 +88,16 @@ function init(){
 			mouseInfo.pendingMovement[0]+=-0.001* evt.movementX;	//TODO screen resolution dependent sensitivity.
 			mouseInfo.pendingMovement[1]+=-0.001* evt.movementY;
 		}
+	});
+    canvas.addEventListener("mousedown", function(evt){
+		mouseInfo.buttons = evt.buttons;
+		evt.preventDefault();
+	});
+	canvas.addEventListener("mouseup", function(evt){
+		mouseInfo.buttons = evt.buttons;
+	});
+	canvas.addEventListener("mouseout", function(evt){
+		mouseInfo.buttons = 0;
 	});
 
 
@@ -403,6 +414,19 @@ function drawScene(frameTime){
     playerElevation=Math.min(playerElevation, 0.7*Math.PI/2);   //pointing down!
     playerElevation=Math.max(playerElevation, -0.8*Math.PI/2);
         //0.7 because arms move more than view.
+
+
+    var fireButtonDepressedNow = mouseInfo.buttons&1;
+
+    if (fireButtonDepressedNow && !fireButtonDepressed){     //fire gun
+
+        //jerk gun. TODO temporary jerk (decay towards where was aiming before)
+        gunTurn+= 0.1*gaussRand();
+        playerElevation+= 0.1*gaussRand();
+    }
+
+    fireButtonDepressed = fireButtonDepressedNow;
+
 
 
     //console.log("drawing scene");
