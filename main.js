@@ -352,13 +352,10 @@ function drawScene(frameTime){
 
         playerVel[2]+=timeChange*playerAcc[2];
         playerVel[0]+=timeChange*playerAcc[0];
-        playerRotation -= timeChange*turnInput*0.005;
+        gunTurn += timeChange*turnInput*0.005;
         playerElevation -= timeChange*elevationInput*0.005;
 
-        //cap elevation
-        playerElevation=Math.min(playerElevation, 0.7*Math.PI/2);   //pointing down!
-        playerElevation=Math.max(playerElevation, -0.7*Math.PI/2);
-            //0.7 because arms move more than view.
+        
 
         //TODO fixed timestep mechanics
         
@@ -377,7 +374,7 @@ function drawScene(frameTime){
         mouseInfo.pendingMovement[cc]*=fractionToKeep;  //TODO if keep this, framerate independence.
     }
 
-    playerRotation-=mouseInfo.pendingMovement[0];
+    gunTurn+=mouseInfo.pendingMovement[0];
     playerElevation-=mouseInfo.pendingMovement[1];
     //NOTE simple decoupled pitch, turn. perhaps better to have "free flight" rotation with auto-levelling - 
     // ie turn when elevated results in tilted view - perhaps similar to head movement preceding body movement - 
@@ -390,10 +387,20 @@ function drawScene(frameTime){
     // simpleish system : elevate gun/arms and then rotate about tilted back "up" axis. 
     // gradually adjust player rotation, while retaining world pointing direction of gun, to reduce the gun's amount of turn.
 
-    //something for quick test. 
-    gunTurn+=mouseInfo.pendingMovement[0];
-    //just decay this for now. 
-    gunTurn*=0.95;
+    var gunTurnLimitRadians = 1;        //cap gun turn so arms don't go off screen, also indirectly limits rotation speed. TODO don't limit so harshly? 
+    gunTurn = Math.max(-gunTurnLimitRadians, gunTurn);
+    gunTurn = Math.min(gunTurnLimitRadians, gunTurn);
+
+    var gunTurnFractionToTurn = 0.04;   //TODO dependence on update interval.
+    playerRotation-=gunTurn*gunTurnFractionToTurn;  //TODO account for elevation (currently pointing direction retained when turning while pointing horizontally)
+    gunTurn*=1 - gunTurnFractionToTurn;
+
+
+    //cap elevation
+    playerElevation=Math.min(playerElevation, 0.7*Math.PI/2);   //pointing down!
+    playerElevation=Math.max(playerElevation, -0.8*Math.PI/2);
+        //0.7 because arms move more than view.
+
 
     //console.log("drawing scene");
     
