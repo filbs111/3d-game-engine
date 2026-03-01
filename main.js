@@ -29,7 +29,7 @@ var pointerLocked=false;
 var listerBuffers={};
 var lucyBuffers={};
 
-var fireButtonDepressed = 0;
+var haveUnclickedFire = 0;
 
 function init(){
 
@@ -329,6 +329,7 @@ var torsoElevationMultiplier=0.4;   //torso doesn't elevate as much as view. nec
 
 var gunTurn=0;
 var gunElevTemp=0;
+var lastShotTime=-1000; //could be 0 but want to ensure ready for next shot
 
 function drawScene(frameTime){
 	requestAnimationFrame(drawScene);
@@ -418,14 +419,22 @@ function drawScene(frameTime){
 
     var fireButtonDepressedNow = mouseInfo.buttons&1;
 
-    if (fireButtonDepressedNow && !fireButtonDepressed){     //fire gun
+    var autofire = document.getElementById("autofire").checked;
+    var timeSinceLastShot = frameTime - lastShotTime;
+    var roundsPerMin = 1200;
+    var haveReloaded = timeSinceLastShot> 60_000/roundsPerMin;
 
+    if (fireButtonDepressedNow && haveReloaded && (haveUnclickedFire || autofire)){
         //jerk gun. TODO temporary jerk (decay towards where was aiming before)
         gunTurn+= 0.1*gaussRand();
         gunElevTemp+= 0.1*gaussRand();
+        lastShotTime = frameTime;
+        haveUnclickedFire = false;
     }
 
-    fireButtonDepressed = fireButtonDepressedNow;
+    if (!fireButtonDepressedNow){
+        haveUnclickedFire=true;
+    }
 
     playerElevation-=gunElevTemp*gunTurnFractionToTurn;
     gunElevTemp*=1 - gunTurnFractionToTurn;
