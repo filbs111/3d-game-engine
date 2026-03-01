@@ -355,6 +355,9 @@ function drawScene(frameTime){
     if (lastFrameTime){
         var timeChange = frameTime-lastFrameTime;
 
+        //prevent large time passing when switch back to tab
+        timeChange = Math.min(timeChange, 100);
+
         var accMultiply = Math.exp(-0.002*timeChange);
         var preDragPlayerAccTarget = [zMove,0,xMove].map(xx=>xx*-0.00001);
        
