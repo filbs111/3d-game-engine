@@ -316,6 +316,8 @@ var armElevationMultiplier=1.4; //elevate arms more than player look direction.
      // NOTE could make gimbal lock situation worse - perhaps better use pointing direction and scale look elevation...
 var torsoElevationMultiplier=0.4;   //torso doesn't elevate as much as view. neck does remaining rotation
 
+var gunTurn=0;
+
 function drawScene(frameTime){
 	requestAnimationFrame(drawScene);
 
@@ -380,6 +382,18 @@ function drawScene(frameTime){
     //NOTE simple decoupled pitch, turn. perhaps better to have "free flight" rotation with auto-levelling - 
     // ie turn when elevated results in tilted view - perhaps similar to head movement preceding body movement - 
     // when body catches up and face in same compass direction as looking direction, view levels out.
+
+
+    //for "free flight" system
+    // how should body rotate? bend at waist? twist upper torso? 
+    // should head also tilt over? 
+    // simpleish system : elevate gun/arms and then rotate about tilted back "up" axis. 
+    // gradually adjust player rotation, while retaining world pointing direction of gun, to reduce the gun's amount of turn.
+
+    //something for quick test. 
+    gunTurn+=mouseInfo.pendingMovement[0];
+    //just decay this for now. 
+    gunTurn*=0.95;
 
     //console.log("drawing scene");
     
@@ -558,6 +572,8 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     mat4.translate(gunMat, [0,0,-0.2]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
     mat4.rotateX(gunMat, -playerElevation*(armElevationMultiplier-torsoElevationMultiplier));
     
+    mat4.rotateY(gunMat, gunTurn);
+
     mat4.translate(gunMat, [0,0.05,-1]);    //1m - end of arm, up by 5cm
 
 
@@ -611,6 +627,10 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         mat4.translate(armMat, [0.2*handedness,0,-0.2]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
         
         mat4.rotateX(armMat, -playerElevation*(armElevationMultiplier-torsoElevationMultiplier));
+
+        mat4.rotateY(armMat, gunTurn);  //note with this arms don't quite match gun because order of rotations
+
+
         if (!doubleGuns){
             mat4.rotateX(armMat, handedness*0.06);
             mat4.rotateY(armMat, 0.2*handedness); //turn shoulder about up vector
