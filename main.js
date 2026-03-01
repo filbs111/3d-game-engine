@@ -14,6 +14,8 @@ var shaderPrograms={};
 var cubeBuffers={};
 var quadBuffers={};
 var cameraMat = mat4.create();
+var cameraZoomAdjustInputSmoothed = 1.0;
+
 var mvMatrix = mat4.create();
 var mMatrix = mat4.create();
 var pMatrix = mat4.create();
@@ -331,6 +333,8 @@ var gunTurn=0;
 var gunElevTemp=0;
 var lastShotTime=-1000; //could be 0 but want to ensure ready for next shot
 
+var cameraZoom = -1;
+
 function drawScene(frameTime){
 	requestAnimationFrame(drawScene);
 
@@ -376,6 +380,12 @@ function drawScene(frameTime){
         playerPos[0]+=playerVel[0]*timeChange;
 
         updateSpeedInfo(playerVel, playerAcc);
+
+
+        //faster switch for camera zooming
+        var cameraAccMultiply = Math.exp(-0.02*timeChange);
+        var cameraZoomAdjustInput = (mouseInfo.buttons&2)? 0.4: 1.0;     //adjust camera zoom by right click. TODO reduce fisheye as zoom in - make distance from screen or fov of screen in view be configurable.
+        cameraZoomAdjustInputSmoothed = cameraZoomAdjustInputSmoothed*cameraAccMultiply + (1-cameraAccMultiply)*cameraZoomAdjustInput;
     }
     lastFrameTime=frameTime;
 
@@ -505,6 +515,9 @@ function drawScene(frameTime){
     }
     mat4.inverse(unmirroredCameraMat);    //note .transpose won't work like does in 3sphere games, because these are standard 3d gfx mats, not SO4s.
     
+    cameraZoom = parseFloat(document.getElementById("camerazoom").value);
+    cameraZoom*=cameraZoomAdjustInputSmoothed;
+
 
     if (!document.getElementById("fisheyeselection_off").checked){
 
@@ -519,7 +532,6 @@ function drawScene(frameTime){
 
     }else{
 
-        var cameraZoom = parseFloat(document.getElementById("camerazoom").value); 
         var vFov = 2* Math.atan(cameraZoom) * 180/Math.PI;
 
         mat4.perspective(vFov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 
