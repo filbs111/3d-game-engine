@@ -298,6 +298,7 @@ var camParams = {
 };
 
 var lastFrameTime = null;
+var lastFixedTimestepUpdateTime = 0;
 var playerPos=[0,0,5];
 var playerEyePosFromNeck=[0,0.2,-0.2]; //20cm above and ahead of neck, so 1.7m above groun d, 10cm forwards
 var playerNeckPos=[0,0.5,0.1];  //relative to player centre which is 1m above ground.  1.5m above ground, 10cm back
@@ -335,10 +336,9 @@ var lastShotTime=-1000; //could be 0 but want to ensure ready for next shot
 
 var cameraZoom = -1;
 
-function drawScene(frameTime){
-	requestAnimationFrame(drawScene);
 
-    //TODO iterate mechanics using controls
+function iterateMechanics(timeChange){
+    //TODO take inputs more frequently?
 
     var forwardBack = keyThing.keystate(87)-keyThing.keystate(83);	//vertical W,S = up, down
     var leftRight = keyThing.keystate(65)-keyThing.keystate(68);    //lateral A,D
@@ -352,46 +352,27 @@ function drawScene(frameTime){
     var turnInput = keyThing.leftKey() - keyThing.rightKey();
     var elevationInput = keyThing.upKey() - keyThing.downKey();
 
-    if (lastFrameTime){
-        var timeChange = frameTime-lastFrameTime;
+    var timeChange = 10;
+    var accMultiply = Math.exp(-0.002*timeChange);
+    
+    var preDragPlayerAccTarget = [zMove,0,xMove].map(xx=>xx*-0.00001);
+    
+    preDragPlayerAcc[0] = preDragPlayerAcc[0]*accMultiply + (1-accMultiply)*preDragPlayerAccTarget[0];
+    preDragPlayerAcc[2] = preDragPlayerAcc[2]*accMultiply + (1-accMultiply)*preDragPlayerAccTarget[2];
 
-        //prevent large time passing when switch back to tab
-        timeChange = Math.min(timeChange, 100);
+    playerAcc = preDragPlayerAcc.map(x=>x); //copy
 
-        var accMultiply = Math.exp(-0.002*timeChange);
-        var preDragPlayerAccTarget = [zMove,0,xMove].map(xx=>xx*-0.00001);
-       
-        preDragPlayerAcc[0] = preDragPlayerAcc[0]*accMultiply + (1-accMultiply)*preDragPlayerAccTarget[0];
-        preDragPlayerAcc[2] = preDragPlayerAcc[2]*accMultiply + (1-accMultiply)*preDragPlayerAccTarget[2];
+    //add drag proportional to speed.
+    playerAcc[0]-=playerVel[0]*0.001;
+    playerAcc[2]-=playerVel[2]*0.001;
 
-        playerAcc = preDragPlayerAcc.map(x=>x); //copy
-
-        //add drag proportional to speed.
-        playerAcc[0]-=playerVel[0]*0.001;
-        playerAcc[2]-=playerVel[2]*0.001;
-
-        playerVel[2]+=timeChange*playerAcc[2];
-        playerVel[0]+=timeChange*playerAcc[0];
-        gunTurn += timeChange*turnInput*0.005;
-        playerElevation -= timeChange*elevationInput*0.005;
-
-        
-
-        //TODO fixed timestep mechanics
-        
-        playerPos[2]+=playerVel[2]*timeChange;
-        playerPos[0]+=playerVel[0]*timeChange;
-
-        updateSpeedInfo(playerVel, playerAcc);
-
-
-        //faster switch for camera zooming
-        var cameraAccMultiply = Math.exp(-0.02*timeChange);
-        var cameraZoomAdjustInput = (mouseInfo.buttons&2)? 0.4: 1.0;     //adjust camera zoom by right click. TODO reduce fisheye as zoom in - make distance from screen or fov of screen in view be configurable.
-        cameraZoomAdjustInputSmoothed = cameraZoomAdjustInputSmoothed*cameraAccMultiply + (1-cameraAccMultiply)*cameraZoomAdjustInput;
-    }
-    lastFrameTime=frameTime;
-
+    playerVel[2]+=timeChange*playerAcc[2];
+    playerVel[0]+=timeChange*playerAcc[0];
+    gunTurn += timeChange*turnInput*0.005;
+    playerElevation -= timeChange*elevationInput*0.005;
+    
+    playerPos[2]+=playerVel[2]*timeChange;
+    playerPos[0]+=playerVel[0]*timeChange;
 
     var amountToMove = new Array(2);
     var fractionToKeep = 0.9;
@@ -421,9 +402,12 @@ function drawScene(frameTime){
 
     var adjustment = 1.0/(0.1 + Math.cos(playerElevation)); //can go infinite when pointed up so add fudge factor in denominator
 
-    playerRotation-=gunTurn*adjustment*gunTurnFractionToTurn;  //TODO adjust elevation to keep gun pointed in same direction
+    var playerRotationAdjustment = gunTurn*adjustment*gunTurnFractionToTurn;    //TODO adjust elevation to keep gun pointed in same direction
+    playerRotation-=playerRotationAdjustment;  
     gunTurn*=1 - gunTurnFractionToTurn;
 
+    var elevationAdjustment = playerElevation*playerRotationAdjustment*gunTurn; //??
+    playerElevation-=elevationAdjustment;
 
     //cap elevation
     playerElevation=Math.min(playerElevation, 0.7*Math.PI/2);   //pointing down!
@@ -433,7 +417,7 @@ function drawScene(frameTime){
     var fireButtonDepressedNow = mouseInfo.buttons&1;
 
     var autofire = document.getElementById("autofire").checked;
-    var timeSinceLastShot = frameTime - lastShotTime;
+    var timeSinceLastShot = lastFixedTimestepUpdateTime - lastShotTime;
     var roundsPerMin = 1200;
     var haveReloaded = timeSinceLastShot> 60_000/roundsPerMin;
 
@@ -441,7 +425,7 @@ function drawScene(frameTime){
         //jerk gun. TODO temporary jerk (decay towards where was aiming before)
         gunTurn+= 0.1*gaussRand();
         gunElevTemp+= 0.1*gaussRand();
-        lastShotTime = frameTime;
+        lastShotTime = lastFixedTimestepUpdateTime;
         haveUnclickedFire = false;
     }
 
@@ -451,6 +435,36 @@ function drawScene(frameTime){
 
     playerElevation-=gunElevTemp*gunTurnFractionToTurn;
     gunElevTemp*=1 - gunTurnFractionToTurn;
+
+
+    //faster switch for camera zooming
+    var cameraAccMultiply = Math.exp(-0.02*timeChange);
+    var cameraZoomAdjustInput = (mouseInfo.buttons&2)? 0.5: 1.0;     //adjust camera zoom by right click. TODO reduce fisheye as zoom in - make distance from screen or fov of screen in view be configurable.
+    cameraZoomAdjustInputSmoothed = cameraZoomAdjustInputSmoothed*cameraAccMultiply + (1-cameraAccMultiply)*cameraZoomAdjustInput;
+}
+
+
+function drawScene(frameTime){
+	requestAnimationFrame(drawScene);
+    
+    if (lastFrameTime){
+        var timeChange = frameTime-lastFrameTime;
+
+        //prevent large time passing when switch back to tab
+        timeChange = Math.min(timeChange, 100);
+
+        var timeChangeForTimestep=10;   // 100FPS mechanics. TODO interpolate displayed motion
+        //fixed timestep mechanics. TODO interpolation
+        while (lastFixedTimestepUpdateTime<frameTime){
+            lastFixedTimestepUpdateTime+=timeChangeForTimestep;
+            iterateMechanics(timeChangeForTimestep);
+            updateSpeedInfo(playerVel, playerAcc);
+        }        
+    }
+    lastFrameTime=frameTime;
+
+
+    
 
 
 
