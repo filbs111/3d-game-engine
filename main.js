@@ -512,6 +512,16 @@ function drawScene(frameTime){
     mat4.translate(upperTorsoMat, [0,0.3,0]);
     mat4.translate(eyeMat, playerNeckPos);
     mat4.rotateX(eyeMat, -playerElevation*(1-torsoElevationMultiplier));
+
+    //offset forwards acceleration tilt?    //TODO adjust this properly - suspect equation not quite right.
+    var forwardsAcc = Math.cos(playerRotation)*playerAcc[2] - Math.sin(playerRotation)*playerAcc[0];
+    var forwardsTilt = Math.atan(forwardsAcc*1_000_000/9.88);
+    mat4.rotateX(eyeMat, -forwardsTilt*0.75);
+
+    //offset forwards acceleration for arms.
+    var armRotationAdjustment = -forwardsTilt*0.75;
+        //TODO have torso rotation do some of this adjustment (check looks sensible when have more humanlike model/proportions)
+
     var neckMat = mat4.create(eyeMat);
     mat4.translate(eyeMat, playerEyePosFromNeck);
 
@@ -543,7 +553,7 @@ function drawScene(frameTime){
         // NOTE can do this more efficiently, (what is best depends on FOV), by drawing to 1,2,or 4 panels (last is "quad view" used in 3-sphere project), but this is generally
         // more complex.
 
-        updateCubemap(unmirroredCameraMat, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime);
+        updateCubemap(unmirroredCameraMat, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);
 
         renderViewUsingCmap();
 
@@ -554,14 +564,14 @@ function drawScene(frameTime){
         mat4.perspective(vFov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 
         pMatrix[9]=-0.33;       //shift centre of perspective one third up from centre to top of screen (so is 1/3 down screen top to bottom)
 
-        drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime);
+        drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);
         gl.clear(gl.DEPTH_BUFFER_BIT);
-        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime);    
+        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);    
     }
 }
 
 
-function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime){
+function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment){
         //NOTE passing in eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation is awkward. 
         //TODO create scene description and use for render?
 
@@ -646,7 +656,8 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     mat4.translate(gunMat, playerNeckPos);
     mat4.translate(gunMat, [0,0,-0.2]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
     mat4.rotateX(gunMat, -playerElevation*(armElevationMultiplier-torsoElevationMultiplier) + gunElevTemp);
-    
+    mat4.rotateX(gunMat, armRotationAdjustment);
+
     mat4.rotateY(gunMat, gunTurn);
 
     mat4.translate(gunMat, [0,0.05,-1]);    //1m - end of arm, up by 5cm
@@ -702,6 +713,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         mat4.translate(armMat, [0.2*handedness,0,-0.2]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
         
         mat4.rotateX(armMat, -playerElevation*(armElevationMultiplier-torsoElevationMultiplier));
+        mat4.rotateX(armMat, armRotationAdjustment);
 
         mat4.rotateY(armMat, gunTurn);  //note with this arms don't quite match gun because order of rotations
 
