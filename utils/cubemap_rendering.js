@@ -134,17 +134,8 @@ function renderViewUsingCmap(){
     if (document.getElementById("fisheyeselection_simple").checked){
         var ss = parseFloat(document.getElementById("simple_strength").value);
 
-        //bodge this to reduce when zoom in. 
-        // assume that strength k is set right for n=2
-        // k = (n^2 -1) / (6n^2)
-        // calculate n from z
-        //override ss
-        var nNow = 2*cameraZoomAdjustInputSmoothed; //divide or multiply?
-        var ssAdjusted =  (nNow*nNow - 1)/ (6*nNow*nNow);
-
-        simpleStrengthGlobal = ssAdjusted;
-
-        gl.uniform1f(activeShaderProgram.uniforms.uSimpleStrength, ssAdjusted);
+        //NOTE overriding ss calculation, ignoring simple strength value
+        gl.uniform1f(activeShaderProgram.uniforms.uSimpleStrength, simpleStrengthGlobal);
     }
 
     if (document.getElementById("fisheyeselection_thoby").checked){

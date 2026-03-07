@@ -546,7 +546,27 @@ function drawScene(frameTime){
     cameraZoom*=cameraZoomAdjustInputSmoothed;
 
 
-    if (!document.getElementById("fisheyeselection_off").checked){
+    //calculation of fisheye zoom given ratio of distance from viewer to screen to distance for correct rectilinear viewing. 
+    // assume that strength k is set right for n=2
+    // k = (n^2 -1) / (6n^2)
+    // calculate n from z
+    //override ss
+    var nNow = 2*cameraZoomAdjustInputSmoothed; //divide or multiply?
+    simpleStrengthGlobal =  (nNow*nNow - 1)/ (6*nNow*nNow);
+
+    if (document.getElementById("fisheyeselection_singleview").checked){
+
+        var vertSizeFromVFov = cameraZoom;
+        var horizSizeFromVFov = vertSizeFromVFov * (gl.viewportWidth/ gl.viewportHeight);
+        calculateProjectionMatrixForIntermediateView(horizSizeFromVFov, vertSizeFromVFov, simpleStrengthGlobal, -0.333, pMatrix);
+
+        //TODO draw view intermediate view
+
+        drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);
+        gl.clear(gl.DEPTH_BUFFER_BIT);
+        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);    
+
+    } else if (!document.getElementById("fisheyeselection_off").checked){
 
         //draw cubemap about current camera.
         // but for simplicity, make initial version using cubemap for intermediate views. render 6 cameras for each cubemap side, then map from cubemap onto the screen.
@@ -557,25 +577,13 @@ function drawScene(frameTime){
 
         renderViewUsingCmap();
 
-    }else{
+    } else {
 
-/*
+
         var vFov = 2* Math.atan(cameraZoom) * 180/Math.PI;
 
         mat4.perspective(vFov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 
         pMatrix[9]=-0.33;       //shift centre of perspective one third up from centre to top of screen (so is 1/3 down screen top to bottom)
-
-*/
-        //use persp mat from frustum calc temporarily. TODO pass in right vals for width, height (depends on fisheye zoom?)
-
-        // var vFovRads = vFov * Math.PI/180;  //not actually vFov that will be displayed, but approximately what will want on final screen (?)
-        // var vertSizeFromVFov = 2*Math.tan(vFovRads/2);
-        // //equivalent to cameraZoom ? 
-
-        var vertSizeFromVFov = cameraZoom;
-
-        var horizSizeFromVFov = vertSizeFromVFov * (gl.viewportWidth/ gl.viewportHeight);
-        calculateProjectionMatrixForIntermediateView(horizSizeFromVFov, vertSizeFromVFov, simpleStrengthGlobal, -0.333, pMatrix);
 
 
         drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);
