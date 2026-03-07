@@ -559,10 +559,16 @@ function drawScene(frameTime){
 
     }else{
 
+/*
         var vFov = 2* Math.atan(cameraZoom) * 180/Math.PI;
 
         mat4.perspective(vFov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 
         pMatrix[9]=-0.33;       //shift centre of perspective one third up from centre to top of screen (so is 1/3 down screen top to bottom)
+
+*/
+        //use persp mat from frustum calc temporarily. TODO pass in right vals for width, height (depends on fisheye zoom?)
+        calculateProjectionMatrixForIntermediateView(0.8, 0.45, 0.01, -0.333, pMatrix);
+
 
         drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);
         gl.clear(gl.DEPTH_BUFFER_BIT);
