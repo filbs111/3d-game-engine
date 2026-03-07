@@ -107,6 +107,7 @@ function init(){
     initShaders(shaderPrograms);initShaders=null;
     initTextures();
     initCubemapFramebuffer(cubemapView);
+   	initTextureFramebuffer(rttView);
     initBuffers();
 	getLocationsForShadersUsingPromises(
 		()=>{
@@ -560,11 +561,42 @@ function drawScene(frameTime){
         var horizSizeFromVFov = vertSizeFromVFov * (gl.viewportWidth/ gl.viewportHeight);
         calculateProjectionMatrixForIntermediateView(horizSizeFromVFov, vertSizeFromVFov, simpleStrengthGlobal, -0.333, pMatrix);
 
-        //TODO draw view intermediate view
+        // draw to rttView
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, rttView.framebuffer);
+
+        //TODO scale to get 1:1 mapping in centre of screen taking screen resolution and fisheye curvature into account.
+		var intermediate_view_width = 2048;
+        var intermediate_view_height = 2048;
+
+		gl.viewport( 0,0, intermediate_view_width, intermediate_view_height );
+		setRttSize( rttView, intermediate_view_width, intermediate_view_height );	//todo stop setting this repeatedly
+
+           	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);
         gl.clear(gl.DEPTH_BUFFER_BIT);
         drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);    
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+
+
+        //temporary - just draw map intermediate view straight to the screen using no curvature.
+
+        activeProg = shaderPrograms.fullscreenTextured;
+        gl.useProgram(activeProg);
+        enableDisableAttributes(activeProg);
+        bind2dTextureIfRequired(rttView.texture);
+
+        gl.disable(gl.CULL_FACE);   //?? bodge to try to get rendering to work!!!
+
+        drawObjectFromBuffers(quadBuffers, activeProg);
+
+        gl.enable(gl.CULL_FACE);
+
+
+        //TODO draw intermediate view to the screen using fisheye shader. t
 
     } else if (!document.getElementById("fisheyeselection_off").checked){
 

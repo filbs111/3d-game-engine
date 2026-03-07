@@ -118,6 +118,7 @@ function initShaders(shaderProgs){
 		texmap:["texmap-vs", "texmap-fs"],
 		envmap:["envmap-vs", "envmap-fs"],
 		vertexColorWithEnvmap:["vertcolor-envmap-vs", "envmap-fs"],
+		fullscreenTextured:["fullscreen-vs", "fullscreen-fs"],
 		simpleCubemap:["cubemap-vs", "cubemap-fs"],	//used for skybox
 		fisheyeCubemap:["cubemap-fisheye-vs", "cubemap-fisheye-fs"],
 		fisheyeStereographic:["cubemap-fisheye-vs", "cubemap-fisheye-stereographic-fs"],
