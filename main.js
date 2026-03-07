@@ -567,7 +567,15 @@ function drawScene(frameTime){
 
 */
         //use persp mat from frustum calc temporarily. TODO pass in right vals for width, height (depends on fisheye zoom?)
-        calculateProjectionMatrixForIntermediateView(0.8, 0.45, 0.01, -0.333, pMatrix);
+
+        // var vFovRads = vFov * Math.PI/180;  //not actually vFov that will be displayed, but approximately what will want on final screen (?)
+        // var vertSizeFromVFov = 2*Math.tan(vFovRads/2);
+        // //equivalent to cameraZoom ? 
+
+        var vertSizeFromVFov = cameraZoom;
+
+        var horizSizeFromVFov = vertSizeFromVFov * (gl.viewportWidth/ gl.viewportHeight);
+        calculateProjectionMatrixForIntermediateView(horizSizeFromVFov, vertSizeFromVFov, simpleStrengthGlobal, -0.333, pMatrix);
 
 
         drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);

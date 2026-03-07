@@ -76,32 +76,36 @@ function calculateProjectionMatrixForIntermediateView(screenWidth, screenHeight,
 
 
     mat4.perspective(vFov, intermediateAspect, camParams.near, camParams.far, projMat); 
-    projMat[9]=intermediatePerspShift;
+    //projMat[9]=intermediatePerspShift / 2;  // /2 is guess. is it needed? or sohould this be a fraction of intermediateFy
 
+    projMat[9]= 0.5* intermediatePerspShift / intermediateFy;
+    //projMat[9]= intermediatePerspShift / intermediateFy;
 
     // , pitch it.
     // and just use for straight to screen render, check looks about right, then draw to intermediate view and map by fisheye shader using similar matrix (inverse?)
 
+    mat4.rotateX(projMat, intermediateViewCameraPitchMultiplier*cameraPitch);
 
     //print these to see if looks halfway sensible..
-    console.log({
-        scaledCornerTop,
-        scaledCornerBottom,
-        forwardDirection,
-        upDirection,
-        cameraPitch,
-        widthCalculatedForTop,
-        widthCalculatedForBottom,
-        heightCalculatedForTop,
-        heightCalculatedForBottom,
-        intermediateFx,
-        intermediateFy,
-        intermediateAspect,
-        intermediatePerspShift,
-        projMat
-    });
+    // console.log({
+    //     scaledCornerTop,
+    //     scaledCornerBottom,
+    //     forwardDirection,
+    //     upDirection,
+    //     cameraPitch,
+    //     widthCalculatedForTop,
+    //     widthCalculatedForBottom,
+    //     heightCalculatedForTop,
+    //     heightCalculatedForBottom,
+    //     intermediateFx,
+    //     intermediateFy,
+    //     intermediateAspect,
+    //     intermediatePerspShift,
+    //     projMat
+    // });
 }
 
+var intermediateViewCameraPitchMultiplier = -1;
 
 function dotProd3(aa,bb){
     return aa[0]*bb[0] + aa[1]*bb[1] + aa[2]*bb[2];

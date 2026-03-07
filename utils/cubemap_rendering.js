@@ -114,6 +114,8 @@ function rotateCameraForFace(mat, ii){
     mat4.inverse(mat);
 }
 
+var simpleStrengthGlobal=1;
+
 function renderViewUsingCmap(){
     var activeShaderProgram = 
         document.getElementById("fisheyeselection_simple").checked ?            shaderPrograms.fisheyeCubemap:
@@ -140,6 +142,7 @@ function renderViewUsingCmap(){
         var nNow = 2*cameraZoomAdjustInputSmoothed; //divide or multiply?
         var ssAdjusted =  (nNow*nNow - 1)/ (6*nNow*nNow);
 
+        simpleStrengthGlobal = ssAdjusted;
 
         gl.uniform1f(activeShaderProgram.uniforms.uSimpleStrength, ssAdjusted);
     }
