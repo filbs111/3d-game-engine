@@ -320,6 +320,7 @@ var statCamPos = staticCamera.slice(12,15);
 
 var carMatrix = mat4.identity();
 mat4.translate(carMatrix,[8,-0.6,6]); //right, down a bit, back
+var carCamera = mat4.create(carMatrix);
 
 var lucyMatrix = mat4.identity();
 mat4.translate(lucyMatrix,[-8,3,-6]); //left, up a bit, forwards
@@ -535,9 +536,20 @@ function drawScene(frameTime){
         mat4.rotateX(staticCamera, Math.asin(difference[1]/distance)); //tilt (elevation)
     }
 
+    mat4.set(carMatrix, carCamera);
+    //mat4.translate(carCamera, [0,1,-2]);  //seems ~ cockpit view
+    mat4.translate(carCamera, [0,0,-1.7]);   //centre of car appears to be ahead of car origin
+    //mat4.rotateY(carCamera, 0*Math.PI/2); //quarter turns
+
+    mat4.rotateY(carCamera, lastFixedTimestepUpdateTime*0.001);
+    mat4.translate(carCamera, [0,2.6,4.5]);   //above and behind car
+
+
     var unmirroredCameraMat = mat4.create();
     if (document.getElementById("externalcam").checked){
         mat4.set(staticCamera, unmirroredCameraMat);
+    }else if(document.getElementById("carmode").checked){
+        mat4.set(carCamera, unmirroredCameraMat);
     }else{
         mat4.set(eyeMat, unmirroredCameraMat);
     }
