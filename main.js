@@ -559,7 +559,7 @@ function drawScene(frameTime){
 
         var vertSizeFromVFov = cameraZoom;
         var horizSizeFromVFov = vertSizeFromVFov * (gl.viewportWidth/ gl.viewportHeight);
-        calculateProjectionMatrixForIntermediateView(horizSizeFromVFov, vertSizeFromVFov, simpleStrengthGlobal, -0.000000333, pMatrix);
+        calculateProjectionMatrixForIntermediateView(horizSizeFromVFov, vertSizeFromVFov, simpleStrengthGlobal, -0.33333, pMatrix);
 
         // draw to rttView
 
@@ -603,7 +603,7 @@ function drawScene(frameTime){
         var ratio = gl.viewportWidth/gl.viewportHeight;
         gl.uniform2f(activeProg.uniforms.uScaleXy, ratio*zoom, zoom);   //TODO apply zoom factor, (inverted?) screen dimens
         //gl.uniform2f(activeProg.uniforms.uScaleXy, 0.5,0.5);
-        gl.uniform2f(activeProg.uniforms.uOffsetXy, 0,-0.0000003333);
+        gl.uniform2f(activeProg.uniforms.uOffsetXy, 0, -0.3333);
 
         gl.uniform1f(activeProg.uniforms.uSimpleStrength, simpleStrengthGlobal);
 
@@ -631,7 +631,7 @@ function drawScene(frameTime){
         var vFov = 2* Math.atan(cameraZoom) * 180/Math.PI;
 
         mat4.perspective(vFov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 
-        pMatrix[9]=-0.000033;       //shift centre of perspective one third up from centre to top of screen (so is 1/3 down screen top to bottom)
+        pMatrix[9]=-0.3333;       //shift centre of perspective one third up from centre to top of screen (so is 1/3 down screen top to bottom)
 
 
         drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);

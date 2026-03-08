@@ -21,14 +21,13 @@ void main(void) {
     //fragColor = vec4( vec3(simpleParabolicZCoord), 1.0);    //shows radiating from centre of perspective as expected (vignette effect)
 
 
-    vec3 pos3d = vec3(vPos, simpleParabolicZCoord);
+    vec3 pos3d = vec3(-vPos, simpleParabolicZCoord);
 
     //fragColor = vec4( vec3(10.)*pos3d, 1.0);    //show crossing at centre of perspective as expected.
 
-
     // apply inverse projection matrix (inverted?) to get point on texture.
     //vec4 pointToBeTransformed = vec4(pos3d.x, pos3d.y, 0.0, pos3d.z);   //guess. TODO just take smaller matrix uniform? 
-    vec4 pointToBeTransformed = vec4(pos3d, 0.0);   
+    vec4 pointToBeTransformed = vec4(pos3d, 0.0);
 
     vec4 outputPoint = uPMatrix2 * pointToBeTransformed;
 
@@ -39,9 +38,5 @@ void main(void) {
 
     //fragColor = texture(uSampler, projectedPoint); 
 
-    fragColor = texture(uSampler, vec2(0.5)-vec2(0.5)*projectedPoint);    //regular 2d texture has centre at 0.5
-    //fragColor = texture(uSampler, vec2(0.5,0.66666)-vec2(0.5)*projectedPoint); 
-    
-    //fragColor = texture(uSampler, -projectedPoint); 
-
+    fragColor = texture(uSampler, vec2(0.5)+vec2(0.5)*projectedPoint);    //regular 2d texture has centre at 0.5
 }
