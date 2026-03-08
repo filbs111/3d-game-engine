@@ -33,6 +33,11 @@ var lucyBuffers={};
 
 var haveUnclickedFire = 0;
 
+//TODO tidy this up, use momentum etc! 
+var carInfo = {
+    speed: 0
+}
+
 function init(){
 
     //escape escapes pointer lock and exit fullscreen
@@ -342,6 +347,10 @@ var cameraZoom = -1;
 function iterateMechanics(timeChange){
     //TODO take inputs more frequently?
 
+    var isCarMode = document.getElementById("carmode").checked;
+        //TODO turn off player motion when controlling car? 
+
+
     var forwardBack = keyThing.keystate(87)-keyThing.keystate(83);	//vertical W,S = up, down
     var leftRight = keyThing.keystate(65)-keyThing.keystate(68);    //lateral A,D
 
@@ -443,6 +452,17 @@ function iterateMechanics(timeChange){
     var cameraAccMultiply = Math.exp(-0.02*timeChange);
     var cameraZoomAdjustInput = (mouseInfo.buttons&2)? 0.5: 1.0;     //adjust camera zoom by right click. TODO reduce fisheye as zoom in - make distance from screen or fov of screen in view be configurable.
     cameraZoomAdjustInputSmoothed = cameraZoomAdjustInputSmoothed*cameraAccMultiply + (1-cameraAccMultiply)*cameraZoomAdjustInput;
+
+
+    //car motion. TODO turn off player motion when controlling car?
+    carInfo.speed *= 0.95;
+    if (isCarMode){
+        var turn = -0.1*leftRight*carInfo.speed;
+        carInfo.speed += 0.01*(-forwardBack);
+        mat4.translate(carMatrix, [0,0,carInfo.speed]);
+        mat4.rotateY(carMatrix, turn);
+    }
+
 }
 
 
