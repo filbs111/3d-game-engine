@@ -456,15 +456,23 @@ function iterateMechanics(timeChange){
 
 
     //car motion. TODO turn off player motion when controlling car?
-    carInfo.speed *= 0.96;
+    carInfo.speed *= 0.9985;
     carInfo.steeringAngle *= 0.98;
     if (isCarMode){
-        carInfo.steeringAngle += -0.002*leftRight;
-        carInfo.speed += 0.01*(-forwardBack);
+        
+        //a = v^2/r => r = a v^2
+        // steering angle ~ car wheelbase / radius
+        // so steering andle at which grip fails goes as 1/v^2.
+        // in order to limit at low speed, just do 1/(vbodge^2 + v^2)
+        var steeringStrength = 1/(1+ 50*carInfo.speed*carInfo.speed);
+        steeringStrength = Math.min(0.9, steeringStrength); //max out steering angle at low speed.
+        var steeringAngleTarget = -0.003*leftRight*steeringStrength;
+
+        carInfo.steeringAngle += steeringAngleTarget;
+        carInfo.speed += 0.0015*(-forwardBack);
         mat4.translate(carMatrix, [0,0,carInfo.speed]);
         mat4.rotateY(carMatrix, carInfo.steeringAngle * carInfo.speed);
     }
-
 }
 
 
@@ -482,7 +490,7 @@ function drawScene(frameTime){
         while (lastFixedTimestepUpdateTime<frameTime){
             lastFixedTimestepUpdateTime+=timeChangeForTimestep;
             iterateMechanics(timeChangeForTimestep);
-            updateSpeedInfo(playerVel, playerAcc);
+            updateSpeedInfo(playerVel, playerAcc, carInfo.speed/timeChangeForTimestep );
         }        
     }
     lastFrameTime=frameTime;
@@ -549,10 +557,19 @@ function drawScene(frameTime){
     var neckMat = mat4.create(eyeMat);
     mat4.translate(eyeMat, playerEyePosFromNeck);
 
+
+    var isCarMode = document.getElementById("carmode").checked;
+    var carPos = carMatrix.slice(12);
+
     if (document.getElementById("camfollowsplayer").checked){
         mat4.identity(staticCamera);
         mat4.translate(staticCamera, statCamPos);
-        var difference = [playerPos[0]-statCamPos[0], playerPos[1]-statCamPos[1], playerPos[2]-statCamPos[2]];
+
+        //var camTarget = 
+
+        var difference = isCarMode ? 
+            [carPos[0]-statCamPos[0], carPos[1]-statCamPos[1], carPos[2]-statCamPos[2]]:
+            [playerPos[0]-statCamPos[0], playerPos[1]-statCamPos[1], playerPos[2]-statCamPos[2]];
         mat4.rotateY(staticCamera, Math.atan2(-difference[0], -difference[2]));   //pan
         var distance = Math.hypot.apply(null, difference);
         mat4.rotateX(staticCamera, Math.asin(difference[1]/distance)); //tilt (elevation)
@@ -562,6 +579,9 @@ function drawScene(frameTime){
     //mat4.translate(carCamera, [0,1,-2]);  //seems ~ cockpit view
     mat4.translate(carCamera, [0,0,-1.7]);   //centre of car appears to be ahead of car origin
     //mat4.rotateY(carCamera, 0*Math.PI/2); //quarter turns
+    var steeringAngleCameraImpact = 2;  //+ve means camera lags. -ve means camera leads.
+    mat4.rotateY(carCamera, steeringAngleCameraImpact*carInfo.steeringAngle); //NOTE steering angle unknown units here.
+    
 
     //mat4.rotateY(carCamera, lastFixedTimestepUpdateTime*0.001);
     mat4.translate(carCamera, [0,2.6,4.5]);   //above and behind car
@@ -570,7 +590,7 @@ function drawScene(frameTime){
     var unmirroredCameraMat = mat4.create();
     if (document.getElementById("externalcam").checked){
         mat4.set(staticCamera, unmirroredCameraMat);
-    }else if(document.getElementById("carmode").checked){
+    }else if(isCarMode){
         mat4.set(carCamera, unmirroredCameraMat);
     }else{
         mat4.set(eyeMat, unmirroredCameraMat);
@@ -699,19 +719,19 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     bind2dTextureIfRequired(bricktex);
 
     //draw ground blocker object if in not mirror mode, so don't overwrite view through mirror.
-    if (!mirrorInGroundPlane){
-        gl.colorMask(false, false, false, false);
-        setupDrawMatrixForObjectAtPosition([groundPos[0],groundPos[1]+10, groundPos[2]]);    //top face of cube
-        mat4.scale(mMatrix,[10,0,10]);
-        drawObjectFromBuffers(cubeBuffers, activeProg);
-        gl.colorMask(true, true, true, true);
-    }
+    // if (!mirrorInGroundPlane){
+    //     gl.colorMask(false, false, false, false);
+    //     setupDrawMatrixForObjectAtPosition([groundPos[0],groundPos[1]+10, groundPos[2]]);    //top face of cube
+    //     mat4.scale(mMatrix,[100,0,100]);
+    //     drawObjectFromBuffers(cubeBuffers, activeProg);
+    //     gl.colorMask(true, true, true, true);
+    // }
 
     //draw ground
     // TODO draw ground partially transparent.
     if (!mirrorInGroundPlane){
         setupDrawMatrixForObjectAtPosition(groundPos);
-        mat4.scale(mMatrix,[10,9.99,10]);   //9.99 so the blocker mirror plane is drawn in front! 
+        mat4.scale(mMatrix,[800,9.99,800]);   //9.99 so the blocker mirror plane is drawn in front! 
         drawObjectFromBuffers(cubeBuffers, activeProg);
     }
 
@@ -899,13 +919,14 @@ function setupDrawMatrixForObjectAtPosition(objPos){
     mat4.translate(mMatrix, objPos);
 }
 
-function updateSpeedInfo(vel, acc){
+function updateSpeedInfo(vel, acc, carMovePerMs){
     //world scale is metres
     //vel is in metres per millisecond
+
     var velMag = Math.hypot.apply(null, vel);
-    var speedMetresPerSecond = velMag*1000;
-    var speedKmPerH = speedMetresPerSecond*3.6;
-    var speedMilesPerHour = speedKmPerH/1.6;
+    var personSpeeds = movePerMsToVariousSpeedUnits(velMag);
+
+    var carSpeeds = movePerMsToVariousSpeedUnits(Math.abs(carMovePerMs));
 
     var accMag = Math.hypot.apply(null, acc);
     var accMetresPerSecondSquared = accMag*1_000_000;
@@ -913,12 +934,24 @@ function updateSpeedInfo(vel, acc){
 
     document.getElementById("speedinfo").innerHTML = 
         "speed: " + 
-        speedMetresPerSecond.toFixed(2) + "m/s " + 
-        speedKmPerH.toFixed(2) + "km/h " +
-        speedMilesPerHour.toFixed(2)+"mph ," +
+        personSpeeds.metresPerSecond.toFixed(2) + "m/s " + 
+        personSpeeds.kph.toFixed(2) + "km/h " +
+        personSpeeds.mph.toFixed(2)+"mph ," +
         "acceleration: " +
         accMetresPerSecondSquared.toFixed(2) + "m/s^2 " + 
-        accGees.toFixed(2) + "g";
+        accGees.toFixed(2) + "g" + 
+        "car speed: " +
+        carSpeeds.mph + " mph";
+}
+
+function movePerMsToVariousSpeedUnits(movePerMs){
+    var metresPerSecond = movePerMs*1000;
+    var kph = metresPerSecond*3.6;
+    return {
+        metresPerSecond,
+        kph,
+        mph: kph/1.6
+    };
 }
 
 function drawCubeWithScale(shaderProg, objMatrix, scaleVec){
