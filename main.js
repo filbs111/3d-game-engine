@@ -35,7 +35,8 @@ var haveUnclickedFire = 0;
 
 //TODO tidy this up, use momentum etc! 
 var carInfo = {
-    speed: 0
+    speed: 0,
+    steeringAngle: 0
 }
 
 function init(){
@@ -455,12 +456,13 @@ function iterateMechanics(timeChange){
 
 
     //car motion. TODO turn off player motion when controlling car?
-    carInfo.speed *= 0.95;
+    carInfo.speed *= 0.96;
+    carInfo.steeringAngle *= 0.98;
     if (isCarMode){
-        var turn = -0.1*leftRight*carInfo.speed;
+        carInfo.steeringAngle += -0.002*leftRight;
         carInfo.speed += 0.01*(-forwardBack);
         mat4.translate(carMatrix, [0,0,carInfo.speed]);
-        mat4.rotateY(carMatrix, turn);
+        mat4.rotateY(carMatrix, carInfo.steeringAngle * carInfo.speed);
     }
 
 }
@@ -561,7 +563,7 @@ function drawScene(frameTime){
     mat4.translate(carCamera, [0,0,-1.7]);   //centre of car appears to be ahead of car origin
     //mat4.rotateY(carCamera, 0*Math.PI/2); //quarter turns
 
-    mat4.rotateY(carCamera, lastFixedTimestepUpdateTime*0.001);
+    //mat4.rotateY(carCamera, lastFixedTimestepUpdateTime*0.001);
     mat4.translate(carCamera, [0,2.6,4.5]);   //above and behind car
 
 
