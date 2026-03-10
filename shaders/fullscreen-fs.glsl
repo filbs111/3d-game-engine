@@ -12,11 +12,13 @@ out vec4 fragColor;
 
 void main(void) {
 
+    float vPosMag = dot(vPos,vPos);
+
     //to look up point on texture,
     // maybe faster to do more logic in vertex shader, but expect easier to do all in frag shader.
     // take point on screen, then get direction of point (3d point) using fisheye adjustment - same as cubemap fisheye shader.
 
-    float simpleParabolicZCoord = 1.-uSimpleStrength*dot(vPos,vPos);    //simple barrel distortion
+    float simpleParabolicZCoord = 1.-uSimpleStrength*vPosMag;    //simple barrel distortion
 
     //fragColor = vec4( vec3(simpleParabolicZCoord), 1.0);    //shows radiating from centre of perspective as expected (vignette effect)
 
@@ -38,5 +40,7 @@ void main(void) {
 
     //fragColor = texture(uSampler, projectedPoint); 
 
-    fragColor = texture(uSampler, vec2(0.5)+vec2(0.5)*projectedPoint);    //regular 2d texture has centre at 0.5
+    float vignette = 1. - .15*vPosMag;
+
+    fragColor = vec4(vec3(vignette),1.)* texture(uSampler, vec2(0.5)+vec2(0.5)*projectedPoint);    //regular 2d texture has centre at 0.5
 }

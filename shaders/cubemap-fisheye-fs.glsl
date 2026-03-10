@@ -9,9 +9,14 @@ out vec4 fragColor;
 
 
 void main(void) {
-    float simpleParabolicZCoord = 1.-uSimpleStrength*dot(vPos,vPos);    //simple barrel distortion
+
+    float vPosMag = dot(vPos,vPos);
+
+    float simpleParabolicZCoord = 1.-uSimpleStrength*vPosMag;    //simple barrel distortion
 
     vec3 pos3d = vec3(vPos, simpleParabolicZCoord);
 
-    fragColor = texture(uSamplerCubeFisheye, -pos3d);
+    float vignette = 1. - .15*vPosMag;
+
+    fragColor = vec4(vec3(vignette),1.)*texture(uSamplerCubeFisheye, -pos3d);
 }
