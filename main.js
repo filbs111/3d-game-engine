@@ -35,8 +35,11 @@ var haveUnclickedFire = 0;
 
 //TODO tidy this up, use momentum etc! 
 var carInfo = {
+    pos:[0,0,0],
     speed: 0,
+    vel: [0,0,0],
     acc: 0,
+    accVec:[0,0,0],
     steeringAngle: 0
 }
 
@@ -478,6 +481,12 @@ function iterateMechanics(timeChange){
         mat4.rotateY(carMatrix, carInfo.steeringAngle * timeChange*carInfo.speed);
 
         carInfo.acc = (carInfo.speed - previousSpeed)/timeChange;
+
+        var newPos = carMatrix.slice(12,15);
+        var newVel = carInfo.pos.map((xx,ii) => newPos[ii] - xx).map(xx=>xx/timeChange);
+        carInfo.accVec = carInfo.vel.map((xx,ii) => newVel[ii] - xx).map(xx=>xx/timeChange);
+        carInfo.vel = newVel;
+        carInfo.pos = newPos;
     }
 }
 
@@ -496,7 +505,7 @@ function drawScene(frameTime){
         while (lastFixedTimestepUpdateTime<frameTime){
             lastFixedTimestepUpdateTime+=timeChangeForTimestep;
             iterateMechanics(timeChangeForTimestep);
-            updateSpeedInfo(playerVel, playerAcc, carInfo.speed, carInfo.acc );
+            updateSpeedInfo(playerVel, playerAcc, carInfo.speed, carInfo.accVec );
         }        
     }
     lastFrameTime=frameTime;
@@ -565,17 +574,12 @@ function drawScene(frameTime){
 
 
     var isCarMode = document.getElementById("carmode").checked;
-    var carPos = carMatrix.slice(12);
 
     if (document.getElementById("camfollowsplayer").checked){
         mat4.identity(staticCamera);
         mat4.translate(staticCamera, statCamPos);
-
-        //var camTarget = 
-
-        var difference = isCarMode ? 
-            [carPos[0]-statCamPos[0], carPos[1]-statCamPos[1], carPos[2]-statCamPos[2]]:
-            [playerPos[0]-statCamPos[0], playerPos[1]-statCamPos[1], playerPos[2]-statCamPos[2]];
+        var camTarget = isCarMode ? carInfo.pos : playerPos;
+        var difference = [camTarget[0]-statCamPos[0], camTarget[1]-statCamPos[1], camTarget[2]-statCamPos[2]];
         mat4.rotateY(staticCamera, Math.atan2(-difference[0], -difference[2]));   //pan
         var distance = Math.hypot.apply(null, difference);
         mat4.rotateX(staticCamera, Math.asin(difference[1]/distance)); //tilt (elevation)
