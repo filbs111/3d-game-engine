@@ -1010,7 +1010,9 @@ function drawBiovisionAnimation(anim, currentTime, activeProg){
 
         mat4.set(matWithInfo.mat, mMatrix);
         mat4.scale(mMatrix,[1,1,1].map(x=>x*0.5));
-        drawObjectFromBuffers(cubeBuffers, activeProg);
+
+       	prepBuffersForDrawing(cubeBuffers, activeProg);
+        drawObjectFromPreppedBuffers(cubeBuffers, activeProg);
 
         //draw a dotted line taking rotation of end bone and translation along path from "from" mat to "mat" mat
         var startPosition = matWithInfo.from.slice(12,15);
@@ -1027,10 +1029,8 @@ function drawBiovisionAnimation(anim, currentTime, activeProg){
             mMatrix[14] +=difference[2]*ii/numsteps;
 
             mat4.scale(mMatrix,[1,1,1].map(x=>x*0.5));
-            drawObjectFromBuffers(cubeBuffers, activeProg);
+            drawObjectFromPreppedBuffers(cubeBuffers, activeProg);
         }
-
-
     });
 
     //reset camera scale
