@@ -942,7 +942,9 @@ function updateSpeedInfo(vel, acc, carMovePerMs, carAccMsPerSec){
     var accMetresPerSecondSquared = accMag*1_000_000;
     var accGees = accMetresPerSecondSquared/9.81;
 
-    var carAccMetresPerSecondSquared = carAccMsPerSec*1_000_000;    //NOTE car acceleration here is LONGDITUDINAL ONLY
+    //var carAccMetresPerSecondSquared = carAccMsPerSec*1_000_000;    //LONGITUDINAL ONLY
+    var carAccMag = Math.hypot.apply(null, carAccMsPerSec);
+    var carAccMetresPerSecondSquared = carAccMag*1_000_000;
     var carAccGees = carAccMetresPerSecondSquared/9.81;
 
     document.getElementById("speedinfo").innerHTML = 
