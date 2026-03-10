@@ -36,6 +36,7 @@ var haveUnclickedFire = 0;
 //TODO tidy this up, use momentum etc! 
 var carInfo = {
     speed: 0,
+    acc: 0,
     steeringAngle: 0
 }
 
@@ -456,6 +457,8 @@ function iterateMechanics(timeChange){
 
 
     //car motion. TODO turn off player motion when controlling car?
+    var previousSpeed = carInfo.speed;
+
     carInfo.speed *= 0.9985;
     carInfo.steeringAngle *= 0.98;
     if (isCarMode){
@@ -464,14 +467,17 @@ function iterateMechanics(timeChange){
         // steering angle ~ car wheelbase / radius
         // so steering andle at which grip fails goes as 1/v^2.
         // in order to limit at low speed, just do 1/(vbodge^2 + v^2)
-        var steeringStrength = 1/(1+ 50*carInfo.speed*carInfo.speed);
+        var steeringStrength = 1/(1+ 5000*carInfo.speed*carInfo.speed);
         steeringStrength = Math.min(0.9, steeringStrength); //max out steering angle at low speed.
         var steeringAngleTarget = -0.003*leftRight*steeringStrength;
 
         carInfo.steeringAngle += steeringAngleTarget;
-        carInfo.speed += 0.0015*(-forwardBack);
-        mat4.translate(carMatrix, [0,0,carInfo.speed]);
-        mat4.rotateY(carMatrix, carInfo.steeringAngle * carInfo.speed);
+
+        carInfo.speed += timeChange*0.000015*(-forwardBack);
+        mat4.translate(carMatrix, [0,0,carInfo.speed*timeChange]);
+        mat4.rotateY(carMatrix, carInfo.steeringAngle * timeChange*carInfo.speed);
+
+        carInfo.acc = (carInfo.speed - previousSpeed)/timeChange;
     }
 }
 
@@ -490,7 +496,7 @@ function drawScene(frameTime){
         while (lastFixedTimestepUpdateTime<frameTime){
             lastFixedTimestepUpdateTime+=timeChangeForTimestep;
             iterateMechanics(timeChangeForTimestep);
-            updateSpeedInfo(playerVel, playerAcc, carInfo.speed/timeChangeForTimestep );
+            updateSpeedInfo(playerVel, playerAcc, carInfo.speed, carInfo.acc );
         }        
     }
     lastFrameTime=frameTime;
@@ -919,7 +925,7 @@ function setupDrawMatrixForObjectAtPosition(objPos){
     mat4.translate(mMatrix, objPos);
 }
 
-function updateSpeedInfo(vel, acc, carMovePerMs){
+function updateSpeedInfo(vel, acc, carMovePerMs, carAccMsPerSec){
     //world scale is metres
     //vel is in metres per millisecond
 
@@ -932,6 +938,9 @@ function updateSpeedInfo(vel, acc, carMovePerMs){
     var accMetresPerSecondSquared = accMag*1_000_000;
     var accGees = accMetresPerSecondSquared/9.81;
 
+    var carAccMetresPerSecondSquared = carAccMsPerSec*1_000_000;    //NOTE car acceleration here is LONGDITUDINAL ONLY
+    var carAccGees = carAccMetresPerSecondSquared/9.81;
+
     document.getElementById("speedinfo").innerHTML = 
         "speed: " + 
         personSpeeds.metresPerSecond.toFixed(2) + "m/s " + 
@@ -939,9 +948,10 @@ function updateSpeedInfo(vel, acc, carMovePerMs){
         personSpeeds.mph.toFixed(2)+"mph ," +
         "acceleration: " +
         accMetresPerSecondSquared.toFixed(2) + "m/s^2 " + 
-        accGees.toFixed(2) + "g" + 
+        accGees.toFixed(2) + "g. " + 
         "car speed: " +
-        carSpeeds.mph + " mph";
+        carSpeeds.mph.toFixed(0) + " mph, " + 
+        "car acceleration: " + carAccGees.toFixed(2)  + "g.";
 }
 
 function movePerMsToVariousSpeedUnits(movePerMs){
