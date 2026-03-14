@@ -73,9 +73,23 @@ function init(){
 		}else{
 			switch (evt.keyCode){	
 				case 70:	//F
-					goFullscreen(canvas);
+					goFullscreen(canvascontainer);
 					break;
+                case 69:
+                    var carModeToggle = document.getElementById("carmode");
+
+                    if (carModeToggle.checked){
+                        //get out of car
+                        playerPos[0] = carInfo.pos[0];  //TODO appear at drivers side door
+                        playerPos[2] = carInfo.pos[2];
+                        carModeToggle.checked = false;
+                    }else{
+                         //TODO check proximity
+                         carModeToggle.checked = !carModeToggle.checked;
+                    }
+                    break;
 				default:
+                    //console.log(evt.keyCode);
 					willPreventDefault=false;
 					break;
 			}
@@ -83,10 +97,16 @@ function init(){
 		if (willPreventDefault){evt.preventDefault()};
 	});
 
-	canvas = document.getElementById("mycanvas");
-	
+	canvas = document.getElementById("bottom-canvas");
+	canvascontainer = document.getElementById("canvas-container");
+
+    overlaycanvas = document.getElementById("top-canvas");
+    overlaycanvas.width = 960;
+    overlaycanvas.height = 540;
+    overlaycontext = overlaycanvas.getContext("2d");
+
 	document.addEventListener('pointerlockchange', function lockChangeCb() {
-	  if (document.pointerLockElement === canvas ) {
+	  if (document.pointerLockElement === canvascontainer ) {
 			console.log('The pointer lock status is now locked');
 			pointerLocked=true;
 		} else {
@@ -95,20 +115,21 @@ function init(){
 	  }
 	}, false);
 
-    canvas.addEventListener("mousemove", function(evt){
+    canvascontainer.addEventListener("mousemove", function(evt){
 		if (pointerLocked){
 			mouseInfo.pendingMovement[0]+=-0.001* evt.movementX;	//TODO screen resolution dependent sensitivity.
 			mouseInfo.pendingMovement[1]+=-0.001* evt.movementY;
 		}
 	});
-    canvas.addEventListener("mousedown", function(evt){
+    canvascontainer.addEventListener("mousedown", function(evt){
 		mouseInfo.buttons = evt.buttons;
 		evt.preventDefault();
+        //return false;
 	});
-	canvas.addEventListener("mouseup", function(evt){
+	canvascontainer.addEventListener("mouseup", function(evt){
 		mouseInfo.buttons = evt.buttons;
 	});
-	canvas.addEventListener("mouseout", function(evt){
+	canvascontainer.addEventListener("mouseout", function(evt){
 		mouseInfo.buttons = 0;
 	});
 
@@ -464,30 +485,36 @@ function iterateMechanics(timeChange){
 
     carInfo.speed *= 0.9985;
     carInfo.steeringAngle *= 0.98;
+
+
+    var carForwardInput = 0;
+    var steeringAngleTarget=0;
     if (isCarMode){
-        
         //a = v^2/r => r = a v^2
         // steering angle ~ car wheelbase / radius
         // so steering andle at which grip fails goes as 1/v^2.
         // in order to limit at low speed, just do 1/(vbodge^2 + v^2)
-        var steeringStrength = 1/(1+ 5000*carInfo.speed*carInfo.speed);
+        var steeringStrength = 1/(1+ 10000*carInfo.speed*carInfo.speed);
         steeringStrength = Math.min(0.9, steeringStrength); //max out steering angle at low speed.
-        var steeringAngleTarget = -0.003*leftRight*steeringStrength;
+        steeringAngleTarget = -0.003*leftRight*steeringStrength;
 
-        carInfo.steeringAngle += steeringAngleTarget;
-
-        carInfo.speed += timeChange*0.000015*(-forwardBack);
-        mat4.translate(carMatrix, [0,0,carInfo.speed*timeChange]);
-        mat4.rotateY(carMatrix, carInfo.steeringAngle * timeChange*carInfo.speed);
-
-        carInfo.acc = (carInfo.speed - previousSpeed)/timeChange;
-
-        var newPos = carMatrix.slice(12,15);
-        var newVel = carInfo.pos.map((xx,ii) => newPos[ii] - xx).map(xx=>xx/timeChange);
-        carInfo.accVec = carInfo.vel.map((xx,ii) => newVel[ii] - xx).map(xx=>xx/timeChange);
-        carInfo.vel = newVel;
-        carInfo.pos = newPos;
+        carForwardInput = forwardBack;
     }
+        
+    carInfo.steeringAngle += steeringAngleTarget;
+
+    carInfo.speed += timeChange*0.000015*(-carForwardInput);
+    mat4.translate(carMatrix, [0,0,carInfo.speed*timeChange]);
+    mat4.rotateY(carMatrix, carInfo.steeringAngle * timeChange*carInfo.speed);
+
+    carInfo.acc = (carInfo.speed - previousSpeed)/timeChange;
+
+    var newPos = carMatrix.slice(12,15);
+    var newVel = carInfo.pos.map((xx,ii) => newPos[ii] - xx).map(xx=>xx/timeChange);
+    carInfo.accVec = carInfo.vel.map((xx,ii) => newVel[ii] - xx).map(xx=>xx/timeChange);
+    carInfo.vel = newVel;
+    carInfo.pos = newPos;
+    
 }
 
 
@@ -701,6 +728,12 @@ function drawScene(frameTime){
         drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);
         gl.clear(gl.DEPTH_BUFFER_BIT);
         drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);    
+    }
+
+    //update overlay
+    overlaydisplay.clear();
+    if (isCarMode){
+        overlaydisplay.drawGeeMeter();
     }
 }
 
@@ -946,6 +979,10 @@ function updateSpeedInfo(vel, acc, carMovePerMs, carAccMsPerSec){
     var carAccMag = Math.hypot.apply(null, carAccMsPerSec);
     var carAccMetresPerSecondSquared = carAccMag*1_000_000;
     var carAccGees = carAccMetresPerSecondSquared/9.81;
+
+    var carAccGeesVec = carAccMsPerSec.map(xx => xx*1_000_000/9.81);
+
+    overlaydisplay.setGeeMeter(carAccGeesVec);
 
     document.getElementById("speedinfo").innerHTML = 
         "speed: " + 

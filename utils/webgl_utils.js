@@ -2,11 +2,12 @@
 var gl;	//context
 var screenAspect;
 var canvas;
+var canvascontainer;
 
 //mostly from view-source:http://learningwebgl.com/lessons/lesson01/index.html
 function initGL(){
 	try {
-		gl = canvas.getContext("webgl2",{antialias:true});
+		gl = canvas.getContext("webgl2",{antialias:false});
 		resizecanvas();
 	} catch (e) {
 	}
@@ -26,6 +27,10 @@ function resizecanvas(){
 	}
 	screenAspect = gl.viewportWidth/gl.viewportHeight;
 	
-	canvas.style.width=window.innerWidth+"px";
-	canvas.style.height=window.innerHeight+"px";
+	// Set canvas to match parent size
+	canvas.style.width = '100%';
+	canvas.style.height = '100%';
+
+	canvascontainer.style.width=window.innerWidth+"px";
+	canvascontainer.style.height=window.innerHeight+"px";
 }
