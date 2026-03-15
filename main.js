@@ -733,7 +733,7 @@ function drawScene(frameTime){
     //update overlay
     overlaydisplay.clear();
     if (isCarMode){
-        overlaydisplay.drawGeeMeter();
+        overlaydisplay.drawDisplay();
     }
 }
 
@@ -986,6 +986,7 @@ function updateSpeedInfo(vel, acc, carMovePerMs, carAccMsPerSec){
     var carAccGeesVec = carAccMsPerSec.map(xx => xx*1_000_000/9.81);
 
     overlaydisplay.setGeeMeter(carAccGeesVec);
+    overlaydisplay.setSpeedMph(carSpeeds.mph);
 
     document.getElementById("speedinfo").innerHTML = 
         "speed: " + 

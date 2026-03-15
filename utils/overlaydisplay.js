@@ -9,13 +9,20 @@ var overlaydisplay = (function(){
     var geeMeterWholeRadius = geeMeterRadiusOneGee*geeMeterMaxGees;
 
     var geeMeterReading = [0,0];
+    var speedMph = 0;
 
+
+    function setSpeedMph(speed){
+        speedMph = speed;
+    }
 
     function clear(){
         overlaycontext.clearRect(0, 0, overlaycanvas.width, overlaycanvas.height);
     }
 
-    function drawGeeMeter(){
+    function drawDisplay(){
+        
+        //gee meter
         overlaycontext.beginPath()
         overlaycontext.fillStyle = "rgba(0,0,0,0.5)";
         overlaycontext.beginPath();
@@ -27,6 +34,11 @@ var overlaydisplay = (function(){
 
         overlaycontext.fillStyle = "white";
         overlaycontext.fillRect(geeMeterCentre[0] + geeMeterRadiusOneGee*geeMeterReading[0] - 5, geeMeterCentre[1] + geeMeterRadiusOneGee*geeMeterReading[1] - 5, 10,10);
+
+        //speedo
+        overlaycontext.font = "20px Arial";
+        overlaycontext.fillText(speedMph.toFixed(1) + "mph",10,500);
+
     }
 
     function setGeeMeter(accVecGees){
@@ -37,7 +49,8 @@ var overlaydisplay = (function(){
 
     return {
         clear,
-        drawGeeMeter,
+        setSpeedMph,
+        drawDisplay,
         setGeeMeter
     }
 })();
