@@ -742,6 +742,8 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         //NOTE passing in eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation is awkward. 
         //TODO create scene description and use for render?
 
+    var isCarMode = document.getElementById("carmode").checked;
+
     mat4.set(unmirroredCameraMat, cameraMat);
 
     if (mirrorInGroundPlane){
@@ -814,63 +816,63 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
 
+    if (!isCarMode){
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.1,0.5,0.1]);
 
-    gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.1,0.5,0.1]);
+        //setup gun mat (also used later for x-hair
+        var gunMat = mat4.create(torsoMatrix);
+        mat4.rotateX(gunMat, -playerElevation*torsoElevationMultiplier);
+        mat4.translate(gunMat, playerNeckPos);
+        mat4.translate(gunMat, [0,0,-0.2]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
+        mat4.rotateX(gunMat, -playerElevation*(armElevationMultiplier-torsoElevationMultiplier) + gunElevTemp);
+        mat4.rotateX(gunMat, armRotationAdjustment);
 
-    //setup gun mat (also used later for x-hair
-    var gunMat = mat4.create(torsoMatrix);
-    mat4.rotateX(gunMat, -playerElevation*torsoElevationMultiplier);
-    mat4.translate(gunMat, playerNeckPos);
-    mat4.translate(gunMat, [0,0,-0.2]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
-    mat4.rotateX(gunMat, -playerElevation*(armElevationMultiplier-torsoElevationMultiplier) + gunElevTemp);
-    mat4.rotateX(gunMat, armRotationAdjustment);
+        mat4.rotateY(gunMat, gunTurn);
 
-    mat4.rotateY(gunMat, gunTurn);
+        mat4.translate(gunMat, [0,0.05,-1]);    //1m - end of arm, up by 5cm
 
-    mat4.translate(gunMat, [0,0.05,-1]);    //1m - end of arm, up by 5cm
+        if (document.getElementById("drawbody").checked){
 
+            //draw eye
+            drawCubeWithScale(activeProg, eyeMat, [0.05,0.05,0.05]);    //10cm cube
 
-    if (document.getElementById("drawbody").checked){
+            //draw neck
+            drawCubeWithScale(activeProg, neckMat, [0.05,0.05,0.05]); 
 
-        //draw eye
-        drawCubeWithScale(activeProg, eyeMat, [0.05,0.05,0.05]);    //10cm cube
+            //draw uppoer torso
+            drawCubeWithScale(activeProg, upperTorsoMat, [0.25,0.2,0.1]); 
 
-        //draw neck
-        drawCubeWithScale(activeProg, neckMat, [0.05,0.05,0.05]); 
-
-        //draw uppoer torso
-        drawCubeWithScale(activeProg, upperTorsoMat, [0.25,0.2,0.1]); 
-
-        // draw torso
-        drawCubeWithScale(activeProg, torsoMatrix, [0.2,0.2,0.1]);  //40 cm wide, 40cm tall, 20cm deep. top is like bottom of rib cage
+            // draw torso
+            drawCubeWithScale(activeProg, torsoMatrix, [0.2,0.2,0.1]);  //40 cm wide, 40cm tall, 20cm deep. top is like bottom of rib cage
 
 
-        //draw legs. 
-        //TODO make movement correspond to movement speed and direction. 
-        //temporary - just constant animation.
-        var legSwing = 0.5*Math.sin(boxRotation*4);
-        var legMat = mat4.create(torsoMatrix);
-        mat4.rotateX(legMat, legSwing);
-        mat4.translate(legMat, [0.1,-0.5,0]);
-        drawCubeWithScale(activeProg, legMat, [0.1,0.5,0.1]);   //right leg
+            //draw legs. 
+            //TODO make movement correspond to movement speed and direction. 
+            //temporary - just constant animation.
+            var legSwing = 0.5*Math.sin(boxRotation*4);
+            var legMat = mat4.create(torsoMatrix);
+            mat4.rotateX(legMat, legSwing);
+            mat4.translate(legMat, [0.1,-0.5,0]);
+            drawCubeWithScale(activeProg, legMat, [0.1,0.5,0.1]);   //right leg
 
-        mat4.set(torsoMatrix, legMat);
-        mat4.rotateX(legMat, -legSwing);
-        mat4.translate(legMat, [-0.1,-0.5,0]);
-        drawCubeWithScale(activeProg, legMat, [0.1,0.5,0.1]);   //left leg    
-    
-        var doubleGuns = document.getElementById("doubleguns").checked;
-        if (doubleGuns){
-            mat4.translate(gunMat, [-0.2,0,0]);
-            drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
-            mat4.translate(gunMat, [0.4,0,0]);
-            drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
-        }else{
-            drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
+            mat4.set(torsoMatrix, legMat);
+            mat4.rotateX(legMat, -legSwing);
+            mat4.translate(legMat, [-0.1,-0.5,0]);
+            drawCubeWithScale(activeProg, legMat, [0.1,0.5,0.1]);   //left leg    
+        
+            var doubleGuns = document.getElementById("doubleguns").checked;
+            if (doubleGuns){
+                mat4.translate(gunMat, [-0.2,0,0]);
+                drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
+                mat4.translate(gunMat, [0.4,0,0]);
+                drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
+            }else{
+                drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
+            }
+        
+            drawArm2(activeProg, torsoMatrix, 1, doubleGuns);   //right arm
+            drawArm2(activeProg, torsoMatrix, -1, doubleGuns);  //left arm
         }
-    
-        drawArm2(activeProg, torsoMatrix, 1, doubleGuns);   //right arm
-        drawArm2(activeProg, torsoMatrix, -1, doubleGuns);  //left arm
     }
 
     function drawArm2(activeProg, torsoMatrix, handedness, doubleGuns){
@@ -936,24 +938,25 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     }
 
 
-
-    
     //draw x-hair.
-    activeProg = shaderPrograms.flat;
-    gl.useProgram(activeProg);
-    enableDisableAttributes(activeProg);
-    gl.disable(gl.DEPTH_TEST);
-    gl.depthMask(false);
-    gl.uniform3fv(activeProg.uniforms.uFlatColor, [2,0.1,0.1]);
-    //TODO disable lighting
-    if (!mirrorInGroundPlane){ //drawing final scene
-        mat4.set(gunMat, mMatrix);
-        mat4.translate(mMatrix, [0,0,-100]);
-        mat4.scale(mMatrix,[1,1,1]); 
-        drawObjectFromBuffers(cubeBuffers, activeProg);
+    if (!isCarMode){
+        activeProg = shaderPrograms.flat;
+        gl.useProgram(activeProg);
+        enableDisableAttributes(activeProg);
+        gl.disable(gl.DEPTH_TEST);
+        gl.depthMask(false);
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [2,0.1,0.1]);
+
+        //TODO disable lighting
+        if (!mirrorInGroundPlane){ //drawing final scene
+            mat4.set(gunMat, mMatrix);
+            mat4.translate(mMatrix, [0,0,-100]);
+            mat4.scale(mMatrix,[1,1,1]); 
+            drawObjectFromBuffers(cubeBuffers, activeProg);
+        }
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthMask(true);
     }
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthMask(true);
 }
 
 
