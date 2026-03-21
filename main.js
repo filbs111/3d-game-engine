@@ -480,10 +480,24 @@ function iterateMechanics(timeChange){
     cameraZoomAdjustInputSmoothed = cameraZoomAdjustInputSmoothed*cameraAccMultiply + (1-cameraAccMultiply)*cameraZoomAdjustInput;
 
 
+
     //car motion. TODO turn off player motion when controlling car?
     var previousSpeed = carInfo.speed;
 
-    carInfo.speed *= 0.9985;
+
+
+
+     //apply drag. TODO measure acc not including this because want to calculate acceleration due to tyre forces
+
+    //when have a 2vec velocity, will want to do pythag, but for now speed is just scalar.
+    //force magnitude is proportional to speed squared and in opposite direction to velocity, so calculate by -velocity*|velocity|
+    //var speedSquared = carInfo.speed * carInfo.speed;
+    //var speedScalar = Math.sqrt(speedSquared);
+
+    var speedTimesDrag = Math.abs(carInfo.speed)*carParams.drag_const;  //dividing by 1000 because speed is movement per ms
+    carInfo.speed -= carInfo.speed*speedTimesDrag*timeChange;
+
+
     carInfo.steeringAngle *= 0.98;
 
 
@@ -503,7 +517,20 @@ function iterateMechanics(timeChange){
         
     carInfo.steeringAngle += steeringAngleTarget;
 
-    carInfo.speed += timeChange*0.000015*(-carForwardInput);
+    //carInfo.speed += timeChange*0.00001*(-carForwardInput);
+
+    var smallHackNum = 0.00000000001;    //TODO replace this with number that gets 1g limit? 
+    var speedMetresPerSec = 1000*carInfo.speed;
+    var forwardsAccelerationMetresPerSecPerSec = -carForwardInput* carParams.engine_acc_const / Math.sqrt(smallHackNum+speedMetresPerSec*speedMetresPerSec);  // NOTE assumes +ve speed
+    var forwardsAcceleration = forwardsAccelerationMetresPerSecPerSec/1000_000;
+        //TODO apply engine power limit only to acceleration in direction of travel (braking is not limited in same way)
+
+    //limit to within 1 g
+    var oneGeeCap = 9.81/1_000_000;
+    forwardsAcceleration = Math.min(Math.max(forwardsAcceleration,-oneGeeCap),oneGeeCap);
+
+    carInfo.speed += timeChange*forwardsAcceleration;
+
     mat4.translate(carMatrix, [0,0,carInfo.speed*timeChange]);
     mat4.rotateY(carMatrix, carInfo.steeringAngle * timeChange*carInfo.speed);
 
