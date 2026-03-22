@@ -35,6 +35,14 @@ function makeTexture(src, imgformat=gl.RGBA, imgtype=gl.UNSIGNED_BYTE, yFlip = t
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, 
 			withMips? gl.LINEAR_MIPMAP_LINEAR: gl.LINEAR);
 
+        //anisotropic filtering. important for track texture. TODO what is best place for this
+        var ansisoExt = gl.getExtension("EXT_texture_filter_anisotropic");
+        if (ansisoExt){
+            var desiredAniso = 4;
+            var anisoLevel = Math.min(desiredAniso, gl.getParameter(ansisoExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT)); //typically 16 is available
+            gl.texParameterf(gl.TEXTURE_2D, ansisoExt.TEXTURE_MAX_ANISOTROPY_EXT, anisoLevel);
+        }
+
 		//gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 		gl.generateMipmap(gl.TEXTURE_2D);
 		bind2dTextureIfRequired(null);	//AFAIK this is just good practice to unwanted side effect bugs
