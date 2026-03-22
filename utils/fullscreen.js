@@ -1,20 +1,20 @@
 function goFullscreen(elem){
+
+	var that = elem;
+	var toDoAfter = () => {
+		resizecanvas();
+		that.requestPointerLock();
+	};
+
 	if (window.electronAPI){
-		window.electronAPI.enterFullscreen();
+		window.electronAPI.enterFullscreen().then(toDoAfter);
 	} else if (elem.requestFullscreen) {
-		elem.requestFullscreen();
+		elem.requestFullscreen().then(toDoAfter);
 	} else if (elem.webkitRequestFullscreen) {
-		elem.webkitRequestFullscreen();
+		elem.webkitRequestFullscreen.then(toDoAfter);
 	} else if (elem.mozRequestFullScreen) {
-		elem.mozRequestFullScreen();
+		elem.mozRequestFullScreen.then(toDoAfter);
 	} else if (elem.msRequestFullscreen) {
-		elem.msRequestFullscreen();
+		elem.msRequestFullscreen.then(toDoAfter);
 	}
-	
-//	elem.requestPointerLock();	//going fullscreen appears to disable pointer lock, and adding this here doesn't help the 1st time through. race condition?
-								//hitting F again (while fullscreened) will cause pointer lock here to do something.
-	
-	setTimeout(function(){elem.requestPointerLock();},1000);	//works in testing on Firefox, my I5 machine. seems if delay too short, wont work.
-																//TODO try continually attempt pointer lock in fullscreen mode if
-																// document.pointerLockElement is null. maybe more reliable/faster
 }
