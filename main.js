@@ -181,7 +181,8 @@ function loadAnimationStuff(){
 var bricktex;
 var cubemapTexture;
 function initTextures(){
-    bricktex = makeTexture("img/brick-tex.jpg",gl.RGB,gl.UNSIGNED_SHORT_5_6_5);
+    //bricktex = makeTexture("img/brick-tex.jpg",gl.RGB,gl.UNSIGNED_SHORT_5_6_5);
+    bricktex = makeTexture("img/Silverstone_Circuit_2020_2.png",gl.RGB,gl.UNSIGNED_SHORT_5_6_5);  //1665x1200px
     cubemapTexture = loadCubeMap("img/skyboxes/sp2/sp2_");
 }
 
@@ -833,7 +834,8 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     // TODO draw ground partially transparent.
     if (!mirrorInGroundPlane){
         setupDrawMatrixForObjectAtPosition(groundPos);
-        mat4.scale(mMatrix,[800,9.99,800]);   //9.99 so the blocker mirror plane is drawn in front! 
+        var mapScaleFactor = 0.5* 100/91; //100m scale on image is 91px, and cube is 2 units wide
+        mat4.scale(mMatrix,[mapScaleFactor*1655,9.99,mapScaleFactor*1200]);   //9.99 so the blocker mirror plane is drawn in front! 
         drawObjectFromBuffers(cubeBuffers, activeProg);
     }
 
