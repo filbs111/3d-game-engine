@@ -332,6 +332,7 @@ var camParams = {
 var lastFrameTime = null;
 var lastFixedTimestepUpdateTime = 0;
 var playerPos=[0,0,5];
+var playerPosOld=[0,0,5];
 var playerEyePosFromNeck=[0,0.2,-0.2]; //20cm above and ahead of neck, so 1.7m above groun d, 10cm forwards
 var playerNeckPos=[0,0.5,0.1];  //relative to player centre which is 1m above ground.  1.5m above ground, 10cm back
 var playerVel=[0,0,0];
@@ -339,6 +340,8 @@ var playerAcc=[0,0,0];
 var preDragPlayerAcc=[0,0,0];
 var playerRotation=0;
 var playerElevation=0;
+var playerRotationOld=0;
+var playerElevationOld=0;
 var boxPos=[0,0.1,0];   //move up a bit to sit above mirror plane
 var groundPos=[0,-11,0];
 
@@ -351,7 +354,10 @@ var statCamPos = staticCamera.slice(12,15);
 
 var carMatrix = mat4.identity();
 mat4.translate(carMatrix,[8,-0.6,6]); //right, down a bit, back
+var carMatrixOld = mat4.create(carMatrix);
+
 var carCamera = mat4.create(carMatrix);
+var carCameraOld = mat4.create(carCamera);
 
 var lucyMatrix = mat4.identity();
 mat4.translate(lucyMatrix,[-8,3,-6]); //left, up a bit, forwards
@@ -372,6 +378,10 @@ var cameraZoom = -1;
 
 function iterateMechanics(timeChange){
     //TODO take inputs more frequently?
+
+    playerPosOld = playerPos.map(x=>x);
+    playerRotationOld = playerRotation;
+    playerElevationOld = playerElevation;
 
     var isCarMode = document.getElementById("carmode").checked;
         //TODO turn off player motion when controlling car? 
@@ -531,6 +541,9 @@ function iterateMechanics(timeChange){
 
     carInfo.speed += timeChange*forwardsAcceleration;
 
+
+    mat4.set(carMatrix, carMatrixOld);
+
     mat4.translate(carMatrix, [0,0,carInfo.speed*timeChange]);
     mat4.rotateY(carMatrix, carInfo.steeringAngle * timeChange*carInfo.speed);
 
@@ -541,7 +554,19 @@ function iterateMechanics(timeChange){
     carInfo.accVec = carInfo.vel.map((xx,ii) => newVel[ii] - xx).map(xx=>xx/timeChange);
     carInfo.vel = newVel;
     carInfo.pos = newPos;
+
+
+    //do car camera stuff every physics frame. will interpret when render.
+    mat4.set(carCamera, carCameraOld);
+    mat4.set(carMatrix, carCamera);
+    //mat4.translate(carCamera, [0,1,-2]);  //seems ~ cockpit view
+    mat4.translate(carCamera, [0,0,-1.7]);   //centre of car appears to be ahead of car origin
+    //mat4.rotateY(carCamera, 0*Math.PI/2); //quarter turns
+    var steeringAngleCameraImpact = 2;  //+ve means camera lags. -ve means camera leads.
+    mat4.rotateY(carCamera, steeringAngleCameraImpact*carInfo.steeringAngle); //NOTE steering angle unknown units here.
     
+    //mat4.rotateY(carCamera, lastFixedTimestepUpdateTime*0.001);
+    mat4.translate(carCamera, [0,2.6,4.5]);   //above and behind car
 }
 
 
@@ -565,9 +590,10 @@ function drawScene(frameTime){
     lastFrameTime=frameTime;
 
 
-    
-
-
+    var interpolationFactor = (lastFixedTimestepUpdateTime-frameTime)/timeChangeForTimestep;    // from 0 to 1. shift back by 1 physics so 
+                                                                                    //0 means time to display physics time minus 1 timestep - should display objects with "old" poses before latest physics iteration
+                                                                                    // 1 means time to display is latest update - should display objects with "new" pose from latest physics iteration.
+                                                                                    // intermediate value mean interpolate between old and new poses (linear blending might be fine unless angular step large.)
 
     //console.log("drawing scene");
     
@@ -584,6 +610,16 @@ function drawScene(frameTime){
     gl.disable(gl.BLEND);
 	gl.enable(gl.DEPTH_TEST);
 
+
+    var playerPosInterp = playerPos;
+    var playerRotationInterp = playerRotation;
+    var playerElevationInterp = playerElevation;
+
+    if (document.getElementById("interpolate-camera").checked){
+        playerPosInterp = playerPos.map((xx,ii) => xx* (1-interpolationFactor) + playerPosOld[ii] * interpolationFactor);
+        playerRotationInterp = playerRotation * (1-interpolationFactor) + playerRotationOld * interpolationFactor;
+        playerElevationInterp = playerElevation * (1-interpolationFactor) + playerElevationOld * interpolationFactor;
+    }
     
     //draw a block for player's core.
     
@@ -592,7 +628,7 @@ function drawScene(frameTime){
     // and when rendering, invert camera matrix.
    
     var torsoMatrix = mat4.identity();
-    mat4.translate(torsoMatrix, playerPos);
+    mat4.translate(torsoMatrix, playerPosInterp);
     //tilt by player acceleration
     var accMag = Math.hypot.apply(null, playerAcc);
     var accTurnAngle = Math.atan2(playerAcc[2],playerAcc[0]);
@@ -602,20 +638,20 @@ function drawScene(frameTime){
     mat4.rotateY(torsoMatrix, accTurnAngle);
         //TODO smooth jerk (derivative of acceleration)
 
-    mat4.rotateY(torsoMatrix, -playerRotation);
+    mat4.rotateY(torsoMatrix, -playerRotationInterp);
 
     //defer drawing until calculate camera
 
 
     var upperTorsoMat = mat4.create(torsoMatrix);    
-    mat4.rotateX(upperTorsoMat, -playerElevation*torsoElevationMultiplier);
+    mat4.rotateX(upperTorsoMat, -playerElevationInterp*torsoElevationMultiplier);
     var eyeMat = mat4.create(upperTorsoMat);
     mat4.translate(upperTorsoMat, [0,0.3,0]);
     mat4.translate(eyeMat, playerNeckPos);
-    mat4.rotateX(eyeMat, -playerElevation*(1-torsoElevationMultiplier));
+    mat4.rotateX(eyeMat, -playerElevationInterp*(1-torsoElevationMultiplier));
 
     //offset forwards acceleration tilt?    //TODO adjust this properly - suspect equation not quite right.
-    var forwardsAcc = Math.cos(playerRotation)*playerAcc[2] - Math.sin(playerRotation)*playerAcc[0];
+    var forwardsAcc = Math.cos(playerRotationInterp)*playerAcc[2] - Math.sin(playerRotationInterp)*playerAcc[0];
     var forwardsTilt = Math.atan(forwardsAcc*1_000_000/9.88);
     mat4.rotateX(eyeMat, -forwardsTilt*0.75);
 
@@ -632,30 +668,24 @@ function drawScene(frameTime){
     if (document.getElementById("camfollowsplayer").checked){
         mat4.identity(staticCamera);
         mat4.translate(staticCamera, statCamPos);
-        var camTarget = isCarMode ? carInfo.pos : playerPos;
+        var camTarget = isCarMode ? carInfo.pos : playerPosInterp;
         var difference = [camTarget[0]-statCamPos[0], camTarget[1]-statCamPos[1], camTarget[2]-statCamPos[2]];
         mat4.rotateY(staticCamera, Math.atan2(-difference[0], -difference[2]));   //pan
         var distance = Math.hypot.apply(null, difference);
         mat4.rotateX(staticCamera, Math.asin(difference[1]/distance)); //tilt (elevation)
     }
 
-    mat4.set(carMatrix, carCamera);
-    //mat4.translate(carCamera, [0,1,-2]);  //seems ~ cockpit view
-    mat4.translate(carCamera, [0,0,-1.7]);   //centre of car appears to be ahead of car origin
-    //mat4.rotateY(carCamera, 0*Math.PI/2); //quarter turns
-    var steeringAngleCameraImpact = 2;  //+ve means camera lags. -ve means camera leads.
-    mat4.rotateY(carCamera, steeringAngleCameraImpact*carInfo.steeringAngle); //NOTE steering angle unknown units here.
-    
-
-    //mat4.rotateY(carCamera, lastFixedTimestepUpdateTime*0.001);
-    mat4.translate(carCamera, [0,2.6,4.5]);   //above and behind car
-
 
     var unmirroredCameraMat = mat4.create();
     if (document.getElementById("externalcam").checked){
         mat4.set(staticCamera, unmirroredCameraMat);
     }else if(isCarMode){
-        mat4.set(carCamera, unmirroredCameraMat);
+        if (document.getElementById("interpolate-camera").checked){
+            var carCameraInterpolated = simpleMatrixInterpolation(carCamera, carCameraOld, interpolationFactor);
+            mat4.set(carCameraInterpolated, unmirroredCameraMat);
+        }else{
+            mat4.set(carCamera, unmirroredCameraMat);
+        }
     }else{
         mat4.set(eyeMat, unmirroredCameraMat);
     }
@@ -692,9 +722,9 @@ function drawScene(frameTime){
 
            	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);
+        drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);
         gl.clear(gl.DEPTH_BUFFER_BIT);
-        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);    
+        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);    
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -739,7 +769,7 @@ function drawScene(frameTime){
         // NOTE can do this more efficiently, (what is best depends on FOV), by drawing to 1,2,or 4 panels (last is "quad view" used in 3-sphere project), but this is generally
         // more complex.
 
-        updateCubemap(unmirroredCameraMat, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);
+        updateCubemap(unmirroredCameraMat, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);
 
         renderViewUsingCmap();
 
@@ -752,9 +782,9 @@ function drawScene(frameTime){
         pMatrix[9]=-0.3333;       //shift centre of perspective one third up from centre to top of screen (so is 1/3 down screen top to bottom)
 
 
-        drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);
+        drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);
         gl.clear(gl.DEPTH_BUFFER_BIT);
-        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment);    
+        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);    
     }
 
     //update overlay
@@ -765,7 +795,7 @@ function drawScene(frameTime){
 }
 
 
-function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment){
+function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor){
         //NOTE passing in eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation is awkward. 
         //TODO create scene description and use for render?
 
@@ -936,13 +966,19 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     activeProg = shaderPrograms.envmap;
     gl.useProgram(activeProg);
     enableDisableAttributes(activeProg);
-    gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.002,0.006,0.02]);
-    mat4.set(carMatrix, mMatrix);
+    gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.001,0.005,0.001]);
+
+    if (document.getElementById("interpolate-camera").checked){
+        var interpolatedCarMatrix = simpleMatrixInterpolation(carMatrix, carMatrixOld, interpolationFactor);
+        mat4.set(interpolatedCarMatrix, mMatrix);
+    }else{
+        mat4.set(carMatrix, mMatrix);
+    }
+
     mat4.scale(mMatrix,[1,1,1].map(x=>x*0.75));  //guess correct size - default seems far too big
     if (listerBuffers.isLoaded){
         drawObjectFromBuffers(listerBuffers, activeProg);
     }
-
 
     //draw cube
     setupDrawMatrixForObjectAtPosition(boxPos);
@@ -1104,4 +1140,13 @@ function drawBiovisionAnimation(anim, currentTime, activeProg){
     //reset camera scale
     mat4.scale(cameraMat, [1,1,1].map(x=>x/correctiveScaleFactor));
     mat4.translate(cameraMat, animWorldPosition.map(x=>-x));
+}
+
+function simpleMatrixInterpolation(newMat, oldMat, interpolationFactor){
+    var interpolationFactor2 = 1-interpolationFactor;
+    var interpolatedMat = mat4.create();
+    for (var ii=0;ii<16;ii++){
+        interpolatedMat[ii] = newMat[ii] *interpolationFactor2 + oldMat[ii]*interpolationFactor;
+    }
+    return interpolatedMat;
 }
