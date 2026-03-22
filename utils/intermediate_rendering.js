@@ -14,9 +14,9 @@ function setRttSize(view, width, height){
 	gl.bindTexture(gl.TEXTURE_2D, view.texture);
 	texImage2DWithLogs("after binding view texture", 
 		gl.TEXTURE_2D, 0,
-		gl.RGBA, view.framebuffer.width, view.framebuffer.height, 0, 
-		gl.RGBA, gl.UNSIGNED_BYTE, null);
-	
+		gl.RGB10_A2, view.framebuffer.width, view.framebuffer.height, 0, 
+		gl.RGBA, gl.UNSIGNED_INT_2_10_10_10_REV, null);
+
 	gl.bindTexture(gl.TEXTURE_2D, view.depthTexture);
 	texImage2DWithLogs("after binding depth texture",
 		 gl.TEXTURE_2D, 0,

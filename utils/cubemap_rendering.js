@@ -35,7 +35,7 @@ function initCubemapFramebuffer(view){
 		framebuffers[i]=framebuffer;
 		
 		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-		gl.texImage2D(face, 0, gl.RGBA, cubemapSize, cubemapSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+		gl.texImage2D(face, 0, gl.RGB10_A2, cubemapSize, cubemapSize, 0, gl.RGBA, gl.UNSIGNED_INT_2_10_10_10_REV, null);
 	
 		var renderbuffer = gl.createRenderbuffer();
 		gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
