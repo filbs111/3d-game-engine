@@ -354,7 +354,7 @@ mat4.rotateX(staticCamera, -0.2); //elevate more
 var statCamPos = staticCamera.slice(12,15);
 
 var carMatrix = mat4.identity();
-mat4.translate(carMatrix,[8,-0.6,6]); //right, down a bit, back
+mat4.translate(carMatrix,[8,-0.7,6]); //right, down a bit, back
 var carMatrixOld = mat4.create(carMatrix);
 
 var carCamera = mat4.create(carMatrix);
@@ -567,7 +567,7 @@ function iterateMechanics(timeChange){
     mat4.rotateY(carCamera, steeringAngleCameraImpact*carInfo.steeringAngle); //NOTE steering angle unknown units here.
     
     //mat4.rotateY(carCamera, lastFixedTimestepUpdateTime*0.001);
-    mat4.translate(carCamera, [0,2.6,4.5]);   //above and behind car
+    mat4.translate(carCamera, [0,2.4,4.2]);   //above and behind car
 }
 
 
@@ -692,6 +692,7 @@ function drawScene(frameTime){
     }
     mat4.inverse(unmirroredCameraMat);    //note .transpose won't work like does in 3sphere games, because these are standard 3d gfx mats, not SO4s.
     
+    
     cameraZoom = parseFloat(document.getElementById("camerazoom").value);
     cameraZoom*=cameraZoomAdjustInputSmoothed;
 
@@ -701,7 +702,7 @@ function drawScene(frameTime){
     // k = (n^2 -1) / (6n^2)
     // calculate n from z
     //override ss
-    var nNow = 2*cameraZoomAdjustInputSmoothed; //divide or multiply?
+    var nNow = 2.15*cameraZoomAdjustInputSmoothed; //divide or multiply?
     simpleStrengthGlobal =  (nNow*nNow - 1)/ (6*nNow*nNow);
 
     if (document.getElementById("fisheyeselection_singleview").checked){
@@ -977,10 +978,21 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         mat4.set(carMatrix, mMatrix);
     }
 
-    mat4.scale(mMatrix,[1,1,1].map(x=>x*0.75));  //guess correct size - default seems far too big
+    // //draw cube at car's position to check size is right.
+    // var carScale = [1.981,1.32,4.547].map(xx=>xx/2);   //width, height, length  of car in blueprint
+    // var boxShift = [0,0.3,-1.4];
+    // mat4.translate(mMatrix,boxShift);
+    // mat4.scale(mMatrix, carScale);
+    // drawObjectFromBuffers(cubeBuffers, activeProg);
+    // mat4.scale(mMatrix, carScale.map(xx=>1/xx));
+    // mat4.translate(mMatrix,boxShift.map(x=>-x));
+
+
+    mat4.scale(mMatrix,[1,1,1].map(x=>x*0.56));  //guess correct size - default seems far too big
     if (listerBuffers.isLoaded){
         drawObjectFromBuffers(listerBuffers, activeProg);
     }
+
 
     //draw cube
     setupDrawMatrixForObjectAtPosition(boxPos);
