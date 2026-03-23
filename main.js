@@ -716,7 +716,7 @@ function drawScene(frameTime){
         gl.bindFramebuffer(gl.FRAMEBUFFER, rttView.framebuffer);
 
         //TODO scale to get 1:1 mapping in centre of screen taking screen resolution and fisheye curvature into account.
-		var intermediate_view_width = 2048;
+		var intermediate_view_width = 4096;
         var intermediate_view_height = 2048;
 
 		gl.viewport( 0,0, intermediate_view_width, intermediate_view_height );
