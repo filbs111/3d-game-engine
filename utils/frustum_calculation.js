@@ -70,7 +70,7 @@ function calculateProjectionMatrixForIntermediateView(screenWidth, screenHeight,
 
     //TODO define these earlier (defined elsewhere globally)
     var camParams = {
-        near:0.1,
+        near:0.05,
         far:20000
     };
 
