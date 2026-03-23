@@ -128,6 +128,8 @@ function initShaders(shaderProgs){
 		fisheyeOrthographic:["cubemap-fisheye-vs", "cubemap-fisheye-orthographic-fs"],
 		fisheyeTanktheta:["cubemap-fisheye-vs", "cubemap-fisheye-tanktheta-fs"],
 		fisheyeSpecial:["cubemap-fisheye-vs", "cubemap-fisheye-special-fs"],
+
+		fullscreenTexturedDither:["cubemap-fisheye-vs", "fullscreen-fs-dither"]
 	};
 
 	console.log("loading shaders...");

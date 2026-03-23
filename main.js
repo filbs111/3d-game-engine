@@ -734,7 +734,10 @@ function drawScene(frameTime){
 
         //temporary - just draw map intermediate view straight to the screen using no curvature.
 
-        activeProg = shaderPrograms.fullscreenTextured;
+        //activeProg = shaderPrograms.fullscreenTextured;
+        activeProg = shaderPrograms.fullscreenTexturedDither;
+
+
         gl.useProgram(activeProg);
         enableDisableAttributes(activeProg);
         bind2dTextureIfRequired(rttView.texture);
