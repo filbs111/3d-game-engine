@@ -16,7 +16,7 @@ void main(void) {
 
     vec3 pos3d = vec3(vPos, simpleParabolicZCoord);
 
-    float vignette = 1. - .15*vPosMag;
+    float vignette = 1. - .12*vPosMag;
 
     fragColor = vec4(vec3(vignette),1.)*texture(uSamplerCubeFisheye, -pos3d);
 }

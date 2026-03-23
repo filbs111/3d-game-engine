@@ -40,7 +40,7 @@ void main(void) {
 
     //fragColor = texture(uSampler, projectedPoint); 
 
-    float vignette = 1. - .15*vPosMag;
+    float vignette = 1. - .12*vPosMag;
 
     fragColor = vec4(vec3(vignette),1.)* texture(uSampler, vec2(0.5)+vec2(0.5)*projectedPoint);    //regular 2d texture has centre at 0.5
 }
