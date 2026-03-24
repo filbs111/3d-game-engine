@@ -7,7 +7,7 @@ uniform mat4 uPMatrix2;
 uniform sampler2D uSampler;
 uniform float uSimpleStrength;  // 0 for rectilinear projection, .25 this is equivalent to stereographic!
 
-//uniform vec2 uInvSize;
+uniform vec2 uInvSize;
 
 out vec4 fragColor;
 
@@ -64,10 +64,8 @@ void main(void) {
 
 
     //translate to params used in copied dither shader 
-    vec2 vTextureCoord = vPos;
-    vec2 uInvSize = vec2( 0.0025, 0.0025);  //TODO pass in appropriate vals given window size
-
-
+    vec2 vTextureCoord = vPos + vec2(10000.)*uInvSize;  //NOTE second part shifts zero point. removing this results in visible horiz, vertical lines thru screen.
+                                                        //would be more proper to shift so zero at screen corner (otherwise risk hack number 10000 not being large enough on future very high res monitor.)
 
     
     //vec4 adjusted = MIDv4;

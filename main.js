@@ -758,6 +758,12 @@ function drawScene(frameTime){
         //gl.uniform2f(activeProg.uniforms.uScaleXy, 0.5,0.5);
         gl.uniform2f(activeProg.uniforms.uOffsetXy, 0, -0.3333);
 
+
+        //for dithering
+        gl.uniform2fv(activeProg.uniforms.uInvSize, [ratio*zoom/gl.viewportWidth, zoom/gl.viewportHeight].map(x=>x*2));
+        //gl.uniform2f(activeProg.uniforms.uInvSize, 0.001, 0.001);
+
+
         gl.uniform1f(activeProg.uniforms.uSimpleStrength, simpleStrengthGlobal);
 
         drawObjectFromBuffers(quadBuffers, activeProg);
