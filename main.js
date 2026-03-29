@@ -380,6 +380,8 @@ var lastShotTime=-1000; //could be 0 but want to ensure ready for next shot
 
 var cameraZoom = -1;
 
+var xMoveSmooth=0;
+var zMoveSmooth=0;
 
 function iterateMechanics(timeChange){
     //TODO take inputs more frequently?
@@ -407,7 +409,11 @@ function iterateMechanics(timeChange){
     var timeChange = 10;
     var accMultiply = Math.exp(-0.002*timeChange);
     
-    var preDragPlayerAccTarget = [zMove,0,xMove].map(xx=>xx*-0.00001);
+    //smooth out x,zmove. makes tilt due to input less instant.
+    xMoveSmooth = xMoveSmooth*0.9 + 0.1*xMove;
+    zMoveSmooth = zMoveSmooth*0.9 + 0.1*zMove;
+
+    var preDragPlayerAccTarget = [zMoveSmooth,0,xMoveSmooth].map(xx=>xx*-0.00001);
     
     preDragPlayerAcc[0] = preDragPlayerAcc[0]*accMultiply + (1-accMultiply)*preDragPlayerAccTarget[0];
     preDragPlayerAcc[2] = preDragPlayerAcc[2]*accMultiply + (1-accMultiply)*preDragPlayerAccTarget[2];
