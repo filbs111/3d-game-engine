@@ -39,6 +39,13 @@ var overlaydisplay = (function(){
         overlaycontext.font = "20px Arial";
         overlaycontext.fillText(speedMph.toFixed(1) + "mph",10,500);
 
+        //steering angle
+        var steeringAngleCosSin = [Math.cos(carInfo.steeringAngle), Math.sin(carInfo.steeringAngle)];
+        var steeringAngleIndicatorLen = 20;
+        overlaycontext.beginPath();
+        overlaycontext.moveTo(200 +steeringAngleIndicatorLen*steeringAngleCosSin[1], 100 -steeringAngleIndicatorLen*steeringAngleCosSin[0]);
+        overlaycontext.lineTo(200 -steeringAngleIndicatorLen*steeringAngleCosSin[1], 100 +steeringAngleIndicatorLen*steeringAngleCosSin[0]);
+        overlaycontext.stroke();
     }
 
     function setGeeMeter(accVecGees){
