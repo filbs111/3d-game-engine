@@ -74,7 +74,6 @@ function calculateProjectionMatrixForIntermediateView(screenWidth, screenHeight,
         far:20000
     };
 
-
     mat4.perspective(vFov, intermediateAspect, camParams.near, camParams.far, projMat); 
     //projMat[9]=intermediatePerspShift / 2;  // /2 is guess. is it needed? or sohould this be a fraction of intermediateFy
 
@@ -109,3 +108,190 @@ function dotProd3(aa,bb){
 
 calculateProjectionMatrixForIntermediateView(0.8, 0.45, 0.1, -0.333, mat4.create());
 
+
+
+
+function figureOutGlmatrixProjMatrixStuff(){
+    //make a general function to calculate a projection matrix given corner points/directions.
+    // proj matrix applied to corner direction should output something expected.
+    //  projMat * (corner 1) = (1,1,1,1)
+    //  projMat * (corner 2) = (-1,1,1,1), etc.
+    // can this be expressed as matrix? 
+
+    // eg projMat * cornersmat = (1,1,1,1,
+    //                            -1,1,1,1, ... ? 
+    // and if so, how should near plane work ? 
+
+    var testProjMat = mat4.create();
+    var far = 100;
+    var near = 0.1;
+    var aspect = 2;
+    var vFov = 2* (Math.atan(1) * 180/Math.PI);    //should be 90 deg
+    console.log("calculated vFOV = " + vFov);
+
+    mat4.perspective(vFov, aspect, near, far, testProjMat); 
+
+    console.log(testProjMat);
+
+    //mat4.transpose(testProjMat);  //??
+
+    //create some test vector and transform it. given this vFov and aspect have some expectation about what will map to back plane corners etc 
+
+    var cornersAtDistance1 = [
+        [-2,-1, 1, 1],
+        [2,-1, 1, 1],
+        [-2,1, 1, 1],
+        [2,1, 1, 1]
+    ];
+
+    var farCorners = cornersAtDistance1.map(x => {
+        x = x.map(xx => xx*far);
+        x[3]=-1;    // -1 seems to get the right result! (or should z be negative?)
+        return x;
+    });
+
+    var nearCorners = cornersAtDistance1.map(x => {
+        x = x.map(xx => xx*near);
+        x[3]=-1;
+        return x;
+    });
+
+    var allCorners = [nearCorners, farCorners].flat();
+
+    var transformedCorners = allCorners.map(corner => {
+        var cornerVec = vec4.create(corner);
+        mat4.multiplyVec4(testProjMat, cornerVec);
+        //is this as expected?
+        return cornerVec;
+    });
+
+    var threeVecCoords = transformedCorners.map(corner => {
+        return corner.slice(0,3).map(x=>x/corner[3]);
+    });
+
+
+    console.log(transformedCorners, threeVecCoords);
+
+    var transformedCorners2 = allCorners.map(corner => {
+        var cornerVec = vec4.create(corner);
+        var cornerVec = myMultiplyVecByMatrix(testProjMat, cornerVec);
+        return cornerVec;
+    });
+
+    console.log(transformedCorners2);
+}
+
+function calculateProjMatFromCorners(){
+    //attempt to find a perspective matrix - ie similar to what glMatrix produces, but which when applied to particular corners, yields desired results.
+    // suppose we know corner directions, these are in +ve z direction, and we want resulting depth map z to be for this direction.
+    // we can scale corner directions for far plane to have z component = far distance, and for near plane to have z component = near distance. 
+    
+    var near = 0.1;
+    var far = 100;
+    var fx = 2;
+    var fy = 1;
+
+    //NOTE this is for regular symmetric frustum. TODO use for arbitrary
+
+    var farCorners = mat4.create([
+        -fx*far, -fy*far, far, -1,
+        fx*far, -fy*far, far, -1,
+        -fx*far, fy*far, far, -1,
+        fx*far, fy*far, far, -1
+    ]);
+
+    var nearCorners = mat4.create([
+        -fx*near, -fy*near, near, -1,
+        fx*near, -fy*near, near, -1,
+        -fx*near, fy*near, near, -1,
+        fx*near, fy*near, near, -1
+    ]);
+
+
+    var transformedCornersFar = mat4.create([
+        -far, -far, -far, -far,
+        far, -far, -far, -far,
+        -far, far, -far, -far,
+        far, far, -far, -far
+    ]);
+
+    var transformedCornersNear = mat4.create([
+        -near, -near, -near, -near,
+        near, -near, -near, -near,
+        -near, near, -near, -near,
+        near, near, -near, -near
+    ]);
+
+    //just plugging in far points didn't work - guess because not linearly independent (all in same plane)
+    // picking a selection of near and far gets expected result.
+    // TODO use this to reproduce existing code to calculate for single intermediate view.
+    // TODO try this for perspective transformed near, far planes, use for 2-panel intermediate view.
+
+    // suspect should make cross section of constant w be rhombus. 
+    // to do this might find normal to faces of frustum bounding top, bottom and sides of view.
+    // cross top and bottom normals to find vector pointing to side, cross sides to find vector pointing up/down. cross the side and up/down vecs to get 
+    // a direction normal to rhombus cross sections (constant w).
+
+
+    //0,1,2 of far, 0 of near
+    //seems to work. perhaps choosing other points would work better.
+    // var cornerSelection = mat4.create([
+    //     -fx*far, -fy*far, far, -1,
+    //     fx*far, -fy*far, far, -1,
+    //     -fx*far, fy*far, far, -1,
+    //     -fx*near, -fy*near, near, -1,
+    // ]);
+    // var transformedCornerSelection = mat4.create([
+    //     -far, -far, -far, -far,
+    //     far, -far, -far, -far,
+    //     -far, far, -far, -far,
+    //     -near, -near, -near, -near,
+    // ]);
+
+    // 1,2 of far, 0,3 of near
+    var cornerSelection = mat4.create([
+        fx*far, -fy*far, far, -1,
+        -fx*far, fy*far, far, -1,
+        -fx*near, -fy*near, near, -1,
+        fx*near, fy*near, near, -1
+    ]);
+    var transformedCornerSelection = mat4.create([
+        far, -far, -far, -far,
+        -far, far, -far, -far,
+        -near, -near, -near, -near,
+        near, near, -near, -near
+    ]);
+
+    var corners = cornerSelection;
+    var transformedCorners = transformedCornerSelection;
+
+    // transformed = projection * corners.
+    // => transformed * invCorners = projection? 
+
+    var inverseCorners = mat4.create(corners);
+    mat4.inverse(inverseCorners);
+
+    var projMat = mat4.create(transformedCorners);
+    mat4.multiply(projMat, inverseCorners);
+
+    console.log({
+        corners,
+        transformedCorners,
+        inverseCorners,
+        projMat
+    });
+}
+
+
+function myMultiplyVecByMatrix(someMat4, someVec4){
+    //this achieves same result as mat4.multiplyVec4(someMat4, someVec4); (though glMatrix overwrites input mat)
+
+    var output = vec4.create([0,0,0,0]);
+
+    for (var ii=0;ii<4;ii++){
+        for (var jj=0;jj<4;jj++){
+            output[ii] += someMat4[ii+4*jj]*someVec4[jj];
+        }
+    }
+    return output;
+}
