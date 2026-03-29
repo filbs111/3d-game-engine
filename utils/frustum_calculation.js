@@ -20,7 +20,7 @@ function calculateProjectionMatrixForIntermediateView(screenWidth, screenHeight,
         far:20000
     };
 
-    centreOfPerspectiveShiftDown = 0; 
+    // centreOfPerspectiveShiftDown = 0; 
 
     function fisheyeCornerDirection(inputCorner){
         var sumsq = inputCorner[0]*inputCorner[0] +  inputCorner[1]*inputCorner[1];
@@ -37,10 +37,16 @@ function calculateProjectionMatrixForIntermediateView(screenWidth, screenHeight,
     var bottomCornerDirectionVec = fisheyeCornerDirection([screenWidth, screenHeight * ( centreOfPerspectiveShiftDown + 1 )]);
 
 
+   
+
+    //bodge input to calculation - switching tilt appears to work... 
+    var topCornerDirectionVecBodge = fisheyeCornerDirection([screenWidth, screenHeight * ( -centreOfPerspectiveShiftDown - 1)]);
+    var bottomCornerDirectionVecBodge = fisheyeCornerDirection([screenWidth, screenHeight * ( -centreOfPerspectiveShiftDown + 1 )]);
     //make a perspective matrix using general method. check result matches custom method here.
-    var topCornerDirectionVec2 = fisheyeCornerDirection([-screenWidth, screenHeight * ( centreOfPerspectiveShiftDown - 1)]);
-    var bottomCornerDirectionVec2 = fisheyeCornerDirection([-screenWidth, screenHeight * ( centreOfPerspectiveShiftDown + 1 )]);
-    var projMatGeneralMethod = calculateProjMatFromCorners2(topCornerDirectionVec, topCornerDirectionVec2, bottomCornerDirectionVec, bottomCornerDirectionVec2, camParams.near, camParams.far);
+    var topCornerDirectionVec2 = fisheyeCornerDirection([-screenWidth, screenHeight * ( -centreOfPerspectiveShiftDown - 1)]);
+    var bottomCornerDirectionVec2 = fisheyeCornerDirection([-screenWidth, screenHeight * ( -centreOfPerspectiveShiftDown + 1 )]);
+
+    var projMatGeneralMethod = calculateProjMatFromCorners2(topCornerDirectionVecBodge, topCornerDirectionVec2, bottomCornerDirectionVecBodge, bottomCornerDirectionVec2, camParams.near, camParams.far);
 
 
     // "forwards" direction is [0, fwd_y, fwd_z]
@@ -249,11 +255,7 @@ function calculateProjMatFromCorners(){
     // TODO use this to reproduce existing code to calculate for single intermediate view.
     // TODO try this for perspective transformed near, far planes, use for 2-panel intermediate view.
 
-    // suspect should make cross section of constant w be rhombus. 
-    // to do this might find normal to faces of frustum bounding top, bottom and sides of view.
-    // cross top and bottom normals to find vector pointing to side, cross sides to find vector pointing up/down. cross the side and up/down vecs to get 
-    // a direction normal to rhombus cross sections (constant w).
-
+    
 
     //0,1,2 of far, 0 of near
     //seems to work. perhaps choosing other points would work better.
@@ -313,14 +315,39 @@ function calculateProjMatFromCorners2(c1,c2,c3,c4, near, far){
     // suppose we know corner directions, these are in +ve z direction, and we want resulting depth map z to be for this direction.
     // we can scale corner directions for far plane to have z component = far distance, and for near plane to have z component = near distance. 
    
-    //calculate corners given input corner directions.
-    // different ways to do this - simple: scale so that z = near or far. suspect not proper, but try...
+    // suspect should make cross section of constant w be rhombus. 
+    // to do this might find normal to faces of frustum bounding top, bottom and sides of view.
+    // cross top and bottom normals to find vector pointing to side, cross sides to find vector pointing up/down. cross the side and up/down vecs to get 
+    // a direction normal to rhombus cross sections (constant w).
 
+    var upDownDirections = [crossProd(c1,c2), crossProd(c3,c4)];
+    var sideDirections = [crossProd(c1,c3), crossProd(c2,c4)];
+    var upDownCross = crossProd(upDownDirections[0], upDownDirections[1]);
+    var sideCross = crossProd(sideDirections[0], sideDirections[1]);
+    var totalCross = crossProd(upDownCross, sideCross);
+
+    var totalCrossSq = dotProd3(totalCross,totalCross);
+    var totalCrossMag = Math.sqrt(totalCrossSq);
+    var totalCrossNormalised = totalCross.map(x=>x/totalCrossMag);
+
+    // to get near and far points for near and far planes along this new direction,
+    // dot input point direction with totalCross direction, and divide by this
+    
     //var cornerDirections = [c1,c2,c3,c4];
     var cornerDirections = [c3,c4,c1,c2];   //switched to get result consistent(ish) with previous proj matrix
-
-    var zEquals1Directions = cornerDirections.map(x=> x.map(xx=>xx/x[2]));
+//    var cornerDirections = [c1,c3,c2,c4]
     
+
+    //var zEquals1Directions = cornerDirections.map(x=> x.map(xx=>xx/x[2]));
+    
+    var zPrimeEquals1Directions = cornerDirections.map(x => 
+    {
+        var dot = dotProd3(x, totalCrossNormalised);
+        return x.map(xx=>xx/dot);
+    });
+    
+    zEquals1Directions = zPrimeEquals1Directions;
+
     var cornerSelection = mat4.create([
         zEquals1Directions[1].map(xx=>xx*far),
         zEquals1Directions[2].map(xx=>xx*far),
@@ -380,4 +407,12 @@ function myMultiplyVecByMatrix(someMat4, someVec4){
         }
     }
     return output;
+}
+
+function crossProd(vec1, vec2){
+    return [
+        vec1[1]*vec2[2] - vec1[2]*vec2[1],
+        vec1[2]*vec2[0] - vec1[0]*vec2[2],
+        vec1[0]*vec2[1] - vec1[1]*vec2[0],
+    ];
 }
