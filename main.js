@@ -13,6 +13,7 @@
 var shaderPrograms={};
 var cubeBuffers={};
 var quadBuffers={};
+var quadBuffersLR = {left:{},right:{}};
 var cameraMat = mat4.create();
 var cameraZoomAdjustInputSmoothed = 1.0;
 
@@ -189,6 +190,9 @@ function initTextures(){
 function initBuffers(){
     loadBufferData(cubeBuffers, levelCubeData);
    	loadBufferData(quadBuffers, quadData);
+   	loadBufferData(quadBuffersLR.left, quadDataLR.left);
+   	loadBufferData(quadBuffersLR.right, quadDataLR.right);
+
 }
 
 var bind2dTextureIfRequired = (function createBind2dTextureIfRequiredFunction(){
@@ -773,7 +777,84 @@ function drawScene(frameTime){
 
         //TODO draw intermediate view to the screen using fisheye shader. t
 
-    } else if (!document.getElementById("fisheyeselection_off").checked){
+    } else if (document.getElementById("fisheyeselection_doubleview").checked){
+
+        var vertSizeFromVFov = cameraZoom;
+        var horizSizeFromVFov = vertSizeFromVFov * (gl.viewportWidth/ gl.viewportHeight);
+
+        var projMatrices = calculateLeftRightPanelProjMatrices(horizSizeFromVFov, vertSizeFromVFov, simpleStrengthGlobal, -0.33333);
+    
+
+        //TODO scale to get 1:1 mapping in centre of screen taking screen resolution and fisheye curvature into account.
+		var intermediate_view_width = 4096;
+        var intermediate_view_height = 2048;
+
+        //draw left, right views
+        drawLeftOrRight(projMatrices.projMatLeft, quadBuffersLR.left);
+        drawLeftOrRight(projMatrices.projMatRight, quadBuffersLR.right);
+
+
+        function drawLeftOrRight(projMatrix, panelBuffers){
+            mat4.set(projMatrix, pMatrix);
+        
+            // draw to rttView
+            gl.bindFramebuffer(gl.FRAMEBUFFER, rttView.framebuffer);
+            
+            gl.viewport( 0,0, intermediate_view_width, intermediate_view_height );
+            setRttSize( rttView, intermediate_view_width, intermediate_view_height );	//todo stop setting this repeatedly
+
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+            drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);
+            gl.clear(gl.DEPTH_BUFFER_BIT);
+            drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);    
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+
+            //temporary - just draw map intermediate view straight to the screen using no curvature.
+
+            //activeProg = shaderPrograms.fullscreenTextured;
+            activeProg = shaderPrograms.fullscreenTexturedDither;
+
+
+            gl.useProgram(activeProg);
+            enableDisableAttributes(activeProg);
+            bind2dTextureIfRequired(rttView.texture);
+
+
+            var invertedProjMat = mat4.create(pMatrix);
+            //mat4.inverse(invertedProjMat);
+            //mat4.transpose(invertedProjMat);    //?? 
+
+            gl.uniformMatrix4fv(activeProg.uniforms.uPMatrix2, false, invertedProjMat);
+
+
+            gl.disable(gl.CULL_FACE);   //?? bodge to try to get rendering to work!!!
+
+            //repeated from cubemap rendering.
+            var zoom = cameraZoom;    //larger number = more zoomed out
+            var ratio = gl.viewportWidth/gl.viewportHeight;
+            gl.uniform2f(activeProg.uniforms.uScaleXy, ratio*zoom, zoom);   //TODO apply zoom factor, (inverted?) screen dimens
+            //gl.uniform2f(activeProg.uniforms.uScaleXy, 0.5,0.5);
+            gl.uniform2f(activeProg.uniforms.uOffsetXy, 0, -0.3333);
+
+
+            //for dithering
+            gl.uniform2fv(activeProg.uniforms.uInvSize, [ratio*zoom/gl.viewportWidth, zoom/gl.viewportHeight].map(x=>x*2));
+            //gl.uniform2f(activeProg.uniforms.uInvSize, 0.001, 0.001);
+
+
+            gl.uniform1f(activeProg.uniforms.uSimpleStrength, simpleStrengthGlobal);
+
+            drawObjectFromBuffers(panelBuffers, activeProg);
+
+            gl.enable(gl.CULL_FACE);
+        }
+
+
+
+    }else if (!document.getElementById("fisheyeselection_off").checked){
 
         //draw cubemap about current camera.
         // but for simplicity, make initial version using cubemap for intermediate views. render 6 cameras for each cubemap side, then map from cubemap onto the screen.

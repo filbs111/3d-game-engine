@@ -3,6 +3,16 @@
 // should account for perspective shift (eg with centre of perspective 3rd way down screen)
 // support barrel distortion first - pincusion distortion would require more work
 
+function fisheyeCornerDirection(inputCorner, simpleStrength){
+    var sumsq = inputCorner[0]*inputCorner[0] +  inputCorner[1]*inputCorner[1];
+    var simpleParabolicZcoord = 1.-simpleStrength*sumsq;
+    var unnormalised = [inputCorner[0], inputCorner[1], simpleParabolicZcoord];
+    
+    return unnormalised;
+    //var mag = Math.sqrt(sumsq + simpleParabolicZcoord*simpleParabolicZcoord);
+    //return unnormalised.map(xx=>xx/mag); 
+}
+
 function calculateProjectionMatrixForIntermediateView(screenWidth, screenHeight, simpleStrength, centreOfPerspectiveShiftDown, projMat){
     //TODO generalise this using a fisheye strength function to support different fisheye projections? 
 
@@ -20,34 +30,21 @@ function calculateProjectionMatrixForIntermediateView(screenWidth, screenHeight,
         far:20000
     };
 
-    // centreOfPerspectiveShiftDown = 0; 
-
-    function fisheyeCornerDirection(inputCorner){
-        var sumsq = inputCorner[0]*inputCorner[0] +  inputCorner[1]*inputCorner[1];
-        var simpleParabolicZcoord = 1.-simpleStrength*sumsq;
-        var unnormalised = [inputCorner[0], inputCorner[1], simpleParabolicZcoord];
-        
-        return unnormalised;
-        //var mag = Math.sqrt(sumsq + simpleParabolicZcoord*simpleParabolicZcoord);
-        //return unnormalised.map(xx=>xx/mag); 
-    }
+    // centreOfPerspectiveShiftDown = 0;     
 
     //calculate fisheye screen corner vectors. 
-    var topCornerDirectionVec = fisheyeCornerDirection([screenWidth, screenHeight * ( centreOfPerspectiveShiftDown - 1)]);
-    var bottomCornerDirectionVec = fisheyeCornerDirection([screenWidth, screenHeight * ( centreOfPerspectiveShiftDown + 1 )]);
+    var topCornerDirectionVec = fisheyeCornerDirection([screenWidth, screenHeight * ( centreOfPerspectiveShiftDown - 1)], simpleStrength);
+    var bottomCornerDirectionVec = fisheyeCornerDirection([screenWidth, screenHeight * ( centreOfPerspectiveShiftDown + 1 )], simpleStrength);
 
-
-   
 
     //bodge input to calculation - switching tilt appears to work... 
-    var topCornerDirectionVecBodge = fisheyeCornerDirection([screenWidth, screenHeight * ( -centreOfPerspectiveShiftDown - 1)]);
-    var bottomCornerDirectionVecBodge = fisheyeCornerDirection([screenWidth, screenHeight * ( -centreOfPerspectiveShiftDown + 1 )]);
+    var topCornerDirectionVecBodge = fisheyeCornerDirection([screenWidth, screenHeight * ( -centreOfPerspectiveShiftDown - 1)], simpleStrength);
+    var bottomCornerDirectionVecBodge = fisheyeCornerDirection([screenWidth, screenHeight * ( -centreOfPerspectiveShiftDown + 1 )], simpleStrength);
     //make a perspective matrix using general method. check result matches custom method here.
-    var topCornerDirectionVec2 = fisheyeCornerDirection([-screenWidth, screenHeight * ( -centreOfPerspectiveShiftDown - 1)]);
-    var bottomCornerDirectionVec2 = fisheyeCornerDirection([-screenWidth, screenHeight * ( -centreOfPerspectiveShiftDown + 1 )]);
+    var topCornerDirectionVec2 = fisheyeCornerDirection([-screenWidth, screenHeight * ( -centreOfPerspectiveShiftDown - 1)], simpleStrength);
+    var bottomCornerDirectionVec2 = fisheyeCornerDirection([-screenWidth, screenHeight * ( -centreOfPerspectiveShiftDown + 1 )], simpleStrength);
 
     var projMatGeneralMethod = calculateProjMatFromCorners2(topCornerDirectionVecBodge, topCornerDirectionVec2, bottomCornerDirectionVecBodge, bottomCornerDirectionVec2, camParams.near, camParams.far);
-
 
     // "forwards" direction is [0, fwd_y, fwd_z]
     // scale the two corner directions so that x components same (1),
@@ -125,6 +122,38 @@ function calculateProjectionMatrixForIntermediateView(screenWidth, screenHeight,
         mat4.set(projMatGeneralMethod, projMat);
     }
 }
+
+
+function calculateLeftRightPanelProjMatrices(screenWidth, screenHeight, simpleStrength, centreOfPerspectiveShiftDown){
+    //TODO define these earlier (defined elsewhere globally)
+    var camParams = {
+        near:0.05,
+        far:20000
+    };
+
+    //bodge input to calculation - switching tilt appears to work... 
+    var topCornerDirectionVecBodge = fisheyeCornerDirection([screenWidth, screenHeight * ( -centreOfPerspectiveShiftDown - 1)], simpleStrength);
+    var bottomCornerDirectionVecBodge = fisheyeCornerDirection([screenWidth, screenHeight * ( -centreOfPerspectiveShiftDown + 1 )], simpleStrength);
+    //make a perspective matrix using general method. check result matches custom method here.
+    var topCornerDirectionVec2 = fisheyeCornerDirection([-screenWidth, screenHeight * ( -centreOfPerspectiveShiftDown - 1)], simpleStrength);
+    var bottomCornerDirectionVec2 = fisheyeCornerDirection([-screenWidth, screenHeight * ( -centreOfPerspectiveShiftDown + 1 )], simpleStrength);
+
+    //var projMatGeneralMethod = calculateProjMatFromCorners2(topCornerDirectionVecBodge, topCornerDirectionVec2, bottomCornerDirectionVecBodge, bottomCornerDirectionVec2, camParams.near, camParams.far);
+
+    //make a perspective matrix using general method. check result matches custom method here.
+    var topMid = fisheyeCornerDirection([0, screenHeight * ( -centreOfPerspectiveShiftDown - 1)], simpleStrength);
+    var bottomMid = fisheyeCornerDirection([0, screenHeight * ( -centreOfPerspectiveShiftDown + 1 )], simpleStrength);
+
+    //NOTE these 2 proje matrices are very similar - calculation mostly repeated.
+    var projMatLeft = calculateProjMatFromCorners2(topCornerDirectionVecBodge, topMid, bottomCornerDirectionVecBodge, bottomMid, camParams.near, camParams.far);
+    var projMatRight = calculateProjMatFromCorners2(topMid, topCornerDirectionVec2, bottomMid, bottomCornerDirectionVec2, camParams.near, camParams.far);
+
+    return {
+        projMatLeft,
+        projMatRight
+    }
+}
+
 
 function dotProd3(aa,bb){
     return aa[0]*bb[0] + aa[1]*bb[1] + aa[2]*bb[2];
