@@ -180,10 +180,12 @@ function loadAnimationStuff(){
 
 
 var bricktex;
+var concreteTex;
 var cubemapTexture;
 function initTextures(){
     //bricktex = makeTexture("img/brick-tex.jpg",gl.RGB,gl.UNSIGNED_SHORT_5_6_5);
     bricktex = makeTexture("img/Silverstone_Circuit_2020_2.png",gl.RGB,gl.UNSIGNED_SHORT_5_6_5);  //1665x1200px
+    concreteTex = makeTexture("img/0033.jpg",gl.RGB,gl.UNSIGNED_SHORT_5_6_5);
     cubemapTexture = loadCubeMap("img/skyboxes/sp2/sp2_");
 }
 
@@ -256,6 +258,10 @@ function prepBuffersForDrawing(bufferObj, shaderProg){
 	
 		gl.activeTexture(gl.TEXTURE0);
 		gl.uniform1i(shaderProg.uniforms.uSampler, 0);
+	}
+    if (bufferObj.vertexTextureCoordBuffer && shaderProg.uniforms.uSampler2){    
+		gl.activeTexture(gl.TEXTURE1);
+		gl.uniform1i(shaderProg.uniforms.uSampler2, 1);
 	}
 
     if (shaderProg.uniforms.uPMatrix){
@@ -913,10 +919,11 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
        gl.cullFace(gl.BACK);
     }
 
-    activeProg = shaderPrograms.texmap;
+    activeProg = shaderPrograms.texmapWithDetail;
     gl.useProgram(activeProg);
     enableDisableAttributes(activeProg);
     bind2dTextureIfRequired(bricktex);
+    bind2dTextureIfRequired(concreteTex, gl.TEXTURE1);
 
     //draw ground blocker object if in not mirror mode, so don't overwrite view through mirror.
     // if (!mirrorInGroundPlane){

@@ -116,6 +116,7 @@ function initShaders(shaderProgs){
 		flat:["flat-vs", "flat-fs"],
 		vertexColor:["vertcolor-vs", "flat-fs"],
 		texmap:["texmap-vs", "texmap-fs"],
+		texmapWithDetail:["texmap-vs", "texmap-detail-fs"],
 		envmap:["envmap-vs", "envmap-fs"],
 		vertexColorWithEnvmap:["vertcolor-envmap-vs", "envmap-fs"],
 		fullscreenTextured:["cubemap-fisheye-vs", "fullscreen-fs"],
