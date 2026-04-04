@@ -649,12 +649,15 @@ function iterateMechanics(timeChange){
     //second car
     mat4.set(carCamera2, carCamera2Old);
     mat4.set(carMatrix2, carCamera2);
-    mat4.translate(carCamera2, [0,0,-1.7]);   //centre of car appears to be ahead of car origin
     
-        mat4.rotateY(carCamera2, Math.PI/4);   //quarter angle to help looking at ground motion vs wheels
+    //mat4.rotateY(carCamera2, Math.PI/4);   //quarter angle to help looking at ground motion vs wheels
 
-    //mat4.translate(carCamera2, [0,3,6]);   //above and behind car
-    mat4.translate(carCamera2, [0,3.5,7]);   //above and behind car
+    //rotate to face in direction of velocity, but with some preference for straight forwards, so no/0 when stopped.
+    var camExtraYaw = Math.atan2(-carInfo2.velInCarFrame[0], -carInfo2.velInCarFrame[1] + 10 );
+    mat4.rotateY(carCamera2, camExtraYaw);
+
+    mat4.translate(carCamera2, [0,2.5,4.5]);   //above and behind car
+    //mat4.translate(carCamera2, [0,3.5,7]);   //above and behind car
 
 
 
@@ -739,7 +742,7 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     //calculate velocity of ground under wheel position in car frame (not contact patch)
     var const1 = -1;
     var const2 = 6;
-    var const3 = -3;
+    var const3 = -4;
     var const4 = -6;
 
     var rearWheelsVel = carInfo2.velInCarFrame.map(x=>x);
@@ -777,7 +780,7 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     // simple solution for linear drag at low speed. 
     // NOTE for slow speeds would slide down slope when parked etc (though no slopes here! 
     // this would be more complicated, would want damping for wobbles etc.
-    var smallValDeterminingLowSpeedResponse = 0.01;
+    var smallValDeterminingLowSpeedResponse = 0.2;
     var inverseSpeedFactorFrontWheel = 1/Math.sqrt(dotDirectionWithVel*dotDirectionWithVel + smallValDeterminingLowSpeedResponse);
     var inverseSpeedFactorRearWheel = 1/Math.sqrt(rearWheelsVel[1]*rearWheelsVel[1] + smallValDeterminingLowSpeedResponse);
     
@@ -1343,7 +1346,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     }
 
     //second car
-        if (listerBuffers.isLoaded){
+    if (listerBuffers.isLoaded){
 
         gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.02,0.001,0.001]);
         if (document.getElementById("interpolate-camera").checked){
