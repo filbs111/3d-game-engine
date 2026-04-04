@@ -64,6 +64,8 @@ var carInfo2 = {
     slipVecRear:[0,0],
     slipVecFrontMultiplierToCap:0,
     slipVecRearMultiplierToCap:0,
+
+    acceleration:[0,0],
     
     //invariants? 
     // length/angle over which tyre deflection decays
@@ -743,7 +745,7 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     var const1 = -1;
     var const2 = 6;
     var const3 = -4;
-    var const4 = -6;
+    var const4 = -4;
 
     var rearWheelsVel = carInfo2.velInCarFrame.map(x=>x);
     rearWheelsVel[0]+=const1*carInfo2.rearWheelLongPos*carInfo2.yawRate;
@@ -788,7 +790,7 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     var rearWheelSlipVector = rearWheelsRimVelVsGroundInCarFrame.map(x=>x*inverseSpeedFactorRearWheel);
 
     //cap these vectors within some limit (TODO slip ratio/angle force fall off outside optimal circle)
-    var slipVecCapMag = 0.4;   //guess number...
+    var slipVecCapMag = 0.2;   //guess number...
 
     var slipSqFront = dotProd2(frontWheelSlipVector, frontWheelSlipVector);
     var slipSqRear = dotProd2(rearWheelSlipVector, rearWheelSlipVector);
@@ -814,9 +816,13 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     var rearWheelForceInCarFrame = rearWheelsCappedSlip.map(x=>x*const4);
 
     //apply forces
-    velInCarFrame[0]+=timeChangeSeconds* const2*(frontWheelForceInCarFrame[0] + rearWheelForceInCarFrame[0]);
-    velInCarFrame[1]+=timeChangeSeconds* const2*(frontWheelForceInCarFrame[1] + rearWheelForceInCarFrame[1]);
+    var acceleration = [0,1].map(ii => frontWheelForceInCarFrame[ii] + rearWheelForceInCarFrame[ii]).map(xx=> const2*xx);
+
+    velInCarFrame[0]+=timeChangeSeconds* acceleration[0];
+    velInCarFrame[1]+=timeChangeSeconds* acceleration[1];
     
+    carInfo2.acceleration = acceleration;
+
     //apply torques
     carInfo2.yawRate += timeChangeSeconds* const3 * (frontWheelForceInCarFrame[0]*carInfo2.frontWheelLongPos + rearWheelForceInCarFrame[0]*carInfo2.rearWheelLongPos);
 

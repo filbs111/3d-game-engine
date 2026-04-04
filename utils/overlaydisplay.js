@@ -26,17 +26,19 @@ var overlaydisplay = (function(){
 
         if (carMode == 0){return;}
 
+        //gee meter background
+        overlaycontext.beginPath()
+        overlaycontext.fillStyle = "rgba(0,0,0,0.5)";
+        overlaycontext.beginPath();
+        overlaycontext.arc(geeMeterCentre[0], geeMeterCentre[1], geeMeterWholeRadius, 0, 2 * Math.PI);
+        overlaycontext.fill();
+        overlaycontext.beginPath();
+        overlaycontext.arc(geeMeterCentre[0], geeMeterCentre[1], geeMeterRadiusOneGee, 0, 2 * Math.PI);
+        overlaycontext.fill();
+        
+
         if (carMode == 1){
             //gee meter
-            overlaycontext.beginPath()
-            overlaycontext.fillStyle = "rgba(0,0,0,0.5)";
-            overlaycontext.beginPath();
-            overlaycontext.arc(geeMeterCentre[0], geeMeterCentre[1], geeMeterWholeRadius, 0, 2 * Math.PI);
-            overlaycontext.fill();
-            overlaycontext.beginPath();
-            overlaycontext.arc(geeMeterCentre[0], geeMeterCentre[1], geeMeterRadiusOneGee, 0, 2 * Math.PI);
-            overlaycontext.fill();
-
             overlaycontext.fillStyle = "white";
             overlaycontext.fillRect(geeMeterCentre[0] + geeMeterRadiusOneGee*geeMeterReading[0] - 5, geeMeterCentre[1] + geeMeterRadiusOneGee*geeMeterReading[1] - 5, 10,10);
 
@@ -53,6 +55,12 @@ var overlaydisplay = (function(){
         }
 
         if (carMode == 2){
+            //gee meter
+            overlaycontext.fillStyle = "white";
+
+            var geeMeterReading2 = carInfo2.acceleration.map(xx=>xx/9.81);
+
+            overlaycontext.fillRect(geeMeterCentre[0] + geeMeterRadiusOneGee*geeMeterReading2[0] - 5, geeMeterCentre[1] + geeMeterRadiusOneGee*geeMeterReading2[1] - 5, 10,10);
 
             overlaycontext.strokeStyle = "black";
 
@@ -61,13 +69,13 @@ var overlaydisplay = (function(){
             var velLineScale = 50;
             //velocity of front and back in cra frame WRT ground (not including wheel rotation)
             overlaycontext.beginPath();
-            overlaycontext.moveTo(100, 100);
-            overlaycontext.lineTo(100 + velLineScale*slipVecFront[0], 100 + velLineScale*slipVecFront[1]);
+            overlaycontext.moveTo(200, 100);
+            overlaycontext.lineTo(200 + velLineScale*slipVecFront[0], 100 + velLineScale*slipVecFront[1]);
             overlaycontext.stroke();
 
             overlaycontext.beginPath();
-            overlaycontext.moveTo(100, 150);
-            overlaycontext.lineTo(100 + velLineScale*slipVecRear[0], 150 + velLineScale*slipVecRear[1]);
+            overlaycontext.moveTo(200, 150);
+            overlaycontext.lineTo(200 + velLineScale*slipVecRear[0], 150 + velLineScale*slipVecRear[1]);
             overlaycontext.stroke();
 
             //show capping
@@ -78,32 +86,29 @@ var overlaydisplay = (function(){
             slipVecRearMultiplierToCap = carInfo2.slipVecRearMultiplierToCap;
 
             overlaycontext.beginPath();
-            overlaycontext.moveTo(100, 100);
-            overlaycontext.lineTo(100 + velLineScale*slipVecFrontMultiplierToCap*slipVecFront[0], 100 + velLineScale*slipVecFrontMultiplierToCap*slipVecFront[1]);
+            overlaycontext.moveTo(200, 100);
+            overlaycontext.lineTo(200 + velLineScale*slipVecFrontMultiplierToCap*slipVecFront[0], 100 + velLineScale*slipVecFrontMultiplierToCap*slipVecFront[1]);
             overlaycontext.stroke();
 
             overlaycontext.beginPath();
-            overlaycontext.moveTo(100, 150);
-            overlaycontext.lineTo(100 + velLineScale*slipVecRearMultiplierToCap*slipVecRear[0], 150 + velLineScale*slipVecRearMultiplierToCap*slipVecRear[1]);
+            overlaycontext.moveTo(200, 150);
+            overlaycontext.lineTo(200 + velLineScale*slipVecRearMultiplierToCap*slipVecRear[0], 150 + velLineScale*slipVecRearMultiplierToCap*slipVecRear[1]);
             overlaycontext.stroke();
-
-
 
             overlaycontext.strokeStyle = "blue";
 
             //steering angle
             var steeringAngleCosSin2 = [Math.cos(carInfo2.steeringAngle), -Math.sin(carInfo2.steeringAngle)];
             overlaycontext.beginPath();
-            overlaycontext.moveTo(100 , 100);
-            overlaycontext.lineTo(100 +steeringAngleIndicatorLen*steeringAngleCosSin2[1], 100 -steeringAngleIndicatorLen*steeringAngleCosSin2[0]);
+            overlaycontext.moveTo(200 , 100);
+            overlaycontext.lineTo(200 +steeringAngleIndicatorLen*steeringAngleCosSin2[1], 100 -steeringAngleIndicatorLen*steeringAngleCosSin2[0]);
             overlaycontext.stroke();
 
             //steering angle of rear wheels = 0
             overlaycontext.beginPath();
-            overlaycontext.moveTo(100 , 150);
-            overlaycontext.lineTo(100, 150 -steeringAngleIndicatorLen);
+            overlaycontext.moveTo(200 , 150);
+            overlaycontext.lineTo(200, 150 -steeringAngleIndicatorLen);
             overlaycontext.stroke();
-
         }
     }
 
