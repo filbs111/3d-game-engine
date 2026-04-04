@@ -159,6 +159,9 @@ function dotProd3(aa,bb){
     return aa[0]*bb[0] + aa[1]*bb[1] + aa[2]*bb[2];
 }
 
+function dotProd2(aa,bb){
+    return aa[0]*bb[0] + aa[1]*bb[1];
+}
 
 
 calculateProjectionMatrixForIntermediateView(0.8, 0.45, 0.1, -0.333, mat4.create());

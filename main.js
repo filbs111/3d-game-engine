@@ -44,6 +44,30 @@ var carInfo = {
     steeringAngle: 0
 }
 
+//2nd car with different physics model
+var carInfo2 = {
+    pos: [0,0],
+    yawRate: 0,
+    steeringAngle: 0,
+    throttle: 0,
+    velInCarFrame: [0,0],
+    rearWheelAngVel: 0,
+    frontWheelLongPos: 1.3,
+    rearWheelLongPos: -1.3,
+    frontWheelContactPatchOffsetInCarFrame: [0,0],
+    rearWheelContactPatchOffsetInCarFrame: [0,0],
+    
+    //invariants? 
+    // length/angle over which tyre deflection decays
+    // mass, angular mass? 
+    // height of centre of mass for weight transfer
+    // power, drivetrain mass
+    // aero drag, rolling resistance
+    // downforce
+    // steering lock, speed dependence, input to steering angle method
+}
+
+
 function init(){
 
     //escape escapes pointer lock and exit fullscreen
@@ -77,12 +101,14 @@ function init(){
 					goFullscreen(canvascontainer);
 					break;
                 case 69:
-                    var carModeToggle = document.getElementById("carmode");
+                    //NOTE just switching between walk and car 2
+
+                    var carModeToggle = document.getElementById("carmode_2");
 
                     if (carModeToggle.checked){
                         //get out of car
-                        playerPos[0] = carInfo.pos[0];  //TODO appear at drivers side door
-                        playerPos[2] = carInfo.pos[2];
+                        playerPos[0] = carInfo2.pos3[0];  //TODO appear at drivers side door
+                        playerPos[2] = carInfo2.pos3[2];
                         carModeToggle.checked = false;
                     }else{
                          //TODO check proximity
@@ -370,6 +396,16 @@ var carMatrixOld = mat4.create(carMatrix);
 var carCamera = mat4.create(carMatrix);
 var carCameraOld = mat4.create(carCamera);
 
+
+var carMatrix2 = mat4.identity();
+mat4.translate(carMatrix2,[4,-0.7,6]); //right, down a bit, back
+var carMatrix2Old = mat4.create(carMatrix2);
+
+var carCamera2 = mat4.create(carMatrix2);
+var carCamera2Old = mat4.create(carCamera2);
+
+
+
 var lucyMatrix = mat4.identity();
 mat4.translate(lucyMatrix,[-8,3,-6]); //left, up a bit, forwards
 mat4.rotateY(lucyMatrix, -1);   //clockwise
@@ -389,6 +425,12 @@ var cameraZoom = -1;
 var xMoveSmooth=0;
 var zMoveSmooth=0;
 
+function getCarMode(){
+    return document.getElementById("carmode_2").checked ? 2 : 
+            document.getElementById("carmode_1").checked ? 1 :
+            0;
+}
+
 function iterateMechanics(timeChange){
     //TODO take inputs more frequently?
 
@@ -396,18 +438,20 @@ function iterateMechanics(timeChange){
     playerRotationOld = playerRotation;
     playerElevationOld = playerElevation;
 
-    var isCarMode = document.getElementById("carmode").checked;
-        //TODO turn off player motion when controlling car? 
-
+    var carMode = getCarMode();
 
     var forwardBack = keyThing.keystate(87)-keyThing.keystate(83);	//vertical W,S = up, down
     var leftRight = keyThing.keystate(65)-keyThing.keystate(68);    //lateral A,D
 
-    var cosSin = [Math.cos(playerRotation), Math.sin(playerRotation)];
-    var moveMultiplier = (forwardBack==0 || leftRight==0) ? 1: 0.7071
+    //don't move player if in car
+    var forwardBackWalk = carMode == 0 ? forwardBack : 0;
+    var leftRightWalk = carMode == 0 ? leftRight : 0;
 
-    var xMove = moveMultiplier*(forwardBack*cosSin[0] + leftRight*cosSin[1]);
-    var zMove = moveMultiplier*(-forwardBack*cosSin[1] + leftRight*cosSin[0]);
+    var cosSin = [Math.cos(playerRotation), Math.sin(playerRotation)];
+    var moveMultiplier = (forwardBackWalk==0 || leftRightWalk==0) ? 1: 0.7071
+
+    var xMove = moveMultiplier*(forwardBackWalk*cosSin[0] + leftRightWalk*cosSin[1]);
+    var zMove = moveMultiplier*(-forwardBackWalk*cosSin[1] + leftRightWalk*cosSin[0]);
 
     var turnInput = keyThing.leftKey() - keyThing.rightKey();
     var elevationInput = keyThing.upKey() - keyThing.downKey();
@@ -525,12 +569,21 @@ function iterateMechanics(timeChange){
     carInfo.speed -= carInfo.speed*speedTimesDrag*timeChange;
 
 
+    //linear drag
+    if (carMode !=1 ){
+        carInfo.speed*=0.99;    //apply handbrake if not in car. NOTE really this should be grip limited. TODO make handbrake more constant (presumably is like a dynamic friction when moving)
+    }else{
+        carInfo.speed*=0.9999;   //something like rolling resistance. NOTE current aero drag tuned to produce documented top speed with zero rolling resitance. TODO tune to regain top speed, select
+                                    //reasonable rolling resistance val.
+    }
+
+
     carInfo.steeringAngle *= 0.98;
 
 
     var carForwardInput = 0;
     var steeringAngleTarget=0;
-    if (isCarMode){
+    if (carMode == 1){
         //a = v^2/r => r = a v^2
         // steering angle ~ car wheelbase / radius
         // so steering andle at which grip fails goes as 1/v^2.
@@ -584,6 +637,134 @@ function iterateMechanics(timeChange){
     
     //mat4.rotateY(carCamera, lastFixedTimestepUpdateTime*0.001);
     mat4.translate(carCamera, [0,2.4,4.2]);   //above and behind car
+
+    //second car
+    mat4.set(carCamera2, carCamera2Old);
+    mat4.set(carMatrix2, carCamera2);
+    mat4.translate(carCamera2, [0,0,-1.7]);   //centre of car appears to be ahead of car origin
+    
+    //mat4.translate(carCamera2, [0,3,6]);   //above and behind car
+    mat4.translate(carCamera2, [0,4,8]);   //above and behind car
+
+    //top-down view
+    // mat4.translate(carCamera2, [0,10,1]);   //above and behind car
+    // mat4.rotateX(carCamera2, -Math.PI/2);
+
+    processCar2Mechanics(timeChange, leftRight, forwardBack, carMode == 2);
+}
+
+function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl){
+
+    if (!enableControl){
+        leftRight = 0;
+        forwardBack = 0;
+    }
+
+    var timeChangeSeconds = timeChange*0.001;
+    
+    //second car with different physics/controls
+    mat4.set(carMatrix2, carMatrix2Old);
+
+    /*
+
+    //2nd car with different physics model
+    var carInfo2 = {
+        pos3: [0,0],
+        yawRate: 0,
+        steeringAngle: 0,
+        throttle: 0,
+        velInCarFrame: [0,0],
+        rearWheelAngVel: 0,
+        frontWheelLongPos: 2,
+        rearWheelLongPos: -2,
+        frontWheelContactPatchOffsetInCarFrame: [0,0],
+        rearWheelContactPatchOffsetInCarFrame: [0,0],
+    */
+
+    carInfo2.pos3 = carMatrix2.slice(12,15);
+
+    var totalSpeedSq = carInfo2.velInCarFrame.reduce((prev, current) => prev + current*current , 0);
+    
+    //steering angle dependent on speed similar to car 1. TODO units? assume rads for now...
+    carInfo2.steeringAngle *= 0.98;
+    var steeringAngleTarget=0;
+    //a = v^2/r => r = a v^2
+    // steering angle ~ car wheelbase / radius
+    // so steering andle at which grip fails goes as 1/v^2.
+    // in order to limit at low speed, just do 1/(vbodge^2 + v^2)
+    var steeringStrength = 1/(1+ 0.01*totalSpeedSq);
+    steeringStrength = Math.min(0.9, steeringStrength); //max out steering angle at low speed.
+    steeringAngleTarget = 0.015*leftRight*steeringStrength;
+
+    carInfo2.steeringAngle += steeringAngleTarget;
+
+    //override with simple steering angle
+    //carInfo2.steeringAngle = leftRight;
+    
+    //console.log(carInfo2.steeringAngle);
+
+    //simple thrust like a rocket -  TODO slip ratio, real wheel speed
+    var velInCarFrame = carInfo2.velInCarFrame;
+    velInCarFrame[1] -= forwardBack * 0.1;
+    for (var ii=0;ii<2;ii++){
+        velInCarFrame[ii]*=0.999;  //simple drag
+    }
+
+    //move by speed
+    mat4.translate(carMatrix2, [velInCarFrame[0],0,velInCarFrame[1]].map(x=>x*timeChangeSeconds));
+
+    //calculate velocity of ground under wheel position in car frame (not contact patch)
+    var const1 = -1;
+    var const2 = 2;
+    var const3 = -2;
+    var const4 = -0.3;
+
+    var rearWheelsVel = carInfo2.velInCarFrame.map(x=>x);
+    rearWheelsVel[0]+=const1*carInfo2.rearWheelLongPos*carInfo2.yawRate;
+
+    var frontWheelsVel = carInfo2.velInCarFrame.map(x=>x);
+    frontWheelsVel[0]+=const1*carInfo2.frontWheelLongPos*carInfo2.yawRate;
+
+    //calculate velocity of ground here relative to spinning tyre, ignoring contact patch movement.
+    // for now, have zero slip ratio - freely driven light wheels. TODO modify for driven/braked wheels.
+
+    var rearWheelsRimVelVsGroundInCarFrame = rearWheelsVel.map(x=>x);
+    rearWheelsRimVelVsGroundInCarFrame[1] = 0;
+
+    var frontWheelsRimVelVsGroundInCarFrame = frontWheelsVel.map(x=>x);
+    var frontWheelDirectionInCarFrame = [Math.sin(carInfo2.steeringAngle), Math.cos(carInfo2.steeringAngle)];
+    var dotDirectionWithVel = dotProd2(frontWheelDirectionInCarFrame, frontWheelsRimVelVsGroundInCarFrame);
+    for (var ii=0;ii<2;ii++){
+        frontWheelsRimVelVsGroundInCarFrame[ii] -= dotDirectionWithVel*frontWheelDirectionInCarFrame[ii];
+    }
+
+    //apply force to car proportional to this wheel rim vel vs ground, check steering behaviour approximately right TODO use slip angle
+    //also apply torque
+
+    var frontWheelForceInCarFrame = frontWheelsRimVelVsGroundInCarFrame.map(x=>x*const4);
+    var rearWheelForceInCarFrame = rearWheelsRimVelVsGroundInCarFrame.map(x=>x*const4);
+
+    //apply forces
+    velInCarFrame[0]+=timeChangeSeconds* const2*(frontWheelForceInCarFrame[0] + rearWheelForceInCarFrame[0]);
+    velInCarFrame[1]+=timeChangeSeconds* const2*(frontWheelForceInCarFrame[1] + rearWheelForceInCarFrame[1]);
+    
+    //apply torques
+    carInfo2.yawRate += timeChangeSeconds* const3 * (frontWheelForceInCarFrame[0]*carInfo2.frontWheelLongPos + rearWheelForceInCarFrame[0]*carInfo2.rearWheelLongPos);
+
+    var angleToRotateBy = carInfo2.yawRate * timeChangeSeconds;
+    var cosSin = [Math.cos(angleToRotateBy), Math.sin(angleToRotateBy)];
+    mat4.rotateY(carMatrix2, angleToRotateBy);  //degrees or rads?
+
+    //also should rotate speed of car in its fram
+    carInfo2.velInCarFrame = [ velInCarFrame[0]*cosSin[0] - velInCarFrame[1]*cosSin[1], velInCarFrame[1]*cosSin[0] + velInCarFrame[0]*cosSin[1] ];
+        //TODO check sign!
+
+    // console.log({
+    //     frontWheelForceInCarFrame,
+    //     rearWheelForceInCarFrame
+    // })
+
+
 }
 
 
@@ -679,13 +860,15 @@ function drawScene(frameTime){
     var neckMat = mat4.create(eyeMat);
     mat4.translate(eyeMat, playerEyePosFromNeck);
 
-
-    var isCarMode = document.getElementById("carmode").checked;
+    var carMode = getCarMode();
 
     if (document.getElementById("camfollowsplayer").checked){
         mat4.identity(staticCamera);
         mat4.translate(staticCamera, statCamPos);
-        var camTarget = isCarMode ? carInfo.pos : playerPosInterp;
+        var camTarget = carMode == 2 ? carInfo2.pos:
+                        carMode == 1 ? carInfo.pos:
+                        playerPosInterp;
+
         var difference = [camTarget[0]-statCamPos[0], camTarget[1]-statCamPos[1], camTarget[2]-statCamPos[2]];
         mat4.rotateY(staticCamera, Math.atan2(-difference[0], -difference[2]));   //pan
         var distance = Math.hypot.apply(null, difference);
@@ -696,12 +879,19 @@ function drawScene(frameTime){
     var unmirroredCameraMat = mat4.create();
     if (document.getElementById("externalcam").checked){
         mat4.set(staticCamera, unmirroredCameraMat);
-    }else if(isCarMode){
+    }else if(carMode == 1){
         if (document.getElementById("interpolate-camera").checked){
             var carCameraInterpolated = simpleMatrixInterpolation(carCamera, carCameraOld, interpolationFactor);
             mat4.set(carCameraInterpolated, unmirroredCameraMat);
         }else{
             mat4.set(carCamera, unmirroredCameraMat);
+        }
+    }else if(carMode == 2){
+        if (document.getElementById("interpolate-camera").checked){
+            var carCameraInterpolated = simpleMatrixInterpolation(carCamera2, carCamera2Old, interpolationFactor);
+            mat4.set(carCameraInterpolated, unmirroredCameraMat);
+        }else{
+            mat4.set(carCamera2, unmirroredCameraMat);
         }
     }else{
         mat4.set(eyeMat, unmirroredCameraMat);
@@ -893,9 +1083,7 @@ function drawScene(frameTime){
 
     //update overlay
     overlaydisplay.clear();
-    if (isCarMode){
-        overlaydisplay.drawDisplay();
-    }
+    overlaydisplay.drawDisplay(carMode);
 }
 
 
@@ -903,7 +1091,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         //NOTE passing in eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation is awkward. 
         //TODO create scene description and use for render?
 
-    var isCarMode = document.getElementById("carmode").checked;
+    var carMode = getCarMode();
 
     mat4.set(unmirroredCameraMat, cameraMat);
 
@@ -979,7 +1167,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
 
-    if (!isCarMode){
+    if (carMode == 0){
         gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.1,0.5,0.1]);
 
         //setup gun mat (also used later for x-hair
@@ -1096,6 +1284,49 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         drawObjectFromBuffers(listerBuffers, activeProg);
     }
 
+    //second car
+        if (listerBuffers.isLoaded){
+
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.02,0.001,0.001]);
+        if (document.getElementById("interpolate-camera").checked){
+            var interpolatedCarMatrix = simpleMatrixInterpolation(carMatrix2, carMatrix2Old, interpolationFactor);
+            mat4.set(interpolatedCarMatrix, mMatrix);
+        }else{
+            mat4.set(carMatrix2, mMatrix);
+        }
+
+        //move visual car back back a bit since seems 
+        var carDrawPosOffset = [0,0,1.5];
+        mat4.translate(mMatrix, carDrawPosOffset);
+
+        mat4.scale(mMatrix,[1,1,1].map(x=>x*0.56));  //guess correct size - default seems far too big
+        drawObjectFromBuffers(listerBuffers, activeProg);
+        
+        mat4.scale(mMatrix,[1,1,1].map(x=>x/0.56)); //undo scale
+        mat4.translate(mMatrix, carDrawPosOffset.map(x=>-x));   //undo translate
+
+
+        var wheelMarkerScale = [.1,1,.2];
+
+        //marker for wheels
+        mat4.translate(mMatrix, [0,0,-carInfo2.rearWheelLongPos]);
+        mat4.scale(mMatrix,wheelMarkerScale);
+        drawObjectFromBuffers(cubeBuffers, activeProg);
+
+        //undo scale
+        mat4.scale(mMatrix,wheelMarkerScale.map(x=>1/x));
+        mat4.translate(mMatrix, [0,0,-(carInfo2.frontWheelLongPos-carInfo2.rearWheelLongPos)]);
+        mat4.rotateY(mMatrix, carInfo2.steeringAngle);
+        mat4.scale(mMatrix,wheelMarkerScale);
+
+        drawObjectFromBuffers(cubeBuffers, activeProg);
+
+    }
+
+    
+
+
+
 
     //draw cube
     setupDrawMatrixForObjectAtPosition(boxPos);
@@ -1119,7 +1350,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
 
     //draw x-hair.
-    if (!isCarMode){
+    if (carMode == 0){
         activeProg = shaderPrograms.flat;
         gl.useProgram(activeProg);
         enableDisableAttributes(activeProg);

@@ -20,33 +20,48 @@ var overlaydisplay = (function(){
         overlaycontext.clearRect(0, 0, overlaycanvas.width, overlaycanvas.height);
     }
 
-    function drawDisplay(){
+    function drawDisplay(carMode){
         
-        //gee meter
-        overlaycontext.beginPath()
-        overlaycontext.fillStyle = "rgba(0,0,0,0.5)";
-        overlaycontext.beginPath();
-        overlaycontext.arc(geeMeterCentre[0], geeMeterCentre[1], geeMeterWholeRadius, 0, 2 * Math.PI);
-        overlaycontext.fill();
-        overlaycontext.beginPath();
-        overlaycontext.arc(geeMeterCentre[0], geeMeterCentre[1], geeMeterRadiusOneGee, 0, 2 * Math.PI);
-        overlaycontext.fill();
-
-        overlaycontext.fillStyle = "white";
-        overlaycontext.fillRect(geeMeterCentre[0] + geeMeterRadiusOneGee*geeMeterReading[0] - 5, geeMeterCentre[1] + geeMeterRadiusOneGee*geeMeterReading[1] - 5, 10,10);
-
-        //speedo
-        overlaycontext.font = "20px Arial";
-        overlaycontext.fillText(speedMph.toFixed(1) + "mph",10,500);
-
-        //steering angle
-        var steeringAngleCosSin = [Math.cos(carInfo.steeringAngle), Math.sin(carInfo.steeringAngle)];
         var steeringAngleIndicatorLen = 20;
-        overlaycontext.beginPath();
-        overlaycontext.moveTo(200 +steeringAngleIndicatorLen*steeringAngleCosSin[1], 100 -steeringAngleIndicatorLen*steeringAngleCosSin[0]);
-        overlaycontext.lineTo(200 -steeringAngleIndicatorLen*steeringAngleCosSin[1], 100 +steeringAngleIndicatorLen*steeringAngleCosSin[0]);
-        overlaycontext.stroke();
+
+        if (carMode == 0){return;}
+
+        if (carMode == 1){
+            //gee meter
+            overlaycontext.beginPath()
+            overlaycontext.fillStyle = "rgba(0,0,0,0.5)";
+            overlaycontext.beginPath();
+            overlaycontext.arc(geeMeterCentre[0], geeMeterCentre[1], geeMeterWholeRadius, 0, 2 * Math.PI);
+            overlaycontext.fill();
+            overlaycontext.beginPath();
+            overlaycontext.arc(geeMeterCentre[0], geeMeterCentre[1], geeMeterRadiusOneGee, 0, 2 * Math.PI);
+            overlaycontext.fill();
+
+            overlaycontext.fillStyle = "white";
+            overlaycontext.fillRect(geeMeterCentre[0] + geeMeterRadiusOneGee*geeMeterReading[0] - 5, geeMeterCentre[1] + geeMeterRadiusOneGee*geeMeterReading[1] - 5, 10,10);
+
+            //speedo
+            overlaycontext.font = "20px Arial";
+            overlaycontext.fillText(speedMph.toFixed(1) + "mph",10,500);
+
+            //steering angle
+            var steeringAngleCosSin = [Math.cos(carInfo.steeringAngle), Math.sin(carInfo.steeringAngle)];
+            overlaycontext.beginPath();
+            overlaycontext.moveTo(200 +steeringAngleIndicatorLen*steeringAngleCosSin[1], 100 -steeringAngleIndicatorLen*steeringAngleCosSin[0]);
+            overlaycontext.lineTo(200 -steeringAngleIndicatorLen*steeringAngleCosSin[1], 100 +steeringAngleIndicatorLen*steeringAngleCosSin[0]);
+            overlaycontext.stroke();
+        }
+
+        if (carMode == 2){
+            //steering angle
+            var steeringAngleCosSin2 = [Math.cos(carInfo2.steeringAngle), -Math.sin(carInfo2.steeringAngle)];
+            overlaycontext.beginPath();
+            overlaycontext.moveTo(200 +steeringAngleIndicatorLen*steeringAngleCosSin2[1], 100 -steeringAngleIndicatorLen*steeringAngleCosSin2[0]);
+            overlaycontext.lineTo(200 -steeringAngleIndicatorLen*steeringAngleCosSin2[1], 100 +steeringAngleIndicatorLen*steeringAngleCosSin2[0]);
+            overlaycontext.stroke();
+        }
     }
+
 
     function setGeeMeter(accVecGees){
         //car z angle something like Math.atan(carMatrix[0], carMatrix[2])
