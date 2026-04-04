@@ -923,7 +923,7 @@ function drawScene(frameTime){
     if (document.getElementById("camfollowsplayer").checked){
         mat4.identity(staticCamera);
         mat4.translate(staticCamera, statCamPos);
-        var camTarget = carMode == 2 ? carInfo2.pos:
+        var camTarget = carMode == 2 ? carInfo2.pos3:
                         carMode == 1 ? carInfo.pos:
                         playerPosInterp;
 
