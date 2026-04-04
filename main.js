@@ -56,6 +56,12 @@ var carInfo2 = {
     rearWheelLongPos: -1.3,
     frontWheelContactPatchOffsetInCarFrame: [0,0],
     rearWheelContactPatchOffsetInCarFrame: [0,0],
+
+    frontAxleVelInCarFrame:0,
+    rearAxleVelInCarFrame:0,
+
+    rimVelFrontMultiplierToCap:0,
+    rimVelRearMultiplierToCap:0,
     
     //invariants? 
     // length/angle over which tyre deflection decays
@@ -643,8 +649,12 @@ function iterateMechanics(timeChange){
     mat4.set(carMatrix2, carCamera2);
     mat4.translate(carCamera2, [0,0,-1.7]);   //centre of car appears to be ahead of car origin
     
+        mat4.rotateY(carCamera2, Math.PI/4);   //quarter angle to help looking at ground motion vs wheels
+
     //mat4.translate(carCamera2, [0,3,6]);   //above and behind car
-    mat4.translate(carCamera2, [0,4,8]);   //above and behind car
+    mat4.translate(carCamera2, [0,3.5,7]);   //above and behind car
+
+
 
     //top-down view
     // mat4.translate(carCamera2, [0,10,1]);   //above and behind car
@@ -715,15 +725,19 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
 
     //calculate velocity of ground under wheel position in car frame (not contact patch)
     var const1 = -1;
-    var const2 = 2;
-    var const3 = -2;
-    var const4 = -0.3;
+    var const2 = 6;
+    var const3 = -3;
+    var const4 = -0.5;
 
     var rearWheelsVel = carInfo2.velInCarFrame.map(x=>x);
     rearWheelsVel[0]+=const1*carInfo2.rearWheelLongPos*carInfo2.yawRate;
 
     var frontWheelsVel = carInfo2.velInCarFrame.map(x=>x);
     frontWheelsVel[0]+=const1*carInfo2.frontWheelLongPos*carInfo2.yawRate;
+
+    //store in order to display on overlay
+    carInfo2.frontAxleVelInCarFrame = frontWheelsVel;
+    carInfo2.rearAxleVelInCarFrame = rearWheelsVel;
 
     //calculate velocity of ground here relative to spinning tyre, ignoring contact patch movement.
     // for now, have zero slip ratio - freely driven light wheels. TODO modify for driven/braked wheels.
@@ -737,6 +751,26 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     for (var ii=0;ii<2;ii++){
         frontWheelsRimVelVsGroundInCarFrame[ii] -= dotDirectionWithVel*frontWheelDirectionInCarFrame[ii];
     }
+
+
+    //cap these vectors within some limit (TODO slip ratio/angle force fall off outside optimal circle)
+    var rimVelCapMag = 2;   //guess number...
+
+    var rimVelSqFront = dotProd2(frontWheelsRimVelVsGroundInCarFrame, frontWheelsRimVelVsGroundInCarFrame);
+    var rimVelSqRear = dotProd2(rearWheelsRimVelVsGroundInCarFrame, rearWheelsRimVelVsGroundInCarFrame);
+
+    var rimVelMagFront = Math.sqrt(rimVelSqFront);
+    var rimVelFrontMultiplierToCap = Math.min(Math.abs(rimVelCapMag/rimVelMagFront), 1);
+    frontWheelsRimVelVsGroundInCarFrame = frontWheelsRimVelVsGroundInCarFrame.map(x=>x*rimVelFrontMultiplierToCap);
+
+    var rimVelMagRear= Math.sqrt(rimVelSqRear);
+    var rimVelRearMultiplierToCap = Math.min(Math.abs(rimVelCapMag/rimVelMagRear), 1);
+    rearWheelsRimVelVsGroundInCarFrame = rearWheelsRimVelVsGroundInCarFrame.map(x=>x*rimVelRearMultiplierToCap);
+
+    //save for use in display
+    carInfo2.rimVelFrontMultiplierToCap = rimVelFrontMultiplierToCap;
+    carInfo2.rimVelRearMultiplierToCap = rimVelRearMultiplierToCap;
+
 
     //apply force to car proportional to this wheel rim vel vs ground, check steering behaviour approximately right TODO use slip angle
     //also apply torque
