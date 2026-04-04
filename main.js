@@ -663,12 +663,23 @@ function iterateMechanics(timeChange){
     processCar2Mechanics(timeChange, leftRight, forwardBack, carMode == 2);
 }
 
+var car2steeringVel = 0;
+var car2steeringSmoothedSteeringInput = 0;
+
 function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl){
 
     if (!enableControl){
         leftRight = 0;
         forwardBack = 0;
     }
+
+    //do something to make steering angle time derivative continuous, and total angle steered not proprtional to press duration.
+    // maybe is equivalent to having some steering wheel position acceleration - TODO graph steering wheel position.
+
+    car2steeringVel = leftRight*0.1 + car2steeringVel*0.9;
+    car2steeringSmoothedSteeringInput = car2steeringSmoothedSteeringInput*0.9+car2steeringVel*0.1;
+
+    leftRight=car2steeringSmoothedSteeringInput;
 
     var timeChangeSeconds = timeChange*0.001;
     
@@ -696,15 +707,15 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     var totalSpeedSq = carInfo2.velInCarFrame.reduce((prev, current) => prev + current*current , 0);
     
     //steering angle dependent on speed similar to car 1. TODO units? assume rads for now...
-    carInfo2.steeringAngle *= 0.98;
+    carInfo2.steeringAngle *= 0.95;
     var steeringAngleTarget=0;
     //a = v^2/r => r = a v^2
     // steering angle ~ car wheelbase / radius
     // so steering andle at which grip fails goes as 1/v^2.
     // in order to limit at low speed, just do 1/(vbodge^2 + v^2)
-    var steeringStrength = 1/(1+ 0.01*totalSpeedSq);
-    steeringStrength = Math.min(0.9, steeringStrength); //max out steering angle at low speed.
-    steeringAngleTarget = 0.015*leftRight*steeringStrength;
+    var steeringStrength = 1/(1+ 0.002*totalSpeedSq);
+    steeringStrength = Math.min(0.7, steeringStrength); //max out steering angle at low speed.
+    steeringAngleTarget = 0.02*leftRight*steeringStrength;
 
     carInfo2.steeringAngle += steeringAngleTarget;
 
@@ -754,7 +765,7 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
 
 
     //cap these vectors within some limit (TODO slip ratio/angle force fall off outside optimal circle)
-    var rimVelCapMag = 2;   //guess number...
+    var rimVelCapMag = 4;   //guess number...
 
     var rimVelSqFront = dotProd2(frontWheelsRimVelVsGroundInCarFrame, frontWheelsRimVelVsGroundInCarFrame);
     var rimVelSqRear = dotProd2(rearWheelsRimVelVsGroundInCarFrame, rearWheelsRimVelVsGroundInCarFrame);
