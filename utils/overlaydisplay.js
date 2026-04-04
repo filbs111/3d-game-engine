@@ -56,35 +56,35 @@ var overlaydisplay = (function(){
 
             overlaycontext.strokeStyle = "black";
 
-            var frontAxleVelInCarFrame = carInfo2.frontAxleVelInCarFrame;
-            var rearAxleVelInCarFrame = carInfo2.rearAxleVelInCarFrame;
-            var velLineScale = 10;
+            var slipVecFront = carInfo2.slipVecFront;
+            var slipVecRear = carInfo2.slipVecRear;
+            var velLineScale = 50;
             //velocity of front and back in cra frame WRT ground (not including wheel rotation)
             overlaycontext.beginPath();
             overlaycontext.moveTo(100, 100);
-            overlaycontext.lineTo(100 + velLineScale*frontAxleVelInCarFrame[0], 100 + velLineScale*frontAxleVelInCarFrame[1]);
+            overlaycontext.lineTo(100 + velLineScale*slipVecFront[0], 100 + velLineScale*slipVecFront[1]);
             overlaycontext.stroke();
 
             overlaycontext.beginPath();
             overlaycontext.moveTo(100, 150);
-            overlaycontext.lineTo(100 + velLineScale*rearAxleVelInCarFrame[0], 150 + velLineScale*rearAxleVelInCarFrame[1]);
+            overlaycontext.lineTo(100 + velLineScale*slipVecRear[0], 150 + velLineScale*slipVecRear[1]);
             overlaycontext.stroke();
 
             //show capping
             //NOTE bodge - capping is done AFTER removing component in direction of tyre.
             overlaycontext.strokeStyle = "green";
 
-            rimVelFrontMultiplierToCap = carInfo2.rimVelFrontMultiplierToCap;
-            rimVelRearMultiplierToCap = carInfo2.rimVelRearMultiplierToCap;
+            slipVecFrontMultiplierToCap = carInfo2.slipVecFrontMultiplierToCap;
+            slipVecRearMultiplierToCap = carInfo2.slipVecRearMultiplierToCap;
 
             overlaycontext.beginPath();
             overlaycontext.moveTo(100, 100);
-            overlaycontext.lineTo(100 + velLineScale*rimVelFrontMultiplierToCap*frontAxleVelInCarFrame[0], 100 + velLineScale*rimVelFrontMultiplierToCap*frontAxleVelInCarFrame[1]);
+            overlaycontext.lineTo(100 + velLineScale*slipVecFrontMultiplierToCap*slipVecFront[0], 100 + velLineScale*slipVecFrontMultiplierToCap*slipVecFront[1]);
             overlaycontext.stroke();
 
             overlaycontext.beginPath();
             overlaycontext.moveTo(100, 150);
-            overlaycontext.lineTo(100 + velLineScale*rimVelRearMultiplierToCap*rearAxleVelInCarFrame[0], 150 + velLineScale*rimVelRearMultiplierToCap*rearAxleVelInCarFrame[1]);
+            overlaycontext.lineTo(100 + velLineScale*slipVecRearMultiplierToCap*slipVecRear[0], 150 + velLineScale*slipVecRearMultiplierToCap*slipVecRear[1]);
             overlaycontext.stroke();
 
 

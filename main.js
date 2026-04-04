@@ -60,8 +60,10 @@ var carInfo2 = {
     frontAxleVelInCarFrame:0,
     rearAxleVelInCarFrame:0,
 
-    rimVelFrontMultiplierToCap:0,
-    rimVelRearMultiplierToCap:0,
+    slipVecFront:[0,0],
+    slipVecRear:[0,0],
+    slipVecFrontMultiplierToCap:0,
+    slipVecRearMultiplierToCap:0,
     
     //invariants? 
     // length/angle over which tyre deflection decays
@@ -738,7 +740,7 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     var const1 = -1;
     var const2 = 6;
     var const3 = -3;
-    var const4 = -0.5;
+    var const4 = -6;
 
     var rearWheelsVel = carInfo2.velInCarFrame.map(x=>x);
     rearWheelsVel[0]+=const1*carInfo2.rearWheelLongPos*carInfo2.yawRate;
@@ -763,31 +765,50 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
         frontWheelsRimVelVsGroundInCarFrame[ii] -= dotDirectionWithVel*frontWheelDirectionInCarFrame[ii];
     }
 
+    //calculate slip angle
+
+    // rear wheel rolling speed : rearWheelsVel[1]
+    // front wheel rolling speed : dotDirectionWithVel
+    // maybe want to abs or square this to handle +ve, -ve.
+    // NOTE for slip angle/ratio, could use absolute speed. better or worse? 
+
+    //get a slip angle that doesn't need abs and doesn't have /0 problem by doing 1/sqrt(longvel^2 + smallval);
+
+    // simple solution for linear drag at low speed. 
+    // NOTE for slow speeds would slide down slope when parked etc (though no slopes here! 
+    // this would be more complicated, would want damping for wobbles etc.
+    var smallValDeterminingLowSpeedResponse = 0.01;
+    var inverseSpeedFactorFrontWheel = 1/Math.sqrt(dotDirectionWithVel*dotDirectionWithVel + smallValDeterminingLowSpeedResponse);
+    var inverseSpeedFactorRearWheel = 1/Math.sqrt(rearWheelsVel[1]*rearWheelsVel[1] + smallValDeterminingLowSpeedResponse);
+    
+    var frontWheelSlipVector = frontWheelsRimVelVsGroundInCarFrame.map(x=>x*inverseSpeedFactorFrontWheel);
+    var rearWheelSlipVector = rearWheelsRimVelVsGroundInCarFrame.map(x=>x*inverseSpeedFactorRearWheel);
 
     //cap these vectors within some limit (TODO slip ratio/angle force fall off outside optimal circle)
-    var rimVelCapMag = 4;   //guess number...
+    var slipVecCapMag = 0.4;   //guess number...
 
-    var rimVelSqFront = dotProd2(frontWheelsRimVelVsGroundInCarFrame, frontWheelsRimVelVsGroundInCarFrame);
-    var rimVelSqRear = dotProd2(rearWheelsRimVelVsGroundInCarFrame, rearWheelsRimVelVsGroundInCarFrame);
+    var slipSqFront = dotProd2(frontWheelSlipVector, frontWheelSlipVector);
+    var slipSqRear = dotProd2(rearWheelSlipVector, rearWheelSlipVector);
 
-    var rimVelMagFront = Math.sqrt(rimVelSqFront);
-    var rimVelFrontMultiplierToCap = Math.min(Math.abs(rimVelCapMag/rimVelMagFront), 1);
-    frontWheelsRimVelVsGroundInCarFrame = frontWheelsRimVelVsGroundInCarFrame.map(x=>x*rimVelFrontMultiplierToCap);
+    var slipMagFront = Math.sqrt(slipSqFront);
+    var slipVecFrontMultiplierToCap = Math.min(Math.abs(slipVecCapMag/slipMagFront), 1);
+    frontWheelsCappedSlip = frontWheelSlipVector.map(x=>x*slipVecFrontMultiplierToCap);
 
-    var rimVelMagRear= Math.sqrt(rimVelSqRear);
-    var rimVelRearMultiplierToCap = Math.min(Math.abs(rimVelCapMag/rimVelMagRear), 1);
-    rearWheelsRimVelVsGroundInCarFrame = rearWheelsRimVelVsGroundInCarFrame.map(x=>x*rimVelRearMultiplierToCap);
+    var slipMagRear= Math.sqrt(slipSqRear);
+    var slipVecRearMultiplierToCap = Math.min(Math.abs(slipVecCapMag/slipMagRear), 1);
+    rearWheelsCappedSlip = rearWheelSlipVector.map(x=>x*slipVecRearMultiplierToCap);
 
     //save for use in display
-    carInfo2.rimVelFrontMultiplierToCap = rimVelFrontMultiplierToCap;
-    carInfo2.rimVelRearMultiplierToCap = rimVelRearMultiplierToCap;
-
+    carInfo2.slipVecFrontMultiplierToCap = slipVecFrontMultiplierToCap;
+    carInfo2.slipVecRearMultiplierToCap = slipVecRearMultiplierToCap;
+    carInfo2.slipVecFront = frontWheelSlipVector;
+    carInfo2.slipVecRear = rearWheelSlipVector;
 
     //apply force to car proportional to this wheel rim vel vs ground, check steering behaviour approximately right TODO use slip angle
     //also apply torque
 
-    var frontWheelForceInCarFrame = frontWheelsRimVelVsGroundInCarFrame.map(x=>x*const4);
-    var rearWheelForceInCarFrame = rearWheelsRimVelVsGroundInCarFrame.map(x=>x*const4);
+    var frontWheelForceInCarFrame = frontWheelsCappedSlip.map(x=>x*const4);
+    var rearWheelForceInCarFrame = rearWheelsCappedSlip.map(x=>x*const4);
 
     //apply forces
     velInCarFrame[0]+=timeChangeSeconds* const2*(frontWheelForceInCarFrame[0] + rearWheelForceInCarFrame[0]);
@@ -802,14 +823,6 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
 
     //also should rotate speed of car in its fram
     carInfo2.velInCarFrame = [ velInCarFrame[0]*cosSin[0] - velInCarFrame[1]*cosSin[1], velInCarFrame[1]*cosSin[0] + velInCarFrame[0]*cosSin[1] ];
-        //TODO check sign!
-
-    // console.log({
-    //     frontWheelForceInCarFrame,
-    //     rearWheelForceInCarFrame
-    // })
-
-
 }
 
 
