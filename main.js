@@ -745,7 +745,7 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     var const1 = -1;
     var const2 = 6;
     var const3 = -4;
-    var const4 = -4;
+    var const4 = -5;
 
     var rearWheelsVel = carInfo2.velInCarFrame.map(x=>x);
     rearWheelsVel[0]+=const1*carInfo2.rearWheelLongPos*carInfo2.yawRate;
@@ -760,14 +760,19 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     //calculate velocity of ground here relative to spinning tyre, ignoring contact patch movement.
     // for now, have zero slip ratio - freely driven light wheels. TODO modify for driven/braked wheels.
 
+    var brakeAmount = 0.1*brake;   //rotate wheels slower than free wheeling speed. impact should mean constant braking force, but fading out near zero speed due
+        //to smallValDeterminingLowSpeedResponse stuff. NOTE this number is quite large!
+
     var rearWheelsRimVelVsGroundInCarFrame = rearWheelsVel.map(x=>x);
-    rearWheelsRimVelVsGroundInCarFrame[1] = 0;
+    rearWheelsRimVelVsGroundInCarFrame[1] *= brakeAmount;
 
     var frontWheelsRimVelVsGroundInCarFrame = frontWheelsVel.map(x=>x);
     var frontWheelDirectionInCarFrame = [Math.sin(carInfo2.steeringAngle), Math.cos(carInfo2.steeringAngle)];
     var dotDirectionWithVel = dotProd2(frontWheelDirectionInCarFrame, frontWheelsRimVelVsGroundInCarFrame);
+
+
     for (var ii=0;ii<2;ii++){
-        frontWheelsRimVelVsGroundInCarFrame[ii] -= dotDirectionWithVel*frontWheelDirectionInCarFrame[ii];
+        frontWheelsRimVelVsGroundInCarFrame[ii] -= dotDirectionWithVel*(1-brakeAmount)*frontWheelDirectionInCarFrame[ii];
     }
 
     //calculate slip angle
@@ -790,7 +795,7 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     var rearWheelSlipVector = rearWheelsRimVelVsGroundInCarFrame.map(x=>x*inverseSpeedFactorRearWheel);
 
     //cap these vectors within some limit (TODO slip ratio/angle force fall off outside optimal circle)
-    var slipVecCapMag = 0.2;   //guess number...
+    var slipVecCapMag = 0.15;   //guess number...
 
     var slipSqFront = dotProd2(frontWheelSlipVector, frontWheelSlipVector);
     var slipSqRear = dotProd2(rearWheelSlipVector, rearWheelSlipVector);

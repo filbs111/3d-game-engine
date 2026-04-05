@@ -24,14 +24,15 @@ var keyThing = (function myKeysStatesThing(){
 	window.oncontextmenu = window.onblur;
 	
 	return {
-		keystate: function(e){ return keyStates[e]?1:0;},
-		spaceKey: function(){ return keyStates[32]?1:0;},
-		returnKey: function(){ return keyStates[13]?1:0;},
-		leftKey: function(){ return keyStates[37]?1:0;},
-		rightKey: function(){ return keyStates[39]?1:0;},
-		upKey: function(){ return keyStates[38]?1:0;},
-		downKey: function(){ return keyStates[40]?1:0;},
-		controlKey: function(){ return keyStates[17]?1:0;},
+		keystate: e => keyStates[e]?1:0,
+		spaceKey: () => keyStates[32]?1:0,
+		returnKey: () => keyStates[13]?1:0,
+		leftKey: () => keyStates[37]?1:0,
+		rightKey: () => keyStates[39]?1:0,
+		upKey: () => keyStates[38]?1:0,
+		downKey: () => keyStates[40]?1:0,
+		bKey: () => keyStates[66]?1:0, 
+		controlKey: () => keyStates[17]?1:0,
 		setKeydownCallback: function(e,f) {keydownCallbackFunctions[e] = f;}
 	};
 })();
