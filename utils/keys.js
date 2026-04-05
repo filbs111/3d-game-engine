@@ -31,7 +31,8 @@ var keyThing = (function myKeysStatesThing(){
 		rightKey: () => keyStates[39]?1:0,
 		upKey: () => keyStates[38]?1:0,
 		downKey: () => keyStates[40]?1:0,
-		bKey: () => keyStates[66]?1:0, 
+		bKey: () => keyStates[66]?1:0,
+  		nKey: () => keyStates[78]?1:0, 
 		controlKey: () => keyStates[17]?1:0,
 		setKeydownCallback: function(e,f) {keydownCallbackFunctions[e] = f;}
 	};

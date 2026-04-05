@@ -52,8 +52,9 @@ var carInfo2 = {
     throttle: 0,
     velInCarFrame: [0,0],
     rearWheelAngVel: 0,
-    frontWheelLongPos: 1.3,
-    rearWheelLongPos: -1.3,
+    frontWheelLongPos: 1.3, 
+    rearWheelLongPos: -1.6, //bodge this back because hope will result in yaw force aligning car heading with velocity. TODO shift car model forwards so centre of mass is at 0
+                            //seems realistic - weight balance of lister storm race car apparently 55/45 front/back, 1.6/(1.6+1.3) ~ .55
     frontWheelContactPatchOffsetInCarFrame: [0,0],
     rearWheelContactPatchOffsetInCarFrame: [0,0],
 
@@ -680,6 +681,10 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
         forwardBack = 0;
     }
 
+    var brake = keyThing.bKey();
+
+    var accelerator = keyThing.nKey();   //TODO use w/s for this!
+
     //do something to make steering angle time derivative continuous, and total angle steered not proprtional to press duration.
     // maybe is equivalent to having some steering wheel position acceleration - TODO graph steering wheel position.
 
@@ -763,8 +768,10 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     var brakeAmount = 0.1*brake;   //rotate wheels slower than free wheeling speed. impact should mean constant braking force, but fading out near zero speed due
         //to smallValDeterminingLowSpeedResponse stuff. NOTE this number is quite large!
 
+    var rearWheelBrakeAccAmount = brakeAmount - 0.2*accelerator;    //NOTE accelerator wont work at zero speed like this due to smallValDeterminingLowSpeedResponse
+
     var rearWheelsRimVelVsGroundInCarFrame = rearWheelsVel.map(x=>x);
-    rearWheelsRimVelVsGroundInCarFrame[1] *= brakeAmount;
+    rearWheelsRimVelVsGroundInCarFrame[1] *= rearWheelBrakeAccAmount;
 
     var frontWheelsRimVelVsGroundInCarFrame = frontWheelsVel.map(x=>x);
     var frontWheelDirectionInCarFrame = [Math.sin(carInfo2.steeringAngle), Math.cos(carInfo2.steeringAngle)];
@@ -1368,7 +1375,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         }
 
         //move visual car back back a bit since seems 
-        var carDrawPosOffset = [0,0,1.5];
+        var carDrawPosOffset = [0,0,1.6];
         mat4.translate(mMatrix, carDrawPosOffset);
 
         mat4.scale(mMatrix,[1,1,1].map(x=>x*0.56));  //guess correct size - default seems far too big
