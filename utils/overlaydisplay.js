@@ -57,10 +57,16 @@ var overlaydisplay = (function(){
         if (carMode == 2){
             //gee meter
             overlaycontext.fillStyle = "white";
-
             var geeMeterReading2 = carInfo2.acceleration.map(xx=>xx/9.81);
-
             overlaycontext.fillRect(geeMeterCentre[0] + geeMeterRadiusOneGee*geeMeterReading2[0] - 5, geeMeterCentre[1] + geeMeterRadiusOneGee*geeMeterReading2[1] - 5, 10,10);
+
+            //speedo
+            overlaycontext.font = "20px Arial";
+
+            //calculate speed. just take forwards speed. (how is speed displayed in car measured? wheel speed?)
+            var speedMph = -2.236936 * carInfo2.velInCarFrame[1];    //m/s to miles per hour
+            overlaycontext.fillText(speedMph.toFixed(1) + "mph",10,500);
+
 
             overlaycontext.strokeStyle = "black";
 
