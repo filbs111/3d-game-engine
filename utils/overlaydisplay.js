@@ -42,16 +42,16 @@ var overlaydisplay = (function(){
             overlaycontext.fillStyle = "white";
             overlaycontext.fillRect(geeMeterCentre[0] + geeMeterRadiusOneGee*geeMeterReading[0] - 5, geeMeterCentre[1] + geeMeterRadiusOneGee*geeMeterReading[1] - 5, 10,10);
 
-            //speedo
-            overlaycontext.font = "20px Arial";
-            overlaycontext.fillText(speedMph.toFixed(1) + "mph",10,500);
-
             //steering angle
             var steeringAngleCosSin = [Math.cos(carInfo.steeringAngle), Math.sin(carInfo.steeringAngle)];
             overlaycontext.beginPath();
             overlaycontext.moveTo(200 +steeringAngleIndicatorLen*steeringAngleCosSin[1], 100 -steeringAngleIndicatorLen*steeringAngleCosSin[0]);
             overlaycontext.lineTo(200 -steeringAngleIndicatorLen*steeringAngleCosSin[1], 100 +steeringAngleIndicatorLen*steeringAngleCosSin[0]);
             overlaycontext.stroke();
+
+            //speedo
+            var speedMph = -2.236936 * 1000* carInfo.speed;    //m/s to miles per hour
+            drawSpeedo(100, 300, 70, -0.6, Math.PI + 1.2, 201, 20, speedMph);
         }
 
         if (carMode == 2){
@@ -59,14 +59,6 @@ var overlaydisplay = (function(){
             overlaycontext.fillStyle = "white";
             var geeMeterReading2 = carInfo2.acceleration.map(xx=>xx/9.81);
             overlaycontext.fillRect(geeMeterCentre[0] + geeMeterRadiusOneGee*geeMeterReading2[0] - 5, geeMeterCentre[1] + geeMeterRadiusOneGee*geeMeterReading2[1] - 5, 10,10);
-
-            //speedo
-            overlaycontext.font = "20px Arial";
-
-            //calculate speed. just take forwards speed. (how is speed displayed in car measured? wheel speed?)
-            var speedMph = -2.236936 * carInfo2.velInCarFrame[1];    //m/s to miles per hour
-            overlaycontext.fillText(speedMph.toFixed(1) + "mph",10,500);
-
 
             overlaycontext.strokeStyle = "black";
 
@@ -115,6 +107,11 @@ var overlaydisplay = (function(){
             overlaycontext.moveTo(200 , 150);
             overlaycontext.lineTo(200, 150 -steeringAngleIndicatorLen);
             overlaycontext.stroke();
+
+            //calculate speed. just take forwards speed. (how is speed displayed in car measured? wheel speed?)
+            var speedMph = -2.236936 * carInfo2.velInCarFrame[1];    //m/s to miles per hour
+
+            drawSpeedo(100, 300, 70, -0.6, Math.PI + 1.2, 201, 20, speedMph);
         }
     }
 
@@ -124,6 +121,50 @@ var overlaydisplay = (function(){
         // car matrix is only rotated about z angle, so can just use XZ components of it. here probably carMatrix[0] = carMatrix[10], carMatrix[2] = -carMatrix[8]
         geeMeterReading = [accVecGees[0]*carMatrix[0] + accVecGees[2]*carMatrix[2], accVecGees[0]*carMatrix[8] + accVecGees[2]*carMatrix[10]];
     }
+
+    function drawSpeedo(xPos, yPos, radius, minAngle, angleRange, maxSpeed, speedIncrement, currentSpeed){
+        overlaycontext.beginPath()
+        overlaycontext.strokeStyle = "white";
+        overlaycontext.beginPath();
+        overlaycontext.arc(xPos, yPos, radius, Math.PI + minAngle, Math.PI + minAngle+angleRange);  //add PI so starts from left and goes clockwise
+        overlaycontext.stroke();
+
+        var innerRad = radius*0.9;
+        var innerRad2 = radius*0.2;
+        var outerRad = radius*1;
+        var numberRad = radius*1.15;
+
+        //show current speed needle
+        overlaycontext.strokeStyle = "red";
+        overlaycontext.beginPath();
+        var angle = minAngle + angleRange*currentSpeed/maxSpeed;
+        var cosSin = [-Math.cos(angle), -Math.sin(angle)];
+        overlaycontext.moveTo(xPos + cosSin[0]*innerRad2, yPos + cosSin[1]*innerRad2);
+        overlaycontext.lineTo(xPos + cosSin[0]*outerRad, yPos + cosSin[1]*outerRad);
+        overlaycontext.stroke();
+        
+        //draw radial speed markers
+        overlaycontext.strokeStyle = "white";
+        overlaycontext.font = "10px Arial";
+
+        for (var speed=0;speed<=maxSpeed; speed+=speedIncrement){
+            overlaycontext.beginPath();
+            angle = minAngle + speed*angleRange/maxSpeed;
+            cosSin = [-Math.cos(angle), -Math.sin(angle)];
+            
+            overlaycontext.moveTo(xPos + cosSin[0]*innerRad, yPos + cosSin[1]*innerRad);
+            overlaycontext.lineTo(xPos + cosSin[0]*outerRad, yPos + cosSin[1]*outerRad);
+            overlaycontext.stroke();
+
+            //TODO speed numbers
+            overlaycontext.fillText(speed.toFixed(0), xPos + cosSin[0]*numberRad - 7, yPos + cosSin[1]*numberRad + 3);
+        }
+
+        //print speed
+        overlaycontext.font = "15px Arial";
+        overlaycontext.fillText(currentSpeed.toFixed(1) + "mph",xPos - 25, yPos + 40);  //TODO dependence on radius
+    }
+
 
     return {
         clear,
