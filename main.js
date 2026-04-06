@@ -739,9 +739,10 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     //simple thrust like a rocket -  TODO slip ratio, real wheel speed
     var velInCarFrame = carInfo2.velInCarFrame;
     velInCarFrame[1] -= forwardBack * 0.1;
-    for (var ii=0;ii<2;ii++){
-        velInCarFrame[ii]*=0.999;  //simple drag
-    }
+
+    // for (var ii=0;ii<2;ii++){
+    //     velInCarFrame[ii]*=0.999;  //simple drag
+    // }
 
     //move by speed
     mat4.translate(carMatrix2, [velInCarFrame[0],0,velInCarFrame[1]].map(x=>x*timeChangeSeconds));
@@ -767,6 +768,8 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
 
     var brakeAmount = 0.1*brake;   //rotate wheels slower than free wheeling speed. impact should mean constant braking force, but fading out near zero speed due
         //to smallValDeterminingLowSpeedResponse stuff. NOTE this number is quite large!
+
+    brakeAmount+=0.002;  //like constant rolling resistance (though nicely goes to 0 for very slow speed)
 
     var rearWheelBrakeAccAmount = brakeAmount - 0.2*accelerator;    //NOTE accelerator wont work at zero speed like this due to smallValDeterminingLowSpeedResponse
 
