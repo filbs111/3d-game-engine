@@ -134,14 +134,6 @@ var overlaydisplay = (function(){
         var outerRad = radius*1;
         var numberRad = radius*0.75;
 
-        //show current speed needle
-        overlaycontext.strokeStyle = "red";
-        overlaycontext.beginPath();
-        var angle = minAngle + angleRange*currentSpeed/maxSpeed;
-        var cosSin = [-Math.cos(angle), -Math.sin(angle)];
-        overlaycontext.moveTo(xPos + cosSin[0]*innerRad2, yPos + cosSin[1]*innerRad2);
-        overlaycontext.lineTo(xPos + cosSin[0]*outerRad, yPos + cosSin[1]*outerRad);
-        overlaycontext.stroke();
         
         //draw radial speed markers
         overlaycontext.strokeStyle = "white";
@@ -149,8 +141,8 @@ var overlaydisplay = (function(){
 
         for (var speed=0;speed<=maxSpeed; speed+=speedIncrement){
             overlaycontext.beginPath();
-            angle = minAngle + speed*angleRange/maxSpeed;
-            cosSin = [-Math.cos(angle), -Math.sin(angle)];
+            var angle = minAngle + speed*angleRange/maxSpeed;
+            var cosSin = [-Math.cos(angle), -Math.sin(angle)];
             
             overlaycontext.moveTo(xPos + cosSin[0]*innerRad, yPos + cosSin[1]*innerRad);
             overlaycontext.lineTo(xPos + cosSin[0]*outerRad, yPos + cosSin[1]*outerRad);
@@ -159,6 +151,15 @@ var overlaydisplay = (function(){
             //TODO speed numbers
             overlaycontext.fillText(speed.toFixed(0), xPos + cosSin[0]*numberRad - 8, yPos + cosSin[1]*numberRad + 3);
         }
+
+        //show current speed needle
+        overlaycontext.strokeStyle = "red";
+        overlaycontext.beginPath();
+        var angle = minAngle + angleRange*currentSpeed/maxSpeed;
+        var cosSin = [-Math.cos(angle), -Math.sin(angle)];
+        overlaycontext.moveTo(xPos + cosSin[0]*innerRad2, yPos + cosSin[1]*innerRad2);
+        overlaycontext.lineTo(xPos + cosSin[0]*outerRad, yPos + cosSin[1]*outerRad);
+        overlaycontext.stroke();
 
         //print speed
         overlaycontext.font = "15px Arial";
