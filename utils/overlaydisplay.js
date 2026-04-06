@@ -132,7 +132,7 @@ var overlaydisplay = (function(){
         var innerRad = radius*0.9;
         var innerRad2 = radius*0.2;
         var outerRad = radius*1;
-        var numberRad = radius*1.15;
+        var numberRad = radius*0.75;
 
         //show current speed needle
         overlaycontext.strokeStyle = "red";
@@ -157,12 +157,12 @@ var overlaydisplay = (function(){
             overlaycontext.stroke();
 
             //TODO speed numbers
-            overlaycontext.fillText(speed.toFixed(0), xPos + cosSin[0]*numberRad - 7, yPos + cosSin[1]*numberRad + 3);
+            overlaycontext.fillText(speed.toFixed(0), xPos + cosSin[0]*numberRad - 8, yPos + cosSin[1]*numberRad + 3);
         }
 
         //print speed
         overlaycontext.font = "15px Arial";
-        overlaycontext.fillText(currentSpeed.toFixed(1) + "mph",xPos - 25, yPos + 40);  //TODO dependence on radius
+        overlaycontext.fillText(currentSpeed.toFixed(1) + "mph",xPos - 30, yPos + 40);  //TODO dependence on radius
     }
 
 
