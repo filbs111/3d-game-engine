@@ -717,7 +717,8 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     carInfo2.pos3 = carMatrix2.slice(12,15);
 
     var totalSpeedSq = carInfo2.velInCarFrame.reduce((prev, current) => prev + current*current , 0);
-    
+    var speedMag = Math.sqrt(totalSpeedSq);
+
     //steering angle dependent on speed similar to car 1. TODO units? assume rads for now...
     carInfo2.steeringAngle *= 0.95;
     var steeringAngleTarget=0;
@@ -771,7 +772,11 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
 
     brakeAmount+=0.002;  //like constant rolling resistance (though nicely goes to 0 for very slow speed)
 
-    var rearWheelBrakeAccAmount = brakeAmount - 0.2*accelerator;    //NOTE accelerator wont work at zero speed like this due to smallValDeterminingLowSpeedResponse
+    //proportional to 1/speed. TODO correct numbers.
+    var availableAcelleration = 20.0/(0.1+speedMag);   //NOTE very high at zero speed - addition in denominator makes finite at zero. TODO something better - add before sqrt for hump
+                //at zero, or drive continuous wheel speed, auto limit wheel spin, etc..
+
+    var rearWheelBrakeAccAmount = brakeAmount - 0.2*accelerator*availableAcelleration;    //NOTE accelerator wont work at zero speed like this due to smallValDeterminingLowSpeedResponse
 
     var rearWheelsRimVelVsGroundInCarFrame = rearWheelsVel.map(x=>x);
     rearWheelsRimVelVsGroundInCarFrame[1] *= rearWheelBrakeAccAmount;
@@ -832,8 +837,7 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
 
     //aero drag
     // force in direction of travel, proportional to speed squared, so speed*|speed|
-    var aeroDragConst = -0.0002;   //TODO reasoned value - current value likely too high, because chosen to balance too high engine power
-    var speedMag = Math.sqrt(totalSpeedSq);
+    var aeroDragConst = -0.0001;   //TODO reasoned value - current value likely too high, because chosen to balance too high engine power
     var aeroDrag = carInfo2.velInCarFrame.map(x => x*aeroDragConst*speedMag);
 
     //apply forces
