@@ -809,18 +809,42 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     var frontWheelSlipVector = frontWheelsRimVelVsGroundInCarFrame.map(x=>x*inverseSpeedFactorFrontWheel);
     var rearWheelSlipVector = rearWheelsRimVelVsGroundInCarFrame.map(x=>x*inverseSpeedFactorRearWheel);
 
+
+    //work out load on each wheel, and limit slip proportional to load.
+    // use current previous frame acceleration to determine front, back tyre loads together with tyre positions, centre of mass.
+    // balance torques.
+    // 1) rearReactionForceOverCarMass * rearWheelLongPos + frontReactionForceOverCarMass * frontWheelLongPos = acceleration * heightOfCentreOfMassAboveGround
+    // balance gravity and reaction 
+    // 2) rearReactionForceOverCarMass + frontReactionForceOverCarMass = 1g
+    // sub 2 into 1...
+    // (1g -frontReactionForceOverCarMass)  * rearWheelLongPos + frontReactionForceOverCarMass * frontWheelLongPos = acceleration * heightOfCentreOfMassAboveGround
+    // frontReactionForceOverCarMass * (-rearWheelLongPos + frontWheelLongPos) = -1g*rearWheelLongPos + acceleration * heightOfCentreOfMassAboveGround
+    // frontReactionForceOverCarMass = (1g*rearWheelLongPos - acceleration * heightOfCentreOfMassAboveGround ) / ( rearWheelLongPos - frontWheelLongPos)
+    // using 2, get rear value
+    // rearReactionForceOverCarMass =  (1g*frontWheelLongPos + acceleration * heightOfCentreOfMassAboveGround ) / ( rearWheelLongPos - frontWheelLongPos)
+    
+    //NOTE some signs messed up above...
+
     //cap these vectors within some limit (TODO slip ratio/angle force fall off outside optimal circle)
-    var slipVecCapMag = 0.15;   //guess number...
+
+    //check can retain existing behaviour
+    carInfo2.centreMassHeight = -0.5;   // - because missed a sign somewhere? is acceleration measured rearwards?
+
+    var slipVecCapMagConst = 0.3 / 9.81;   //guess number...
+    var wheelbase = carInfo2.frontWheelLongPos - carInfo2.rearWheelLongPos;
+    var accCofM = carInfo2.acceleration[1]*carInfo2.centreMassHeight; 
+    var slipVecCapMagFront = slipVecCapMagConst * ( -9.81*carInfo2.rearWheelLongPos - accCofM ) / wheelbase;
+    var slipVecCapMagRear = slipVecCapMagConst * ( 9.81*carInfo2.frontWheelLongPos + accCofM ) / wheelbase;
 
     var slipSqFront = dotProd2(frontWheelSlipVector, frontWheelSlipVector);
     var slipSqRear = dotProd2(rearWheelSlipVector, rearWheelSlipVector);
 
     var slipMagFront = Math.sqrt(slipSqFront);
-    var slipVecFrontMultiplierToCap = Math.min(Math.abs(slipVecCapMag/slipMagFront), 1);
+    var slipVecFrontMultiplierToCap = Math.min(Math.abs(slipVecCapMagFront/slipMagFront), 1);
     frontWheelsCappedSlip = frontWheelSlipVector.map(x=>x*slipVecFrontMultiplierToCap);
 
     var slipMagRear= Math.sqrt(slipSqRear);
-    var slipVecRearMultiplierToCap = Math.min(Math.abs(slipVecCapMag/slipMagRear), 1);
+    var slipVecRearMultiplierToCap = Math.min(Math.abs(slipVecCapMagRear/slipMagRear), 1);
     rearWheelsCappedSlip = rearWheelSlipVector.map(x=>x*slipVecRearMultiplierToCap);
 
     //save for use in display
