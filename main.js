@@ -857,6 +857,11 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
 
     //also should rotate speed of car in its fram
     carInfo2.velInCarFrame = [ velInCarFrame[0]*cosSin[0] - velInCarFrame[1]*cosSin[1], velInCarFrame[1]*cosSin[0] + velInCarFrame[0]*cosSin[1] ];
+
+
+    //damp yaw just in hope of making car more controllable. 
+    carInfo2.yawRate *= 0.99;
+
 }
 
 
