@@ -830,8 +830,14 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     var frontWheelForceInCarFrame = frontWheelsCappedSlip.map(x=>x*const4);
     var rearWheelForceInCarFrame = rearWheelsCappedSlip.map(x=>x*const4);
 
+    //aero drag
+    // force in direction of travel, proportional to speed squared, so speed*|speed|
+    var aeroDragConst = -0.0002;   //TODO reasoned value - current value likely too high, because chosen to balance too high engine power
+    var speedMag = Math.sqrt(totalSpeedSq);
+    var aeroDrag = carInfo2.velInCarFrame.map(x => x*aeroDragConst*speedMag);
+
     //apply forces
-    var acceleration = [0,1].map(ii => frontWheelForceInCarFrame[ii] + rearWheelForceInCarFrame[ii]).map(xx=> const2*xx);
+    var acceleration = [0,1].map(ii => frontWheelForceInCarFrame[ii] + rearWheelForceInCarFrame[ii] + aeroDrag[ii]).map(xx=> const2*xx);
 
     velInCarFrame[0]+=timeChangeSeconds* acceleration[0];
     velInCarFrame[1]+=timeChangeSeconds* acceleration[1];
