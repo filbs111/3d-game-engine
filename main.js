@@ -68,6 +68,9 @@ var carInfo2 = {
     slipVecRearMultiplierToCap:0,
 
     acceleration:[0,0],
+
+    frontWheelRotation:0,
+    rearWheelRotation:0,
     
     //invariants? 
     // length/angle over which tyre deflection decays
@@ -789,6 +792,12 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     var frontWheelDirectionInCarFrame = [Math.sin(carInfo2.steeringAngle), Math.cos(carInfo2.steeringAngle)];
     var dotDirectionWithVel = dotProd2(frontWheelDirectionInCarFrame, frontWheelsRimVelVsGroundInCarFrame);
 
+    //rotate front wheels
+    carInfo2.frontWheelRotation += dotDirectionWithVel*(1-brakeAmount)*timeChangeSeconds/0.56;   //over wheel radius. TODO check radius
+
+    //rotate rear wheels
+    carInfo2.rearWheelRotation += rearWheelsVel[1]*(1-rearWheelBrakeAccAmount)*timeChangeSeconds/0.56;   //over wheel radius. TODO check radius
+
 
     for (var ii=0;ii<2;ii++){
         frontWheelsRimVelVsGroundInCarFrame[ii] -= dotDirectionWithVel*(1-brakeAmount)*frontWheelDirectionInCarFrame[ii];
@@ -1073,6 +1082,7 @@ function drawScene(frameTime){
         enableDisableAttributes(activeProg);
         bind2dTextureIfRequired(rttView.texture);
 
+
         var invertedProjMat = mat4.create(pMatrix);
         //mat4.inverse(invertedProjMat);
         //mat4.transpose(invertedProjMat);    //?? 
@@ -1193,7 +1203,6 @@ function drawScene(frameTime){
         renderViewUsingCmap();
 
     } else {
-
 
         var vFov = 2* Math.atan(cameraZoom) * 180/Math.PI;
 
@@ -1403,6 +1412,8 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     // mat4.scale(mMatrix, carScale.map(xx=>1/xx));
     // mat4.translate(mMatrix,boxShift.map(x=>-x));
 
+    var drawWheelMarkers = document.getElementById("drawwheelmarkers").checked;
+
     var wheelScale = [1,1,1].map(x=>x*0.56);    //coincidentally same as vehicle scale?
 
     mat4.scale(mMatrix,[1,1,1].map(x=>x*0.56));  //guess correct size - default seems far too big
@@ -1412,34 +1423,10 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         activeProg = shaderPrograms.flat;
         gl.useProgram(activeProg);
         enableDisableAttributes(activeProg);
-        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.003,0.003,0.003]);  
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.003,0.003,0.003]);
 
         if (wheelBuffers.isLoaded){
-            var savedmMatrix = mat4.create(mMatrix);
-
-            mat4.set(savedmMatrix, mMatrix);
-            mat4.translate(mMatrix, [1.6,0,-0.25]);   // +ve = right, up , back
-            mat4.scale(mMatrix, wheelScale);
-            drawObjectFromBuffers(wheelBuffers, activeProg);    //right rear
-
-            mat4.set(savedmMatrix, mMatrix);
-            mat4.translate(mMatrix, [-1.6,0,-0.25]);
-            mat4.scale(mMatrix, wheelScale);
-            drawObjectFromBuffers(wheelBuffers, activeProg);    //left rear
-
-            mat4.set(savedmMatrix, mMatrix);
-            mat4.translate(mMatrix, [-1.6,0,-4.95]);
-            mat4.rotateY(mMatrix, -carInfo.steeringAngle);
-            mat4.scale(mMatrix, wheelScale);
-            drawObjectFromBuffers(wheelBuffers, activeProg);    //left front
-
-            mat4.set(savedmMatrix, mMatrix);
-            mat4.translate(mMatrix, [1.6,0,-4.95]);
-            mat4.rotateY(mMatrix, -carInfo.steeringAngle);
-            mat4.scale(mMatrix, wheelScale);
-            drawObjectFromBuffers(wheelBuffers, activeProg);    //right front
-
-            mat4.set(savedmMatrix, mMatrix);
+            drawWheels(wheelScale, activeProg, drawWheelMarkers, -carInfo.steeringAngle, 0, 0);
         }
 
         mat4.scale(mMatrix,[1,1,1].map(x=>x/0.56)); //undo scale
@@ -1476,37 +1463,12 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         activeProg = shaderPrograms.flat;
         gl.useProgram(activeProg);
         enableDisableAttributes(activeProg);
-        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.003,0.003,0.003]);  
-
 
         if (wheelBuffers.isLoaded){
-
-            var savedmMatrix = mat4.create(mMatrix);
-
-            mat4.set(savedmMatrix, mMatrix);
-            mat4.translate(mMatrix, [1.6,0,-0.25]);   // +ve = right, up , back
-            mat4.scale(mMatrix, wheelScale);
-            drawObjectFromBuffers(wheelBuffers, activeProg);    //right rear
-
-            mat4.set(savedmMatrix, mMatrix);
-            mat4.translate(mMatrix, [-1.6,0,-0.25]);
-            mat4.scale(mMatrix, wheelScale);
-            drawObjectFromBuffers(wheelBuffers, activeProg);    //left rear
-
-            mat4.set(savedmMatrix, mMatrix);
-            mat4.translate(mMatrix, [-1.6,0,-4.95]);
-            mat4.rotateY(mMatrix, carInfo2.steeringAngle);
-            mat4.scale(mMatrix, wheelScale);
-            drawObjectFromBuffers(wheelBuffers, activeProg);    //left front
-
-            mat4.set(savedmMatrix, mMatrix);
-            mat4.translate(mMatrix, [1.6,0,-4.95]);
-            mat4.rotateY(mMatrix, carInfo2.steeringAngle);
-            mat4.scale(mMatrix, wheelScale);
-            drawObjectFromBuffers(wheelBuffers, activeProg);    //right front
-
-            mat4.set(savedmMatrix, mMatrix);
+            drawWheels(wheelScale, activeProg, drawWheelMarkers, carInfo2.steeringAngle, carInfo2.frontWheelRotation, carInfo2.rearWheelRotation);
         }
+
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.003,0.003,0.003]);  
 
         mat4.scale(mMatrix,[1,1,1].map(x=>x/0.56)); //undo scale
         mat4.translate(mMatrix, carDrawPosOffset.map(x=>-x));   //undo translate
@@ -1558,6 +1520,56 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         }
         gl.enable(gl.DEPTH_TEST);
         gl.depthMask(true);
+    }
+}
+
+function drawWheels(wheelScale, activeProg, drawDebugMarkers, steeringAngle, frontWheelRotation, rearWheelRotation){
+
+    var savedmMatrix = mat4.create(mMatrix);
+
+    gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.003,0.003,0.003]);  
+
+    mat4.set(savedmMatrix, mMatrix);
+    mat4.translate(mMatrix, [1.6,0,-0.25]);   // +ve = right, up , back
+    mat4.rotateX(mMatrix, rearWheelRotation);
+    mat4.scale(mMatrix, wheelScale);
+    drawObjectFromBuffers(wheelBuffers, activeProg);    //right rear
+    drawTestMarker();
+
+    mat4.set(savedmMatrix, mMatrix);
+    mat4.translate(mMatrix, [-1.6,0,-0.25]);
+    mat4.rotateX(mMatrix, rearWheelRotation);
+    mat4.scale(mMatrix, wheelScale);
+    drawObjectFromBuffers(wheelBuffers, activeProg);    //left rear
+    drawTestMarker();
+
+    mat4.set(savedmMatrix, mMatrix);
+    mat4.translate(mMatrix, [-1.6,0,-4.95]);
+    mat4.rotateY(mMatrix, steeringAngle);
+    mat4.rotateX(mMatrix, frontWheelRotation);
+    mat4.scale(mMatrix, wheelScale);
+    drawObjectFromBuffers(wheelBuffers, activeProg);    //left front
+    drawTestMarker();
+
+    mat4.set(savedmMatrix, mMatrix);
+    mat4.translate(mMatrix, [1.6,0,-4.95]);
+    mat4.rotateY(mMatrix, steeringAngle);
+    mat4.rotateX(mMatrix, frontWheelRotation);
+    mat4.scale(mMatrix, wheelScale);
+    drawObjectFromBuffers(wheelBuffers, activeProg);    //right front
+    drawTestMarker();
+
+    mat4.set(savedmMatrix, mMatrix);
+
+    function drawTestMarker(){
+        if (!drawDebugMarkers){return;}
+
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [1,1,1]);  
+        mat4.translate(mMatrix, [0,0.5,0]);
+        mat4.scale(mMatrix, [0.5,0.5,0.1]);
+        drawObjectFromBuffers(cubeBuffers, activeProg);
+
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.003,0.003,0.003]);  
     }
 }
 
