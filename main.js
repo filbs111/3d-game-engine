@@ -30,6 +30,7 @@ var mouseInfo = {
 var pointerLocked=false;
 
 var listerBuffers={};
+var wheelBuffers={}
 var lucyBuffers={};
 
 var haveUnclickedFire = 0;
@@ -184,8 +185,11 @@ function init(){
 		}
 	);
 
+    
+    //loadBuffersFromObj2Or3File(listerBuffers, "./data/miscobjs/imported-lister.obj2", loadBufferData, 3);
+    loadBuffersFromObj2Or3File(listerBuffers, "./data/miscobjs/imported-lister-colourless.obj2", loadBufferData, 3);
 
-    loadBuffersFromObj2Or3File(listerBuffers, "./data/miscobjs/imported-lister.obj2", loadBufferData, 3);
+    loadBuffersFromObj2Or3File(wheelBuffers, "./data/miscobjs/wheel.obj2", loadBufferData, 3);
     loadBuffersFromObj5File(lucyBuffers, "./data/lucy-withvertcolor.obj5", loadBufferData, 6);
 
     loadAnimationStuff();
@@ -1399,16 +1403,61 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     // mat4.scale(mMatrix, carScale.map(xx=>1/xx));
     // mat4.translate(mMatrix,boxShift.map(x=>-x));
 
+    var wheelScale = [1,1,1].map(x=>x*0.56);    //coincidentally same as vehicle scale?
 
     mat4.scale(mMatrix,[1,1,1].map(x=>x*0.56));  //guess correct size - default seems far too big
     if (listerBuffers.isLoaded){
         drawObjectFromBuffers(listerBuffers, activeProg);
+
+        activeProg = shaderPrograms.flat;
+        gl.useProgram(activeProg);
+        enableDisableAttributes(activeProg);
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.003,0.003,0.003]);  
+
+        if (wheelBuffers.isLoaded){
+            var savedmMatrix = mat4.create(mMatrix);
+
+            mat4.set(savedmMatrix, mMatrix);
+            mat4.translate(mMatrix, [1.6,0,-0.25]);   // +ve = right, up , back
+            mat4.scale(mMatrix, wheelScale);
+            drawObjectFromBuffers(wheelBuffers, activeProg);    //right rear
+
+            mat4.set(savedmMatrix, mMatrix);
+            mat4.translate(mMatrix, [-1.6,0,-0.25]);
+            mat4.scale(mMatrix, wheelScale);
+            drawObjectFromBuffers(wheelBuffers, activeProg);    //left rear
+
+            mat4.set(savedmMatrix, mMatrix);
+            mat4.translate(mMatrix, [-1.6,0,-4.95]);
+            mat4.rotateY(mMatrix, -carInfo.steeringAngle);
+            mat4.scale(mMatrix, wheelScale);
+            drawObjectFromBuffers(wheelBuffers, activeProg);    //left front
+
+            mat4.set(savedmMatrix, mMatrix);
+            mat4.translate(mMatrix, [1.6,0,-4.95]);
+            mat4.rotateY(mMatrix, -carInfo.steeringAngle);
+            mat4.scale(mMatrix, wheelScale);
+            drawObjectFromBuffers(wheelBuffers, activeProg);    //right front
+
+            mat4.set(savedmMatrix, mMatrix);
+        }
+
+        mat4.scale(mMatrix,[1,1,1].map(x=>x/0.56)); //undo scale
+        //draw a black rect as temp shadow
+        mat4.translate(mMatrix, [0,-0.3,-1.6+0.12]);
+        mat4.scale(mMatrix,[1.05,0.005,2.12]);
+        drawObjectFromBuffers(cubeBuffers, activeProg);
     }
 
     //second car
     if (listerBuffers.isLoaded){
 
-        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.02,0.001,0.001]);
+        activeProg = shaderPrograms.envmap;
+        gl.useProgram(activeProg);
+        enableDisableAttributes(activeProg);
+
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.02,0.02,0.04]);
+
         if (document.getElementById("interpolate-camera").checked){
             var interpolatedCarMatrix = simpleMatrixInterpolation(carMatrix2, carMatrix2Old, interpolationFactor);
             mat4.set(interpolatedCarMatrix, mMatrix);
@@ -1423,29 +1472,50 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         mat4.scale(mMatrix,[1,1,1].map(x=>x*0.56));  //guess correct size - default seems far too big
         drawObjectFromBuffers(listerBuffers, activeProg);
         
+        
+        activeProg = shaderPrograms.flat;
+        gl.useProgram(activeProg);
+        enableDisableAttributes(activeProg);
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.003,0.003,0.003]);  
+
+
+        if (wheelBuffers.isLoaded){
+
+            var savedmMatrix = mat4.create(mMatrix);
+
+            mat4.set(savedmMatrix, mMatrix);
+            mat4.translate(mMatrix, [1.6,0,-0.25]);   // +ve = right, up , back
+            mat4.scale(mMatrix, wheelScale);
+            drawObjectFromBuffers(wheelBuffers, activeProg);    //right rear
+
+            mat4.set(savedmMatrix, mMatrix);
+            mat4.translate(mMatrix, [-1.6,0,-0.25]);
+            mat4.scale(mMatrix, wheelScale);
+            drawObjectFromBuffers(wheelBuffers, activeProg);    //left rear
+
+            mat4.set(savedmMatrix, mMatrix);
+            mat4.translate(mMatrix, [-1.6,0,-4.95]);
+            mat4.rotateY(mMatrix, carInfo2.steeringAngle);
+            mat4.scale(mMatrix, wheelScale);
+            drawObjectFromBuffers(wheelBuffers, activeProg);    //left front
+
+            mat4.set(savedmMatrix, mMatrix);
+            mat4.translate(mMatrix, [1.6,0,-4.95]);
+            mat4.rotateY(mMatrix, carInfo2.steeringAngle);
+            mat4.scale(mMatrix, wheelScale);
+            drawObjectFromBuffers(wheelBuffers, activeProg);    //right front
+
+            mat4.set(savedmMatrix, mMatrix);
+        }
+
         mat4.scale(mMatrix,[1,1,1].map(x=>x/0.56)); //undo scale
         mat4.translate(mMatrix, carDrawPosOffset.map(x=>-x));   //undo translate
 
-
-        var wheelMarkerScale = [.1,1,.2];
-
-        //marker for wheels
-        mat4.translate(mMatrix, [0,0,-carInfo2.rearWheelLongPos]);
-        mat4.scale(mMatrix,wheelMarkerScale);
+        //draw a black rect as temp shadow
+        mat4.translate(mMatrix, [0,-0.3,0.12]);
+        mat4.scale(mMatrix,[1.05,0.005,2.12]);
         drawObjectFromBuffers(cubeBuffers, activeProg);
-
-        //undo scale
-        mat4.scale(mMatrix,wheelMarkerScale.map(x=>1/x));
-        mat4.translate(mMatrix, [0,0,-(carInfo2.frontWheelLongPos-carInfo2.rearWheelLongPos)]);
-        mat4.rotateY(mMatrix, carInfo2.steeringAngle);
-        mat4.scale(mMatrix,wheelMarkerScale);
-
-        drawObjectFromBuffers(cubeBuffers, activeProg);
-
     }
-
-    
-
 
 
 
