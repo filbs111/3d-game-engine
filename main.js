@@ -774,16 +774,23 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     //calculate velocity of ground here relative to spinning tyre, ignoring contact patch movement.
     // for now, have zero slip ratio - freely driven light wheels. TODO modify for driven/braked wheels.
 
-    var brakeAmount = 0.1*brake;   //rotate wheels slower than free wheeling speed. impact should mean constant braking force, but fading out near zero speed due
+
+    var brakebias = parseFloat(document.getElementById("brakebias").value)/100;
+
+    var brakeAmount = 0.2*brake;   //rotate wheels slower than free wheeling speed. impact should mean constant braking force, but fading out near zero speed due
         //to smallValDeterminingLowSpeedResponse stuff. NOTE this number is quite large!
 
-    brakeAmount+=0.002;  //like constant rolling resistance (though nicely goes to 0 for very slow speed)
+    var frontBrakeAmount = brakeAmount*brakebias;
+    var rearBrakeAmount = brakeAmount*(1-brakebias);
+
+    frontBrakeAmount+=0.002;    //like constant rolling resistance (though nicely goes to 0 for very slow speed)
+    rearBrakeAmount+=0.002;     //""
 
     //proportional to 1/speed. TODO correct numbers.
     var availableAcelleration = 20.0/(0.1+speedMag);   //NOTE very high at zero speed - addition in denominator makes finite at zero. TODO something better - add before sqrt for hump
                 //at zero, or drive continuous wheel speed, auto limit wheel spin, etc..
 
-    var rearWheelBrakeAccAmount = brakeAmount - 0.2*accelerator*availableAcelleration;    //NOTE accelerator wont work at zero speed like this due to smallValDeterminingLowSpeedResponse
+    var rearWheelBrakeAccAmount = rearBrakeAmount - 0.2*accelerator*availableAcelleration;    //NOTE accelerator wont work at zero speed like this due to smallValDeterminingLowSpeedResponse
 
     var rearWheelsRimVelVsGroundInCarFrame = rearWheelsVel.map(x=>x);
     rearWheelsRimVelVsGroundInCarFrame[1] *= rearWheelBrakeAccAmount;
@@ -793,14 +800,14 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     var dotDirectionWithVel = dotProd2(frontWheelDirectionInCarFrame, frontWheelsRimVelVsGroundInCarFrame);
 
     //rotate front wheels
-    carInfo2.frontWheelRotation += dotDirectionWithVel*(1-brakeAmount)*timeChangeSeconds/0.56;   //over wheel radius. TODO check radius
+    carInfo2.frontWheelRotation += dotDirectionWithVel*(1-frontBrakeAmount)*timeChangeSeconds/0.56;   //over wheel radius. TODO check radius
 
     //rotate rear wheels
     carInfo2.rearWheelRotation += rearWheelsVel[1]*(1-rearWheelBrakeAccAmount)*timeChangeSeconds/0.56;   //over wheel radius. TODO check radius
 
 
     for (var ii=0;ii<2;ii++){
-        frontWheelsRimVelVsGroundInCarFrame[ii] -= dotDirectionWithVel*(1-brakeAmount)*frontWheelDirectionInCarFrame[ii];
+        frontWheelsRimVelVsGroundInCarFrame[ii] -= dotDirectionWithVel*(1-frontBrakeAmount)*frontWheelDirectionInCarFrame[ii];
     }
 
     //calculate slip angle
