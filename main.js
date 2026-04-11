@@ -71,6 +71,9 @@ var carInfo2 = {
 
     frontWheelRotation:0,
     rearWheelRotation:0,
+
+    brakePedal:0,
+    acceleratorPedal:0,
     
     //invariants? 
     // length/angle over which tyre deflection decays
@@ -689,8 +692,11 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     }
 
     var brake = keyThing.bKey();
-
     var accelerator = keyThing.nKey();   //TODO use w/s for this!
+
+    carInfo2.brakePedal = brake;
+    carInfo2.acceleratorPedal = accelerator;
+
 
     //do something to make steering angle time derivative continuous, and total angle steered not proprtional to press duration.
     // maybe is equivalent to having some steering wheel position acceleration - TODO graph steering wheel position.

@@ -123,7 +123,6 @@ var overlaydisplay = (function(){
     }
 
     function drawSpeedo(xPos, yPos, radius, minAngle, angleRange, maxSpeed, speedIncrement, currentSpeed){
-        overlaycontext.beginPath()
         overlaycontext.strokeStyle = "white";
         overlaycontext.beginPath();
         overlaycontext.arc(xPos, yPos, radius, Math.PI + minAngle, Math.PI + minAngle+angleRange);  //add PI so starts from left and goes clockwise
@@ -164,6 +163,52 @@ var overlaydisplay = (function(){
         //print speed
         overlaycontext.font = "15px Arial";
         overlaycontext.fillText(currentSpeed.toFixed(1) + "mph",xPos - 30, yPos + 40);  //TODO dependence on radius
+
+
+        drawWheelAndPedals(carInfo2.steeringAngle * 10, carInfo2.brakePedal, carInfo2.acceleratorPedal);    //TODO steering wheel ratio depends on speed? sort of assuming this when mapping from input to steered wheels angle anyway.
+    }
+
+    function drawWheelAndPedals(wheelAng, brake, accelerator){
+        //draw wheel
+        var wheelX = 100;
+        var wheelY = 450;
+        var wheelRadOuter = 50;
+        var wheelRadInner = 40;
+
+        overlaycontext.fillStyle = "rgba(0,0,0,0.5)";
+        overlaycontext.beginPath();
+        overlaycontext.arc(wheelX, wheelY, wheelRadOuter, 0, 2 * Math.PI, false);
+        overlaycontext.arc(wheelX, wheelY, wheelRadInner, 2 * Math.PI, 0, true);
+        overlaycontext.fill();
+
+        var markerArcHalfSize = 0.1;
+        var wheelAngDisplayed = - wheelAng - Math.PI/2;
+
+        overlaycontext.fillStyle = "rgba(255,255,0,1)";
+        overlaycontext.beginPath();
+        overlaycontext.arc(wheelX, wheelY, wheelRadOuter, wheelAngDisplayed - markerArcHalfSize, wheelAngDisplayed + markerArcHalfSize, false);
+        overlaycontext.arc(wheelX, wheelY, wheelRadInner, wheelAngDisplayed + markerArcHalfSize, wheelAngDisplayed - markerArcHalfSize, true);
+        overlaycontext.fill();
+
+        //draw pedals
+        var pedalTopY = 400;
+        var pedalBottomY = 500;
+        var pedalHeight = pedalBottomY - pedalTopY;
+        overlaycontext.fillStyle = "rgba(0,0,0,0.5)";
+        overlaycontext.beginPath();
+        overlaycontext.rect(170, pedalTopY, 20, pedalHeight);
+        overlaycontext.rect(200, pedalTopY, 20, pedalHeight);
+        overlaycontext.fill();
+        
+        overlaycontext.fillStyle = "rgba(255,0,0,1)";
+        overlaycontext.beginPath();
+        overlaycontext.rect(170, pedalBottomY - pedalHeight*brake, 20, pedalHeight*brake);
+        overlaycontext.fill();
+    
+        overlaycontext.fillStyle = "rgba(0,255,0,1)";
+        overlaycontext.beginPath();
+        overlaycontext.rect(200, pedalBottomY - pedalHeight*accelerator, 20, pedalHeight*accelerator);
+        overlaycontext.fill();
     }
 
 
