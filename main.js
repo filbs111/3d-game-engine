@@ -691,11 +691,14 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
         forwardBack = 0;
     }
 
-    var brake = keyThing.bKey();
-    var accelerator = keyThing.nKey();   //TODO use w/s for this!
+    var brakeInput = keyThing.bKey();
+    var acceleratorInput = keyThing.nKey();   //TODO use w/s for this!
 
-    carInfo2.brakePedal = brake;
-    carInfo2.acceleratorPedal = accelerator;
+    carInfo2.brakePedal = carInfo2.brakePedal*0.9+ 0.1*brakeInput;
+    carInfo2.acceleratorPedal = carInfo2.acceleratorPedal*0.9+ 0.1*acceleratorInput;
+
+    var brake = carInfo2.brakePedal;
+    var accelerator = carInfo2.acceleratorPedal; 
 
 
     //do something to make steering angle time derivative continuous, and total angle steered not proprtional to press duration.
