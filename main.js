@@ -237,7 +237,12 @@ function initTextures(){
     //bricktex = makeTexture("img/brick-tex.jpg",gl.RGB,gl.UNSIGNED_SHORT_5_6_5);
     bricktex = makeTexture("img/Silverstone_Circuit_2020_2.png",gl.RGB,gl.UNSIGNED_SHORT_5_6_5);  //1665x1200px
     concreteTex = makeTexture("img/0033.jpg",gl.RGB,gl.UNSIGNED_SHORT_5_6_5);
-    cubemapTexture = loadCubeMap("img/skyboxes/sp2/sp2_");
+    //concreteTex = makeTexture("img/ash_uvgrid01.jpg",gl.RGB,gl.UNSIGNED_SHORT_5_6_5);
+
+    //cubemapTexture = loadCubeMap("img/skyboxes/sp2/sp2_");
+    cubemapTexture = loadCubeMap("img/skyboxes/sh/sh_");
+        //NOTE skyboxes have detail in lower hemisphere which looks bad (reflection seen when moving)
+        //TODO blur out or darken bottom of skybox
 }
 
 function initBuffers(){
@@ -1087,19 +1092,20 @@ function drawScene(frameTime){
 		gl.viewport( 0,0, intermediate_view_width, intermediate_view_height );
 		setRttSize( rttView, intermediate_view_width, intermediate_view_height );	//todo stop setting this repeatedly
 
-           	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);
         gl.clear(gl.DEPTH_BUFFER_BIT);
         drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);    
 
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, finalOrPenultimateView?.framebuffer);
+        gl.clear(gl.DEPTH_BUFFER_BIT);
 
+        if (finalOrPenultimateView){
+            setRttSize( finalOrPenultimateView, gl.viewportWidth, gl.viewportHeight);	//todo stop setting this repeatedly
+        }
 
-        //temporary - just draw map intermediate view straight to the screen using no curvature.
-
-        //activeProg = shaderPrograms.fullscreenTextured;
         activeProg = shaderPrograms.fullscreenTexturedDither;
 
 
