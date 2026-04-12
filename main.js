@@ -85,6 +85,8 @@ var carInfo2 = {
     // steering lock, speed dependence, input to steering angle method
 }
 
+var wheelColor = [0.001,0.001,0.001];
+
 
 function init(){
 
@@ -1451,7 +1453,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     activeProg = shaderPrograms.envmap;
     gl.useProgram(activeProg);
     enableDisableAttributes(activeProg);
-    gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.001,0.005,0.001]);
+    gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.0005,0.003,0.0005]);
 
     if (document.getElementById("interpolate-camera").checked){
         var interpolatedCarMatrix = simpleMatrixInterpolation(carMatrix, carMatrixOld, interpolationFactor);
@@ -1480,7 +1482,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         activeProg = shaderPrograms.flat;
         gl.useProgram(activeProg);
         enableDisableAttributes(activeProg);
-        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.003,0.003,0.003]);
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, wheelColor);
 
         if (wheelBuffers.isLoaded){
             drawWheels(wheelScale, activeProg, drawWheelMarkers, -carInfo.steeringAngle, 0, 0);
@@ -1499,8 +1501,9 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         activeProg = shaderPrograms.envmap;
         gl.useProgram(activeProg);
         enableDisableAttributes(activeProg);
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.001,0.002,0.003]);
 
-        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.02,0.02,0.04]);
+        //gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.02,0.02,0.04]);
 
         if (document.getElementById("interpolate-camera").checked){
             var interpolatedCarMatrix = simpleMatrixInterpolation(carMatrix2, carMatrix2Old, interpolationFactor);
@@ -1525,7 +1528,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
             drawWheels(wheelScale, activeProg, drawWheelMarkers, carInfo2.steeringAngle, carInfo2.frontWheelRotation, carInfo2.rearWheelRotation);
         }
 
-        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.003,0.003,0.003]);  
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, wheelColor);  
 
         mat4.scale(mMatrix,[1,1,1].map(x=>x/0.56)); //undo scale
         mat4.translate(mMatrix, carDrawPosOffset.map(x=>-x));   //undo translate
@@ -1539,6 +1542,9 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
 
     //draw cube
+    activeProg = shaderPrograms.envmap;
+    gl.useProgram(activeProg);
+    enableDisableAttributes(activeProg);
     setupDrawMatrixForObjectAtPosition(boxPos);
     mat4.rotateY(mMatrix, boxRotation);
     drawObjectFromBuffers(cubeBuffers, activeProg);
@@ -1584,7 +1590,7 @@ function drawWheels(wheelScale, activeProg, drawDebugMarkers, steeringAngle, fro
 
     var savedmMatrix = mat4.create(mMatrix);
 
-    gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.003,0.003,0.003]);  
+    gl.uniform3fv(activeProg.uniforms.uFlatColor, wheelColor);  
 
     mat4.set(savedmMatrix, mMatrix);
     mat4.translate(mMatrix, [1.6,0,-0.25]);   // +ve = right, up , back
@@ -1626,7 +1632,7 @@ function drawWheels(wheelScale, activeProg, drawDebugMarkers, steeringAngle, fro
         mat4.scale(mMatrix, [0.5,0.5,0.1]);
         drawObjectFromBuffers(cubeBuffers, activeProg);
 
-        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.003,0.003,0.003]);  
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, wheelColor);  
     }
 }
 

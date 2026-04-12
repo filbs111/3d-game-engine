@@ -61,6 +61,16 @@ void main(void) {
 
     vec4 MIDv4 = vec4(vec3(vignette),1.)* texture(uSampler, vec2(0.5)+vec2(0.5)*projectedPoint);    //regular 2d texture has centre at 0.5
 
+    //brighten scene. TODO de/regamma? (does selecting the right gl enum avoid this?)
+    // TODO do this kind of thing before the intermediate view.
+    vec3 ungammaed = pow(MIDv4.xyz , vec3(2.2));
+    vec3 speciallyLit =  vec3(1.) - exp(-3.*ungammaed);
+    vec3 regammaed = pow(speciallyLit, vec3(0.455));
+    MIDv4 = vec4(  regammaed , 1.);
+
+    //MIDv4 = vec4( pow( vec3(1.) - exp( -.8*MIDv4.xyz) , vec3(0.455)) , 1.);
+
+
 
 
     //translate to params used in copied dither shader 
