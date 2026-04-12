@@ -184,6 +184,10 @@ function init(){
     initTextures();
     initCubemapFramebuffer(cubemapView);
    	initTextureFramebuffer(rttView);
+  	//initTextureFramebuffer(rttView, gl.NEAREST);
+
+   	initTextureFramebuffer(optionalPenultimateView);    //used for FXAA after fisheye mapping. expect to not keep, and do FXAA during fisheye mapping. NOTE has depth buffer but probably don't need it!
+
     initBuffers();
 	getLocationsForShadersUsingPromises(
 		()=>{
@@ -302,7 +306,8 @@ function prepBuffersForDrawing(bufferObj, shaderProg){
 	if (bufferObj.vertexTextureCoordBuffer && shaderProg.uniforms.uSampler){    
 		gl.bindBuffer(gl.ARRAY_BUFFER, bufferObj.vertexTextureCoordBuffer);
 		gl.vertexAttribPointer(shaderProg.attributes.aTextureCoord, bufferObj.vertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
-	
+    }
+    if (shaderProg.uniforms.uSampler){
 		gl.activeTexture(gl.TEXTURE0);
 		gl.uniform1i(shaderProg.uniforms.uSampler, 0);
 	}
@@ -943,13 +948,17 @@ function drawScene(frameTime){
                                                                                     // 1 means time to display is latest update - should display objects with "new" pose from latest physics iteration.
                                                                                     // intermediate value mean interpolate between old and new poses (linear blending might be fine unless angular step large.)
 
+    
+    var willDoFinalStageFxaa = document.getElementById("final_stage_fxaa").checked;
+    var finalOrPenultimateView = willDoFinalStageFxaa ? optionalPenultimateView : null;
+
+
     //console.log("drawing scene");
     
     //clear colour
-
     gl.clearColor(0,1,1,1); //cyan
-   	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+        
     
     var boxRotation = frameTime / 1000;
     
@@ -1220,15 +1229,36 @@ function drawScene(frameTime){
 
     } else {
 
+        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, finalOrPenultimateView?.framebuffer);
+
+        if (finalOrPenultimateView){
+            setRttSize( finalOrPenultimateView, gl.viewportWidth, gl.viewportHeight);	//todo stop setting this repeatedly
+        }
+
+   	    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
         var vFov = 2* Math.atan(cameraZoom) * 180/Math.PI;
 
         mat4.perspective(vFov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 
         pMatrix[9]=-0.3333;       //shift centre of perspective one third up from centre to top of screen (so is 1/3 down screen top to bottom)
 
-
         drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);
         gl.clear(gl.DEPTH_BUFFER_BIT);
-        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);    
+        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);
+
+        if (finalOrPenultimateView){    //if not null
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+   	        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);    //TODO don't clear, just write without depth check
+
+            //fullscreen copy. TODO fxaa
+            activeProg = shaderPrograms.basicFullscreenGrayscale;
+            gl.useProgram(activeProg);
+            enableDisableAttributes(activeProg);
+            bind2dTextureIfRequired(finalOrPenultimateView.texture);
+         
+            drawObjectFromBuffers(quadBuffers, activeProg);
+        }
     }
 
     //update overlay

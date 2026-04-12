@@ -130,7 +130,9 @@ function initShaders(shaderProgs){
 		fisheyeTanktheta:["cubemap-fisheye-vs", "cubemap-fisheye-tanktheta-fs"],
 		fisheyeSpecial:["cubemap-fisheye-vs", "cubemap-fisheye-special-fs"],
 
-		fullscreenTexturedDither:["cubemap-fisheye-vs", "fullscreen-fs-dither"]
+		fullscreenTexturedDither:["cubemap-fisheye-vs", "fullscreen-fs-dither"],
+
+		basicFullscreenGrayscale:["basic-fullscreen-vs", "fullscreen-fs-grayscale"],
 	};
 
 	console.log("loading shaders...");
