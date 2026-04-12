@@ -148,8 +148,8 @@ function init(){
 	canvascontainer = document.getElementById("canvas-container");
 
     overlaycanvas = document.getElementById("top-canvas");
-    overlaycanvas.width = 960;
-    overlaycanvas.height = 540;
+    overlaycanvas.width = 1280;
+    overlaycanvas.height = 720;
     overlaycontext = overlaycanvas.getContext("2d");
 
 	document.addEventListener('pointerlockchange', function lockChangeCb() {
