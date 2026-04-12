@@ -133,6 +133,7 @@ function initShaders(shaderProgs){
 		fullscreenTexturedDither:["cubemap-fisheye-vs", "fullscreen-fs-dither"],
 
 		basicFullscreenGrayscale:["basic-fullscreen-vs", "fullscreen-fs-grayscale"],
+		basicFullscreenFxaa:["basic-fullscreen-vs", "fullscreen-fs-fxaa"],
 	};
 
 	console.log("loading shaders...");

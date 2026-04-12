@@ -1,6 +1,7 @@
 //stuff copied from 3sphere project (currently in main.js there) for rendering via intermediate view, not including cubemap rendering, which is in cubemap_rendering.js
 
 var rttView={};
+var optionalPenultimateView={};
 
 function setRttSize(view, width, height){	
 	if (view.sizeX == width && view.sizeY == height){return;}	// avoid setting again if same numbers ( has speed impact)

@@ -48,11 +48,8 @@ Huge job, but perhaps best results.
 
 # PLAN: 
 
-take screenshots of each result in standard place.
+Tried 2, with double panel intermediate view. Works reasonably well if the intermediate view is fisheye mapped to penultimate view with linear filtering. Still some stepping seen for near horizontal/vertical lines. 
 
-try 1 by just switching on webgl antialiasing
+TODO try 5
 
-2 is current solution
-
-try 3 by increasing intermediate view size, try with nearest and 
-
+TODO check FXAA implementation (copied current version from 3sphere explorer project, suspect isn't more expensive FXAA that handles near horinz/vertical lines well)
