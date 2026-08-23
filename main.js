@@ -85,6 +85,15 @@ var carInfo2 = {
     // steering lock, speed dependence, input to steering angle method
 }
 
+var carInfo3 = {    //mechanum
+    pos:[0,0,0],
+    //rotation:0, //guess don't need because just using a matrix to track this for other cars!
+    yawRate: 0,
+    velInCarFrame: [0,0],
+    acceleration:[0,0]
+}
+
+
 var wheelColor = [0.001,0.001,0.001];
 
 
@@ -120,7 +129,7 @@ function init(){
 				case 70:	//F
 					goFullscreen(canvascontainer);
 					break;
-                case 69:
+                case 69:    //E
                     //NOTE just switching between walk and car 2
 
                     var carModeToggle = document.getElementById("carmode_2");
@@ -133,6 +142,19 @@ function init(){
                     }else{
                          //TODO check proximity
                          carModeToggle.checked = !carModeToggle.checked;
+                    }
+                    break;
+                case 84:    //T
+                    var mechanumToggle = document.getElementById("carmode_3");
+
+                    if (mechanumToggle.checked){
+                        //get out of car
+                        playerPos[0] = carInfo3.pos3[0];  //TODO appear at drivers side door
+                        playerPos[2] = carInfo3.pos3[2];
+                        mechanumToggle.checked = false;
+                    }else{
+                         //TODO check proximity
+                         mechanumToggle.checked = !mechanumToggle.checked;
                     }
                     break;
 				default:
@@ -436,6 +458,12 @@ var carCamera2 = mat4.create(carMatrix2);
 var carCamera2Old = mat4.create(carCamera2);
 
 
+var carMatrix3 = mat4.identity();
+mat4.translate(carMatrix3,[12,-0.7,6]); //right, down a bit, back
+var carMatrix3Old = mat4.create(carMatrix3);
+var carCamera3 = mat4.create(carMatrix3);
+var carCamera3Old = mat4.create(carCamera3);
+
 
 var lucyMatrix = mat4.identity();
 mat4.translate(lucyMatrix,[-8,3,-6]); //left, up a bit, forwards
@@ -457,7 +485,8 @@ var xMoveSmooth=0;
 var zMoveSmooth=0;
 
 function getCarMode(){
-    return document.getElementById("carmode_2").checked ? 2 : 
+    return  document.getElementById("carmode_3").checked ? 3 :  //mechanum
+            document.getElementById("carmode_2").checked ? 2 : 
             document.getElementById("carmode_1").checked ? 1 :
             0;
 }
@@ -486,6 +515,10 @@ function iterateMechanics(timeChange){
 
     var turnInput = keyThing.leftKey() - keyThing.rightKey();
     var elevationInput = keyThing.upKey() - keyThing.downKey();
+
+
+    var mechanumTurn = 0.2*turnInput;//?? TODO allow adjustment of multiplier, smoothing etc
+
 
     var timeChange = 10;
     var accMultiply = Math.exp(-0.002*timeChange);
@@ -673,6 +706,10 @@ function iterateMechanics(timeChange){
     mat4.set(carCamera2, carCamera2Old);
     mat4.set(carMatrix2, carCamera2);
     
+    //third car.
+    mat4.set(carCamera3, carCamera3Old);
+    mat4.set(carMatrix3, carCamera3);
+
     //mat4.rotateY(carCamera2, Math.PI/4);   //quarter angle to help looking at ground motion vs wheels
 
     //rotate to face in direction of velocity, but with some preference for straight forwards, so no/0 when stopped.
@@ -688,7 +725,13 @@ function iterateMechanics(timeChange){
     // mat4.translate(carCamera2, [0,10,1]);   //above and behind car
     // mat4.rotateX(carCamera2, -Math.PI/2);
 
+
+    mat4.translate(carCamera3, [0,2,4]);   //above and behind car
+
+
     processCar2Mechanics(timeChange, leftRight, forwardBack, carMode == 2);
+
+    processMechanumCarMechanics(timeChange, leftRight, forwardBack, mechanumTurn, carMode == 3);
 }
 
 var car2steeringVel = 0;
@@ -924,7 +967,52 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
 
     //damp yaw just in hope of making car more controllable. 
     carInfo2.yawRate *= 0.99;
+}
 
+function processMechanumCarMechanics(timeChange, leftRight, forwardBack, mechanumTurn, enableControl){
+    if (!enableControl){
+        leftRight = 0;
+        forwardBack = 0;
+        mechanumTurn = 0;
+    }
+
+
+    mat4.set(carMatrix3, carMatrix3Old);
+
+
+    var timeChangeSeconds = timeChange*0.001;
+
+
+    //TODO modify carInfo3 according to inputs
+
+    //TODO mechanum wheel rotation calculation given angular and linear velocity
+
+    //TODO draw car 3
+    //TODO put a camera on car3
+
+
+    var velInCarFrame = carInfo3.velInCarFrame;
+
+    velInCarFrame[0]*=0.99;
+    velInCarFrame[1]*=0.99;
+
+    var moveScale = 0.1;  //??
+    velInCarFrame[0] -= moveScale* leftRight;
+    velInCarFrame[1] -= moveScale* forwardBack;
+
+    carInfo3.yawRate += mechanumTurn;
+    carInfo3.yawRate *= 0.99;    //NOTE with this basic system total movement or turn simply proportional to button pressed time. TODO something better.
+
+
+    var angleToRotateBy = carInfo3.yawRate * timeChangeSeconds;
+    var cosSin = [Math.cos(angleToRotateBy), Math.sin(angleToRotateBy)];
+    mat4.rotateY(carMatrix3, angleToRotateBy);  //degrees or rads?
+
+    //also should rotate speed of car in its frame
+    carInfo3.velInCarFrame = [ velInCarFrame[0]*cosSin[0] - velInCarFrame[1]*cosSin[1], velInCarFrame[1]*cosSin[0] + velInCarFrame[0]*cosSin[1] ];
+
+    //move by speed
+    mat4.translate(carMatrix3, [velInCarFrame[0],0,velInCarFrame[1]].map(x=>x*timeChangeSeconds));
 }
 
 
@@ -1056,6 +1144,13 @@ function drawScene(frameTime){
             mat4.set(carCameraInterpolated, unmirroredCameraMat);
         }else{
             mat4.set(carCamera2, unmirroredCameraMat);
+        }
+    }else if(carMode == 3){
+        if (document.getElementById("interpolate-camera").checked){
+            var carCameraInterpolated = simpleMatrixInterpolation(carCamera3, carCamera3Old, interpolationFactor);
+            mat4.set(carCameraInterpolated, unmirroredCameraMat);
+        }else{
+            mat4.set(carCamera3, unmirroredCameraMat);
         }
     }else{
         mat4.set(eyeMat, unmirroredCameraMat);
@@ -1526,6 +1621,50 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
         if (wheelBuffers.isLoaded){
             drawWheels(wheelScale, activeProg, drawWheelMarkers, carInfo2.steeringAngle, carInfo2.frontWheelRotation, carInfo2.rearWheelRotation);
+        }
+
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, wheelColor);  
+
+        mat4.scale(mMatrix,[1,1,1].map(x=>x/0.56)); //undo scale
+        mat4.translate(mMatrix, carDrawPosOffset.map(x=>-x));   //undo translate
+
+        //draw a black rect as temp shadow
+        mat4.translate(mMatrix, [0,-0.3,0.12]);
+        mat4.scale(mMatrix,[1.05,0.005,2.12]);
+        drawObjectFromBuffers(cubeBuffers, activeProg);
+    }
+
+    //third car. TODO change cosmetics (mechanum wheel car/platform)
+    if (listerBuffers.isLoaded){
+
+        activeProg = shaderPrograms.envmap;
+        gl.useProgram(activeProg);
+        enableDisableAttributes(activeProg);
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.001,0.001,0.001]);
+
+        //gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.02,0.02,0.04]);
+
+        if (document.getElementById("interpolate-camera").checked){
+            var interpolatedCarMatrix = simpleMatrixInterpolation(carMatrix3, carMatrix3Old, interpolationFactor);
+            mat4.set(interpolatedCarMatrix, mMatrix);
+        }else{
+            mat4.set(carMatrix3, mMatrix);
+        }
+
+        //move visual car back back a bit since seems 
+        var carDrawPosOffset = [0,0,1.6];
+        mat4.translate(mMatrix, carDrawPosOffset);
+
+        mat4.scale(mMatrix,[1,1,1].map(x=>x*0.56));  //guess correct size - default seems far too big
+        drawObjectFromBuffers(listerBuffers, activeProg);
+        
+        
+        activeProg = shaderPrograms.flat;
+        gl.useProgram(activeProg);
+        enableDisableAttributes(activeProg);
+
+        if (wheelBuffers.isLoaded){
+            drawWheels(wheelScale, activeProg, drawWheelMarkers, 0, 0, 0);
         }
 
         gl.uniform3fv(activeProg.uniforms.uFlatColor, wheelColor);  
