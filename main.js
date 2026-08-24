@@ -89,6 +89,7 @@ var carInfo3 = {    //mechanum
     pos:[0,0,0],
     //rotation:0, //guess don't need because just using a matrix to track this for other cars!
     yawRate: 0,
+    smoothedTurnInput:0,
     velInCarFrame: [0,0],
     acceleration:[0,0],
     wheelForwardRotate:0,
@@ -1003,9 +1004,15 @@ function processMechanumCarMechanics(timeChange, leftRight, forwardBack, mechanu
     velInCarFrame[0] -= moveScale* leftRight;
     velInCarFrame[1] -= moveScale* forwardBack;
 
-    carInfo3.yawRate += mechanumTurn;
+    carInfo3.smoothedTurnInput += 0.01*mechanumTurn;
+    carInfo3.smoothedTurnInput*=0.95;
+
+    carInfo3.yawRate += carInfo3.smoothedTurnInput;
     carInfo3.yawRate *= 0.99;    //NOTE with this basic system total movement or turn simply proportional to button pressed time. TODO something better.
 
+    //TODO nonlinearity of input?
+
+    //var adjustedYawRate = 0.01*Math.pow(carInfo3.yawRate,3);
 
     var angleToRotateBy = carInfo3.yawRate * timeChangeSeconds;
 
@@ -1169,7 +1176,6 @@ function drawScene(frameTime){
     
     cameraZoom = parseFloat(document.getElementById("camerazoom").value);
     cameraZoom*=cameraZoomAdjustInputSmoothed;
-
 
     //calculation of fisheye zoom given ratio of distance from viewer to screen to distance for correct rectilinear viewing. 
     // assume that strength k is set right for n=2
