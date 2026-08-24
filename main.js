@@ -90,7 +90,10 @@ var carInfo3 = {    //mechanum
     //rotation:0, //guess don't need because just using a matrix to track this for other cars!
     yawRate: 0,
     velInCarFrame: [0,0],
-    acceleration:[0,0]
+    acceleration:[0,0],
+    wheelForwardRotate:0,
+    wheelSideRotate:0,
+    wheelTurnRotate:0
 }
 
 
@@ -1005,6 +1008,9 @@ function processMechanumCarMechanics(timeChange, leftRight, forwardBack, mechanu
 
 
     var angleToRotateBy = carInfo3.yawRate * timeChangeSeconds;
+
+    carInfo3.wheelTurnRotate+=angleToRotateBy;
+
     var cosSin = [Math.cos(angleToRotateBy), Math.sin(angleToRotateBy)];
     mat4.rotateY(carMatrix3, angleToRotateBy);  //degrees or rads?
 
@@ -1013,6 +1019,9 @@ function processMechanumCarMechanics(timeChange, leftRight, forwardBack, mechanu
 
     //move by speed
     mat4.translate(carMatrix3, [velInCarFrame[0],0,velInCarFrame[1]].map(x=>x*timeChangeSeconds));
+
+    carInfo3.wheelForwardRotate += velInCarFrame[1]*timeChangeSeconds;
+    carInfo3.wheelSideRotate -= velInCarFrame[0]*timeChangeSeconds;
 }
 
 
@@ -1664,7 +1673,10 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         enableDisableAttributes(activeProg);
 
         if (wheelBuffers.isLoaded){
-            drawWheels(wheelScale, activeProg, drawWheelMarkers, 0, 0, 0);
+            drawWheelsMechanum(wheelScale, activeProg, drawWheelMarkers, 0, 
+                carInfo3.wheelForwardRotate, 
+                carInfo3.wheelSideRotate, 
+                carInfo3.wheelTurnRotate*2); //TODO correct scaling. 
         }
 
         gl.uniform3fv(activeProg.uniforms.uFlatColor, wheelColor);  
@@ -1726,37 +1738,49 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 }
 
 function drawWheels(wheelScale, activeProg, drawDebugMarkers, steeringAngle, frontWheelRotation, rearWheelRotation){
+    drawWheelsGeneral(-4.95, -0.25, 1.6, wheelScale, activeProg, drawDebugMarkers, steeringAngle, frontWheelRotation, frontWheelRotation, rearWheelRotation, rearWheelRotation);
+}
+
+function drawWheelsMechanum(wheelScale, activeProg, drawDebugMarkers, steeringAngle, forwardRotate, sideRotate, turnRotate){
+    drawWheelsGeneral(-4.95, -0.25, 2, wheelScale, activeProg, drawDebugMarkers, steeringAngle, 
+        forwardRotate+sideRotate+turnRotate,
+        forwardRotate-sideRotate-turnRotate,
+        forwardRotate-sideRotate+turnRotate,
+        forwardRotate+sideRotate-turnRotate);
+}
+
+function drawWheelsGeneral(frontness, backness, sideness, wheelScale, activeProg, drawDebugMarkers, steeringAngle, frontLeftWheelRotation, frontRightWheelRotation, rearLeftWheelRotation, rearRightWheelRotation){
 
     var savedmMatrix = mat4.create(mMatrix);
 
     gl.uniform3fv(activeProg.uniforms.uFlatColor, wheelColor);  
 
     mat4.set(savedmMatrix, mMatrix);
-    mat4.translate(mMatrix, [1.6,0,-0.25]);   // +ve = right, up , back
-    mat4.rotateX(mMatrix, rearWheelRotation);
+    mat4.translate(mMatrix, [sideness,0,backness]);   // +ve = right, up , back
+    mat4.rotateX(mMatrix, rearRightWheelRotation);
     mat4.scale(mMatrix, wheelScale);
     drawObjectFromBuffers(wheelBuffers, activeProg);    //right rear
     drawTestMarker();
 
     mat4.set(savedmMatrix, mMatrix);
-    mat4.translate(mMatrix, [-1.6,0,-0.25]);
-    mat4.rotateX(mMatrix, rearWheelRotation);
+    mat4.translate(mMatrix, [-sideness,0,backness]);
+    mat4.rotateX(mMatrix, rearLeftWheelRotation);
     mat4.scale(mMatrix, wheelScale);
     drawObjectFromBuffers(wheelBuffers, activeProg);    //left rear
     drawTestMarker();
 
     mat4.set(savedmMatrix, mMatrix);
-    mat4.translate(mMatrix, [-1.6,0,-4.95]);
+    mat4.translate(mMatrix, [-sideness,0,frontness]);
     mat4.rotateY(mMatrix, steeringAngle);
-    mat4.rotateX(mMatrix, frontWheelRotation);
+    mat4.rotateX(mMatrix, frontLeftWheelRotation);
     mat4.scale(mMatrix, wheelScale);
     drawObjectFromBuffers(wheelBuffers, activeProg);    //left front
     drawTestMarker();
 
     mat4.set(savedmMatrix, mMatrix);
-    mat4.translate(mMatrix, [1.6,0,-4.95]);
+    mat4.translate(mMatrix, [sideness,0,frontness]);
     mat4.rotateY(mMatrix, steeringAngle);
-    mat4.rotateX(mMatrix, frontWheelRotation);
+    mat4.rotateX(mMatrix, frontRightWheelRotation);
     mat4.scale(mMatrix, wheelScale);
     drawObjectFromBuffers(wheelBuffers, activeProg);    //right front
     drawTestMarker();
