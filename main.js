@@ -31,6 +31,8 @@ var pointerLocked=false;
 
 var listerBuffers={};
 var wheelBuffers={}
+var wheelBuffersMechanum={}
+var wheelBuffersMechanumFlipped={}
 var lucyBuffers={};
 
 var haveUnclickedFire = 0;
@@ -226,6 +228,10 @@ function init(){
     loadBuffersFromObj2Or3File(listerBuffers, "./data/miscobjs/imported-lister-colourless.obj2", loadBufferData, 3);
 
     loadBuffersFromObj2Or3File(wheelBuffers, "./data/miscobjs/wheel.obj2", loadBufferData, 3);
+    loadBuffersFromObj2Or3File(wheelBuffersMechanum, "./data/miscobjs/mechanum.obj2", loadBufferData, 3);
+    loadBuffersFromObj2Or3File(wheelBuffersMechanumFlipped, "./data/miscobjs/mechanum-flipped.obj2", loadBufferData, 3);
+
+
     loadBuffersFromObj5File(lucyBuffers, "./data/lucy-withvertcolor.obj5", loadBufferData, 6);
 
     loadAnimationStuff();
@@ -1678,7 +1684,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         gl.useProgram(activeProg);
         enableDisableAttributes(activeProg);
 
-        if (wheelBuffers.isLoaded){
+        if (wheelBuffersMechanum.isLoaded && wheelBuffersMechanumFlipped.isLoaded){
             drawWheelsMechanum(wheelScale, activeProg, drawWheelMarkers, 0, 
                 carInfo3.wheelForwardRotate, 
                 carInfo3.wheelSideRotate, 
@@ -1744,18 +1750,27 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 }
 
 function drawWheels(wheelScale, activeProg, drawDebugMarkers, steeringAngle, frontWheelRotation, rearWheelRotation){
-    drawWheelsGeneral(-4.95, -0.25, 1.6, wheelScale, activeProg, drawDebugMarkers, steeringAngle, frontWheelRotation, frontWheelRotation, rearWheelRotation, rearWheelRotation);
+    drawWheelsGeneral(-4.95, -0.25, 1.6, wheelScale, activeProg, drawDebugMarkers, steeringAngle, frontWheelRotation, frontWheelRotation, rearWheelRotation, rearWheelRotation, wheelBuffers, wheelBuffers);
 }
 
 function drawWheelsMechanum(wheelScale, activeProg, drawDebugMarkers, steeringAngle, forwardRotate, sideRotate, turnRotate){
-    drawWheelsGeneral(-4.95, -0.25, 2, wheelScale, activeProg, drawDebugMarkers, steeringAngle, 
+    drawWheelsGeneral(-5.2, -0, 2.1, wheelScale, activeProg, drawDebugMarkers, steeringAngle, 
         forwardRotate+sideRotate+turnRotate,
         forwardRotate-sideRotate-turnRotate,
         forwardRotate-sideRotate+turnRotate,
-        forwardRotate+sideRotate-turnRotate);
+        forwardRotate+sideRotate-turnRotate,
+        wheelBuffersMechanum, wheelBuffersMechanumFlipped);
+
+        //+4 more wheels. TODO 
+    drawWheelsGeneral(-3.95, -1.25, 2.1, wheelScale, activeProg, drawDebugMarkers, steeringAngle, 
+        forwardRotate+sideRotate+turnRotate,
+        forwardRotate-sideRotate-turnRotate,
+        forwardRotate-sideRotate+turnRotate,
+        forwardRotate+sideRotate-turnRotate,
+        wheelBuffersMechanum, wheelBuffersMechanumFlipped);
 }
 
-function drawWheelsGeneral(frontness, backness, sideness, wheelScale, activeProg, drawDebugMarkers, steeringAngle, frontLeftWheelRotation, frontRightWheelRotation, rearLeftWheelRotation, rearRightWheelRotation){
+function drawWheelsGeneral(frontness, backness, sideness, wheelScale, activeProg, drawDebugMarkers, steeringAngle, frontLeftWheelRotation, frontRightWheelRotation, rearLeftWheelRotation, rearRightWheelRotation, mesh1, mesh2){
 
     var savedmMatrix = mat4.create(mMatrix);
 
@@ -1765,14 +1780,14 @@ function drawWheelsGeneral(frontness, backness, sideness, wheelScale, activeProg
     mat4.translate(mMatrix, [sideness,0,backness]);   // +ve = right, up , back
     mat4.rotateX(mMatrix, rearRightWheelRotation);
     mat4.scale(mMatrix, wheelScale);
-    drawObjectFromBuffers(wheelBuffers, activeProg);    //right rear
+    drawObjectFromBuffers(mesh2, activeProg);    //right rear
     drawTestMarker();
 
     mat4.set(savedmMatrix, mMatrix);
     mat4.translate(mMatrix, [-sideness,0,backness]);
     mat4.rotateX(mMatrix, rearLeftWheelRotation);
     mat4.scale(mMatrix, wheelScale);
-    drawObjectFromBuffers(wheelBuffers, activeProg);    //left rear
+    drawObjectFromBuffers(mesh1, activeProg);    //left rear
     drawTestMarker();
 
     mat4.set(savedmMatrix, mMatrix);
@@ -1780,7 +1795,7 @@ function drawWheelsGeneral(frontness, backness, sideness, wheelScale, activeProg
     mat4.rotateY(mMatrix, steeringAngle);
     mat4.rotateX(mMatrix, frontLeftWheelRotation);
     mat4.scale(mMatrix, wheelScale);
-    drawObjectFromBuffers(wheelBuffers, activeProg);    //left front
+    drawObjectFromBuffers(mesh2, activeProg);    //left front
     drawTestMarker();
 
     mat4.set(savedmMatrix, mMatrix);
@@ -1788,7 +1803,7 @@ function drawWheelsGeneral(frontness, backness, sideness, wheelScale, activeProg
     mat4.rotateY(mMatrix, steeringAngle);
     mat4.rotateX(mMatrix, frontRightWheelRotation);
     mat4.scale(mMatrix, wheelScale);
-    drawObjectFromBuffers(wheelBuffers, activeProg);    //right front
+    drawObjectFromBuffers(mesh1, activeProg);    //right front
     drawTestMarker();
 
     mat4.set(savedmMatrix, mMatrix);
