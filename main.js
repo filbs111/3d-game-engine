@@ -1063,6 +1063,7 @@ function drawScene(frameTime){
             updateSpeedInfo(playerVel, playerAcc, carInfo.speed, carInfo.accVec );
         }        
     }
+    var elapsedTime = frameTime - lastFrameTime;
     lastFrameTime=frameTime;
 
 
@@ -1483,9 +1484,6 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     mat4.scale(mMatrix,[0.2,0.2,0.4]);
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
-
-    var elapsedTime = frameTime - lastFrameTime;
-    lastFrameTime = frameTime;
 
     if (carMode == 0){
         gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.1,0.5,0.1]);
