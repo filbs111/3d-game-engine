@@ -10,6 +10,8 @@ mycanvas.height= canvasSize;
 
 requestAnimationFrame(updateCanvas);
 
+var lastFrameTime=0;
+var ang=0;
 
 function updateCanvas(frameTime){
     //console.log("drawing legs");
@@ -21,7 +23,10 @@ function updateCanvas(frameTime){
 
     //draw a clock hand
     var handLength = canvasCentre *0.9;
-    var ang = frameTime*0.002;
+
+
+
+    
     // var cosSin = [Math.cos(ang),Math.sin(ang)];
 
     // ctx.beginPath();
@@ -37,21 +42,32 @@ function updateCanvas(frameTime){
     //     1.2, 1.2, 
     //     1.3,  ang);
 
-    var hipAverageAngle = parseFloat(document.getElementById("hipAverageAngle").value);
-    var hipAngleHalfRange = parseFloat(document.getElementById("hipAngleHalfRange").value);
-    var kneeAverageAngle = parseFloat(document.getElementById("kneeAverageAngle").value);
-    var kneeAngleHalfRange = parseFloat(document.getElementById("kneeAngleHalfRange").value);
-    var kneeAngleLag = parseFloat(document.getElementById("kneeAngleLag").value);
+
+    var wholeRangeScale = parseFloat(document.getElementById("wholeRangeScale").value);
+
+    var legSettings = {
+        hipAverageAngle: parseFloat(document.getElementById("hipAverageAngle").value),
+        hipAngleHalfRange: wholeRangeScale*parseFloat(document.getElementById("hipAngleHalfRange").value),
+        kneeAverageAngle: wholeRangeScale*parseFloat(document.getElementById("kneeAverageAngle").value),
+        kneeAngleHalfRange: wholeRangeScale*parseFloat(document.getElementById("kneeAngleHalfRange").value),
+        kneeAngleLag: parseFloat(document.getElementById("kneeAngleLag").value)
+    };
 
     var reverseAnim = document.getElementById("reverseAnim").checked;
+    var cycleSpeed = parseFloat(document.getElementById("cycleSpeed").value);
 
-    drawLegs(hipAverageAngle, hipAngleHalfRange, 
-        kneeAverageAngle, kneeAngleHalfRange, 
-        kneeAngleLag, reverseAnim? -ang :ang);
+    ang+= cycleSpeed*(frameTime-lastFrameTime)*0.004;
+
+    lastFrameTime = frameTime;
+
+    drawLegs(legSettings, reverseAnim? -ang :ang);
 }
 
 
-function drawLegs(hipAverageAngle, hipAngleHalfRange, kneeAverageAngle, kneeAngleHalfRange, kneeAngleLag, currentAngleInput){
+function drawLegs(legSettings, currentAngleInput){
+
+    var {hipAverageAngle, hipAngleHalfRange, kneeAverageAngle, kneeAngleHalfRange, kneeAngleLag} = legSettings;
+
     //angles are relative to bone attached to.
     var jointPositions = calcJointPositions(hipAverageAngle, hipAngleHalfRange, kneeAverageAngle, kneeAngleHalfRange, kneeAngleLag, currentAngleInput);
 

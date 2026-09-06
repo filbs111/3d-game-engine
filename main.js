@@ -434,8 +434,11 @@ var lastFrameTime = null;
 var lastFixedTimestepUpdateTime = 0;
 var playerPos=[0,0,5];
 var playerPosOld=[0,0,5];
-var playerEyePosFromNeck=[0,0.2,-0.2]; //20cm above and ahead of neck, so 1.7m above groun d, 10cm forwards
-var playerNeckPos=[0,0.5,0.1];  //relative to player centre which is 1m above ground.  1.5m above ground, 10cm back
+var playerEyePosFromNeck=[0,0.2,-0.1]; //20cm above and ahead of neck, so 1.7m above groun d, 10cm forwards
+//var playerEyePosFromNeck=[0.4,0.2+0.3,-0.2+1]; //3rd person ish
+
+
+var playerNeckPos=[0,0.5,0.05];  //relative to player centre which is 1m above ground.  1.5m above ground, 5cm back
 var playerVel=[0,0,0];
 var playerAcc=[0,0,0];
 var preDragPlayerAcc=[0,0,0];
@@ -480,7 +483,7 @@ var lucyMatrix = mat4.identity();
 mat4.translate(lucyMatrix,[-8,3,-6]); //left, up a bit, forwards
 mat4.rotateY(lucyMatrix, -1);   //clockwise
 
-var armElevationMultiplier=1.4; //elevate arms more than player look direction. 
+var armElevationMultiplier=1.2; //elevate arms more than player look direction. 
     // - suspect this is natural - head isn't 90 deg
     //back when pointing gun upward.
      // NOTE could make gimbal lock situation worse - perhaps better use pointing direction and scale look elevation...
@@ -1484,13 +1487,13 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         var gunMat = mat4.create(torsoMatrix);
         mat4.rotateX(gunMat, -playerElevation*torsoElevationMultiplier);
         mat4.translate(gunMat, playerNeckPos);
-        mat4.translate(gunMat, [0,0,-0.2]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
+        mat4.translate(gunMat, [0,0,-0.15]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
         mat4.rotateX(gunMat, -playerElevation*(armElevationMultiplier-torsoElevationMultiplier) + gunElevTemp);
         mat4.rotateX(gunMat, armRotationAdjustment);
 
         mat4.rotateY(gunMat, gunTurn);
 
-        mat4.translate(gunMat, [0,0.05,-1]);    //1m - end of arm, up by 5cm
+        mat4.translate(gunMat, [0,0.05,-0.7]);    //0.7m - end of arm, up by 5cm
 
         if (document.getElementById("drawbody").checked){
 
@@ -1500,32 +1503,68 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
             //draw neck
             drawCubeWithScale(activeProg, neckMat, [0.05,0.05,0.05]); 
 
-            //draw uppoer torso
-            drawCubeWithScale(activeProg, upperTorsoMat, [0.25,0.2,0.1]); 
+            //draw upper torso
+            drawCubeWithScale(activeProg, upperTorsoMat, [0.15,0.2,0.07]); 
+
+            // 58008
+            var tempMat1 = mat4.create(upperTorsoMat);
+            //mat4.translate(tempMat1, [0,0.2,0.2]);  //backpack?
+            mat4.translate(tempMat1, [0,0.1,-0.1]);  //backpack?
+            mat4.rotateX(tempMat1, Math.PI/4);
+            drawCubeWithScale(activeProg, tempMat1, [0.14,0.05,0.05]);
 
             // draw torso
-            drawCubeWithScale(activeProg, torsoMatrix, [0.2,0.2,0.1]);  //40 cm wide, 40cm tall, 20cm deep. top is like bottom of rib cage
+            drawCubeWithScale(activeProg, torsoMatrix, [0.16,0.1,0.1]);  //32 cm wide, 20cm tall, 20cm deep. top is like bottom of rib cage
 
 
             //draw legs. 
             //TODO make movement correspond to movement speed and direction. 
             //temporary - just constant animation.
-            var legSwing = 0.5*Math.sin(boxRotation*4);
+            var runCycleAng = boxRotation*5;
+            var legSwing = 0.9*Math.sin(runCycleAng);
+            var kneeBendExtra = 1.1*Math.sin(runCycleAng -1.6);
+
+            var legCentreSwingAmount = 0.3; //knee up (should decrease this when moving slow)
+            var kneeAverageBendAmount = -1.0;
+
             var legMat = mat4.create(torsoMatrix);
-            mat4.rotateX(legMat, legSwing);
-            mat4.translate(legMat, [0.1,-0.5,0]);
-            drawCubeWithScale(activeProg, legMat, [0.1,0.5,0.1]);   //right leg
+
+            //var hipTurn=0.5;    //for diagonal running..
+            //mat4.rotateY(legMat, hipTurn);
+
+            var hipTiltIn = 0.05;   //put feet more centrally under body. guess not realistic - maybe should vary through cycle
+            mat4.rotateZ(legMat, -hipTiltIn);
+
+
+            mat4.rotateX(legMat, legSwing + legCentreSwingAmount);
+            mat4.translate(legMat, [0.1,-0.25,0]);
+            drawCubeWithScale(activeProg, legMat, [0.05,0.25,0.1]);   //right upper leg
+
+            mat4.translate(legMat, [0,-0.25,0]);
+            mat4.rotateX(legMat, kneeAverageBendAmount + kneeBendExtra);
+            mat4.translate(legMat, [0,-0.25,0]);
+            drawCubeWithScale(activeProg, legMat, [0.05,0.25,0.08]);   //right lower leg
+
 
             mat4.set(torsoMatrix, legMat);
-            mat4.rotateX(legMat, -legSwing);
-            mat4.translate(legMat, [-0.1,-0.5,0]);
-            drawCubeWithScale(activeProg, legMat, [0.1,0.5,0.1]);   //left leg    
+            mat4.rotateZ(legMat, hipTiltIn);
+
+            mat4.rotateX(legMat, -legSwing + legCentreSwingAmount);
+            mat4.translate(legMat, [-0.1,-0.25,0]);
+            drawCubeWithScale(activeProg, legMat, [0.05,0.3,0.1]);   //left upper leg    
         
+            mat4.translate(legMat, [0,-0.25,0]);
+            mat4.rotateX(legMat, kneeAverageBendAmount - kneeBendExtra);
+            mat4.translate(legMat, [0,-0.25,0]);
+            drawCubeWithScale(activeProg, legMat, [0.05,0.25,0.08]);   //left lower leg
+
+
+
             var doubleGuns = document.getElementById("doubleguns").checked;
             if (doubleGuns){
-                mat4.translate(gunMat, [-0.2,0,0]);
+                mat4.translate(gunMat, [-0.15,0,0]);
                 drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
-                mat4.translate(gunMat, [0.4,0,0]);
+                mat4.translate(gunMat, [0.3,0,0]);
                 drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
             }else{
                 drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
@@ -1540,13 +1579,12 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         var armMat = mat4.create(torsoMatrix);
         mat4.rotateX(armMat, -playerElevation*torsoElevationMultiplier + gunElevTemp);
         mat4.translate(armMat, playerNeckPos);
-        mat4.translate(armMat, [0.2*handedness,0,-0.2]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
+        mat4.translate(armMat, [0.15*handedness,0,-0.15]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
         
         mat4.rotateX(armMat, -playerElevation*(armElevationMultiplier-torsoElevationMultiplier));
         mat4.rotateX(armMat, armRotationAdjustment);
 
         mat4.rotateY(armMat, gunTurn);  //note with this arms don't quite match gun because order of rotations
-
 
         if (!doubleGuns){
             mat4.rotateX(armMat, handedness*0.06);
@@ -1555,9 +1593,9 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
             mat4.rotateX(armMat, 0.06);
         }
 
-        mat4.translate(armMat, [0,0,-0.5]);    //move forwards by 0.5 for elbow
+        mat4.translate(armMat, [0,0,-0.3]);    //move forwards by 0.3 for elbow
 
-        drawCubeWithScale(activeProg, armMat, [0.05,0.05,0.5]); //10cm x 10cm x 1m
+        drawCubeWithScale(activeProg, armMat, [0.05,0.05,0.35]); //10cm x 10cm x 0.7m
     }
 
 
