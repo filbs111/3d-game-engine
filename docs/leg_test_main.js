@@ -13,6 +13,34 @@ requestAnimationFrame(updateCanvas);
 var lastFrameTime=0;
 var ang=0;
 
+var standardRunValues = {
+    hipAverageAngle: -0.1,
+    hipAngleHalfRange: 1,
+    kneeAverageAngle: 1,
+    kneeAngleHalfRange: 1,
+    kneeAngleLag: 1.5
+};
+
+var otherRunValues = {
+    hipAverageAngle: 0.19, hipAngleHalfRange: 0.87, kneeAverageAngle: 0.94, kneeAngleHalfRange: 0.99, kneeAngleLag: 1.5
+}
+//found bobPhase = -0.2 works here.
+
+
+var standardWalkValues = {
+    hipAverageAngle: -0.1,
+    hipAngleHalfRange: .5,
+    kneeAverageAngle: .3,
+    kneeAngleHalfRange: .3,
+    kneeAngleLag: 1.5
+};
+//found bobPhase = -0.25 works here.
+
+
+var bobPhase = 0;
+
+var latestSettings; //global so can print
+
 function updateCanvas(frameTime){
     //console.log("drawing legs");
     requestAnimationFrame(updateCanvas);
@@ -53,25 +81,52 @@ function updateCanvas(frameTime){
         kneeAngleLag: parseFloat(document.getElementById("kneeAngleLag").value)
     };
 
+    latestSettings = legSettings;
+
+    //legSettings = standardRunValues;
+    //legSettings = standardWalkValues;
+
+    var runAmount = parseFloat(document.getElementById("animBlend").value);
+    var walkAmount = 1-runAmount;    
+
+    var runToBlend = otherRunValues;
+    var walkToBlend = standardWalkValues;
+    //TODO how to get to blend amounts from desired movement speed so that foot speed about right?  
+
+    var legSettings = {
+        hipAverageAngle: walkAmount*walkToBlend.hipAverageAngle + runAmount*runToBlend.hipAverageAngle,
+        hipAngleHalfRange: walkAmount*walkToBlend.hipAngleHalfRange + runAmount*runToBlend.hipAngleHalfRange,
+        kneeAverageAngle: walkAmount*walkToBlend.kneeAverageAngle + runAmount*runToBlend.kneeAverageAngle,
+        kneeAngleHalfRange: walkAmount*walkToBlend.kneeAngleHalfRange + runAmount*runToBlend.kneeAngleHalfRange,
+        kneeAngleLag: walkAmount*walkToBlend.kneeAngleLag + runAmount*runToBlend.kneeAngleLag
+    };
+
+    bobPhase = -0.2*runAmount -0.25*walkAmount;
+
     var reverseAnim = document.getElementById("reverseAnim").checked;
-    var cycleSpeed = parseFloat(document.getElementById("cycleSpeed").value);
+    //var cycleSpeed = parseFloat(document.getElementById("cycleSpeed").value);
+
+    var cycleSpeed = 3*runAmount + 1*walkAmount;
 
     ang+= cycleSpeed*(frameTime-lastFrameTime)*0.004;
 
     lastFrameTime = frameTime;
 
-    drawLegs(legSettings, reverseAnim? -ang :ang);
+    var bob = 10* Math.pow(Math.sin(ang + bobPhase),2);
+
+
+    drawLegs(legSettings, reverseAnim? -ang :ang, bob);
 }
 
 
-function drawLegs(legSettings, currentAngleInput){
+function drawLegs(legSettings, currentAngleInput, bob){
 
     var {hipAverageAngle, hipAngleHalfRange, kneeAverageAngle, kneeAngleHalfRange, kneeAngleLag} = legSettings;
 
     //angles are relative to bone attached to.
-    var jointPositions = calcJointPositions(hipAverageAngle, hipAngleHalfRange, kneeAverageAngle, kneeAngleHalfRange, kneeAngleLag, currentAngleInput);
+    var jointPositions = calcJointPositions(hipAverageAngle, hipAngleHalfRange, kneeAverageAngle, kneeAngleHalfRange, kneeAngleLag, currentAngleInput, bob);
 
-    var jointPositionsOtherLeg = calcJointPositions(hipAverageAngle, hipAngleHalfRange, kneeAverageAngle, kneeAngleHalfRange, kneeAngleLag, currentAngleInput + Math.PI);
+    var jointPositionsOtherLeg = calcJointPositions(hipAverageAngle, hipAngleHalfRange, kneeAverageAngle, kneeAngleHalfRange, kneeAngleLag, currentAngleInput + Math.PI, bob);
 
     drawSingleLeg("blue", jointPositions);
     drawSingleLeg("orange", jointPositionsOtherLeg);
@@ -79,7 +134,8 @@ function drawLegs(legSettings, currentAngleInput){
     //draw path ankle takes.
     var resultsArr=[];
     for (var aa=0;aa<2*Math.PI;aa+=0.01){
-        resultsArr.push(calcJointPositions(hipAverageAngle, hipAngleHalfRange, kneeAverageAngle, kneeAngleHalfRange, kneeAngleLag, aa).anklePos);
+        var thisbob = 10* Math.pow(Math.sin(aa+bobPhase),2); //if reversed, aa might not work same as -ang
+        resultsArr.push(calcJointPositions(hipAverageAngle, hipAngleHalfRange, kneeAverageAngle, kneeAngleHalfRange, kneeAngleLag, aa, thisbob).anklePos);
     }
 
     ctx.beginPath();
@@ -103,7 +159,7 @@ function drawSingleLeg(colorString, jointPositions){
     ctx.stroke();
 }
 
-function calcJointPositions(hipAverageAngle, hipAngleHalfRange, kneeAverageAngle, kneeAngleHalfRange, kneeAngleLag, currentAngleInput){
+function calcJointPositions(hipAverageAngle, hipAngleHalfRange, kneeAverageAngle, kneeAngleHalfRange, kneeAngleLag, currentAngleInput, bob){
     //angles are relative to bone attached to.
     var thighLength = canvasCentre *0.5;
     var calfLength = canvasCentre *0.5;
@@ -111,9 +167,9 @@ function calcJointPositions(hipAverageAngle, hipAngleHalfRange, kneeAverageAngle
     var hipAngle = hipAverageAngle + Math.sin(currentAngleInput)*hipAngleHalfRange;
     var kneeAngle = kneeAverageAngle + Math.sin(currentAngleInput -kneeAngleLag)*kneeAngleHalfRange;
 
-    var hipPos = [canvasCentre, canvasCentre/2];
-    var kneePos = [hipPos[0] + thighLength*Math.sin(hipAngle), hipPos[1] + thighLength*Math.cos(hipAngle)];
-    var anklePos = [kneePos[0] + calfLength*Math.sin(hipAngle+kneeAngle) , kneePos[1] + calfLength*Math.cos(hipAngle+kneeAngle)];
+    var hipPos = [canvasCentre, canvasCentre/2 + bob];
+    var kneePos = [hipPos[0] + thighLength*Math.sin(hipAngle), hipPos[1] + thighLength*Math.cos(hipAngle) + bob];
+    var anklePos = [kneePos[0] + calfLength*Math.sin(hipAngle+kneeAngle) , kneePos[1] + calfLength*Math.cos(hipAngle+kneeAngle) + bob];
 
     return {
         hipPos,
