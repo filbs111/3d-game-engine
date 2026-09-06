@@ -1520,14 +1520,23 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
             //draw legs. 
             //TODO make movement correspond to movement speed and direction. 
             //temporary - just constant animation.
-            var runCycleAng = boxRotation*5;
+            var runCycleAng = boxRotation*10;
             var legSwing = 0.9*Math.sin(runCycleAng);
             var kneeBendExtra = 1.1*Math.sin(runCycleAng -1.6);
 
             var legCentreSwingAmount = 0.3; //knee up (should decrease this when moving slow)
             var kneeAverageBendAmount = -1.0;
 
-            var legMat = mat4.create(torsoMatrix);
+
+            var rotatedHipsMatrix = mat4.create(torsoMatrix);   //twist hips to point in running direction. 
+                //TODO is it better to make hip movement parent of upper torso? 
+
+            var runAngle = Math.atan2(playerVel[0], -playerVel[2]);
+            var angleDifference = playerRotation - runAngle;    //TODO this when backwards? (want to use backward running/walking animation then)
+            mat4.rotateY(rotatedHipsMatrix, angleDifference);
+
+
+            var legMat = mat4.create(rotatedHipsMatrix);
 
             //var hipTurn=0.5;    //for diagonal running..
             //mat4.rotateY(legMat, hipTurn);
@@ -1546,7 +1555,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
             drawCubeWithScale(activeProg, legMat, [0.05,0.25,0.08]);   //right lower leg
 
 
-            mat4.set(torsoMatrix, legMat);
+            mat4.set(rotatedHipsMatrix, legMat);
             mat4.rotateZ(legMat, hipTiltIn);
 
             mat4.rotateX(legMat, -legSwing + legCentreSwingAmount);
