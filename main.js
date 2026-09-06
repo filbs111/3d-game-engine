@@ -380,7 +380,8 @@ function drawObjectFromPreppedBuffers(bufferObj, shaderProg){
         gl.uniformMatrix4fv(shaderProg.uniforms.uMMatrix, false, mMatrix);
         gl.uniformMatrix4fv(shaderProg.uniforms.uVMatrix, false, cameraMat);  //TODO set less frequently
     }
-	gl.drawElements(gl.TRIANGLES, bufferObj.vertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+
+    gl.drawElements(gl.TRIANGLES, bufferObj.vertexIndexBuffer.numItems, bufferObj.use32BitIndices? gl.UNSIGNED_INT: gl.UNSIGNED_SHORT, 0);
 }
 
 var enableDisableAttributes = (function generateEnableDisableAttributesFunc(){
