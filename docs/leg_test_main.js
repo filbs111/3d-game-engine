@@ -18,24 +18,23 @@ var standardRunValues = {
     hipAngleHalfRange: 1,
     kneeAverageAngle: 1,
     kneeAngleHalfRange: 1,
-    kneeAngleLag: 1.5
+    kneeAngleLag: 1.5,
+    bobPhase: -0.2
 };
 
 var otherRunValues = {
-    hipAverageAngle: 0.19, hipAngleHalfRange: 0.87, kneeAverageAngle: 0.94, kneeAngleHalfRange: 0.99, kneeAngleLag: 1.5
+    hipAverageAngle: 0.19, hipAngleHalfRange: 0.87, kneeAverageAngle: 0.94, kneeAngleHalfRange: 0.99, kneeAngleLag: 1.5,
+    bobPhase: -0.2
 }
-//found bobPhase = -0.2 works here.
-
 
 var standardWalkValues = {
     hipAverageAngle: -0.1,
     hipAngleHalfRange: .5,
     kneeAverageAngle: .3,
     kneeAngleHalfRange: .3,
-    kneeAngleLag: 1.5
+    kneeAngleLag: 1.5,
+    bobPhase: -0.25
 };
-//found bobPhase = -0.25 works here.
-
 
 var bobPhase = 0;
 
@@ -78,7 +77,8 @@ function updateCanvas(frameTime){
         hipAngleHalfRange: wholeRangeScale*parseFloat(document.getElementById("hipAngleHalfRange").value),
         kneeAverageAngle: wholeRangeScale*parseFloat(document.getElementById("kneeAverageAngle").value),
         kneeAngleHalfRange: wholeRangeScale*parseFloat(document.getElementById("kneeAngleHalfRange").value),
-        kneeAngleLag: parseFloat(document.getElementById("kneeAngleLag").value)
+        kneeAngleLag: parseFloat(document.getElementById("kneeAngleLag").value),
+        bobPhase: -0.2
     };
 
     latestSettings = legSettings;
@@ -93,15 +93,17 @@ function updateCanvas(frameTime){
     var walkToBlend = standardWalkValues;
     //TODO how to get to blend amounts from desired movement speed so that foot speed about right?  
 
+    //override settings from sliders
     var legSettings = {
         hipAverageAngle: walkAmount*walkToBlend.hipAverageAngle + runAmount*runToBlend.hipAverageAngle,
         hipAngleHalfRange: walkAmount*walkToBlend.hipAngleHalfRange + runAmount*runToBlend.hipAngleHalfRange,
         kneeAverageAngle: walkAmount*walkToBlend.kneeAverageAngle + runAmount*runToBlend.kneeAverageAngle,
         kneeAngleHalfRange: walkAmount*walkToBlend.kneeAngleHalfRange + runAmount*runToBlend.kneeAngleHalfRange,
-        kneeAngleLag: walkAmount*walkToBlend.kneeAngleLag + runAmount*runToBlend.kneeAngleLag
+        kneeAngleLag: walkAmount*walkToBlend.kneeAngleLag + runAmount*runToBlend.kneeAngleLag,
+        bobPhase: walkAmount*walkToBlend.bobPhase + runAmount*runToBlend.bobPhase
     };
 
-    bobPhase = -0.2*runAmount -0.25*walkAmount;
+    bobPhase = legSettings.bobPhase;    //hack - because used elsewhere 
 
     var reverseAnim = document.getElementById("reverseAnim").checked;
     //var cycleSpeed = parseFloat(document.getElementById("cycleSpeed").value);
@@ -112,7 +114,7 @@ function updateCanvas(frameTime){
 
     lastFrameTime = frameTime;
 
-    var bob = 10* Math.pow(Math.sin(ang + bobPhase),2);
+    var bob = 10* Math.pow(Math.sin(ang + legSettings.bobPhase),2);
 
 
     drawLegs(legSettings, reverseAnim? -ang :ang, bob);

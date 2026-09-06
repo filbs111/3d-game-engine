@@ -446,6 +446,10 @@ var playerRotation=0;
 var playerElevation=0;
 var playerRotationOld=0;
 var playerElevationOld=0;
+
+var runCycleAng = 0;
+var lastFrameTime = 0;
+
 var boxPos=[0,0.1,0];   //move up a bit to sit above mirror plane
 var groundPos=[0,-11,0];
 
@@ -1480,6 +1484,9 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
 
+    var elapsedTime = frameTime - lastFrameTime;
+    lastFrameTime = frameTime;
+
     if (carMode == 0){
         gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.1,0.5,0.1]);
 
@@ -1518,14 +1525,30 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
 
             //draw legs. 
+
+            //var runAmount = 0.5;  //TODO speed dependence
+
+            //bodge speed dependence. TODO get this right so no foot sliding! also what should cadence dependence really be? get a proper walk and run animation!
+            var playerSpeed = Math.sqrt(playerVel[0]*playerVel[0] + playerVel[2]*playerVel[2]);
+            var scaledSpeed = playerSpeed * 100;
+            var runAmount = Math.max(0,Math.min(1,scaledSpeed));
+
+            if (Math.random()<0.01){console.log(runAmount)}
+
+            var legSettings = getBlendedLegSettings(runAmount);
+
             //TODO make movement correspond to movement speed and direction. 
             //temporary - just constant animation.
-            var runCycleAng = boxRotation*10;
-            var legSwing = 0.9*Math.sin(runCycleAng);
-            var kneeBendExtra = 1.1*Math.sin(runCycleAng -1.6);
 
-            var legCentreSwingAmount = 0.3; //knee up (should decrease this when moving slow)
-            var kneeAverageBendAmount = -1.0;
+            
+            var cycleSpeed = runAmount*2 + (1-runAmount)*1;
+            runCycleAng+=cycleSpeed*0.008;
+
+            var legSwing = legSettings.hipAngleHalfRange*Math.sin(runCycleAng);
+            var kneeBendExtra = legSettings.kneeAngleHalfRange*Math.sin(runCycleAng -legSettings.kneeAngleLag);
+
+            var legCentreSwingAmount = -legSettings.hipAverageAngle; //knee up (should decrease this when moving slow)
+            var kneeAverageBendAmount = -legSettings.kneeAverageAngle;
 
 
             var rotatedHipsMatrix = mat4.create(torsoMatrix);   //twist hips to point in running direction. 
@@ -1995,4 +2018,34 @@ function simpleMatrixInterpolation(newMat, oldMat, interpolationFactor){
         interpolatedMat[ii] = newMat[ii] *interpolationFactor2 + oldMat[ii]*interpolationFactor;
     }
     return interpolatedMat;
+}
+
+
+function getBlendedLegSettings(runAmount){
+    var runToBlend = {
+        hipAverageAngle: 0.19, hipAngleHalfRange: 0.87, kneeAverageAngle: 0.94, kneeAngleHalfRange: 0.99, kneeAngleLag: 1.5, bobPhase:-0.2
+    }
+
+    var walkToBlend = {
+        hipAverageAngle: -0.1,
+        hipAngleHalfRange: .4,
+        kneeAverageAngle: .3,
+        kneeAngleHalfRange: .3,
+        kneeAngleLag: 1.5,
+        bobPhase: -0.25
+    };
+
+
+    var walkAmount = 1-runAmount;
+
+    var legSettings = {
+        hipAverageAngle: walkAmount*walkToBlend.hipAverageAngle + runAmount*runToBlend.hipAverageAngle,
+        hipAngleHalfRange: walkAmount*walkToBlend.hipAngleHalfRange + runAmount*runToBlend.hipAngleHalfRange,
+        kneeAverageAngle: walkAmount*walkToBlend.kneeAverageAngle + runAmount*runToBlend.kneeAverageAngle,
+        kneeAngleHalfRange: walkAmount*walkToBlend.kneeAngleHalfRange + runAmount*runToBlend.kneeAngleHalfRange,
+        kneeAngleLag: walkAmount*walkToBlend.kneeAngleLag + runAmount*runToBlend.kneeAngleLag,
+        bobPhase: walkAmount*walkToBlend.bobPhase + runAmount*runToBlend.bobPhase
+    };
+
+    return legSettings;
 }
