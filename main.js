@@ -1108,8 +1108,31 @@ function drawScene(frameTime){
     // calculate matrices of cameras (view) and objects (model) in same way,
     // and when rendering, invert camera matrix.
    
+
+    //var runAmount = 0.5;  //TODO speed dependence
+
+    //bodge speed dependence. TODO get this right so no foot sliding! also what should cadence dependence really be? get a proper walk and run animation!
+    var playerSpeed = Math.sqrt(playerVel[0]*playerVel[0] + playerVel[2]*playerVel[2]);
+    var scaledSpeed = playerSpeed * 100;
+    var runAmount = Math.max(0,Math.min(1,scaledSpeed));
+
+    if (Math.random()<0.01){console.log(runAmount)}
+
+    var legSettings = getBlendedLegSettings(runAmount);
+
+    //TODO make movement correspond to movement speed and direction. 
+    //temporary - just constant animation.
+    
+    var cycleSpeed = runAmount*2 + (1-runAmount)*1;
+    runCycleAng+=cycleSpeed*elapsedTime*0.005;
+
+    var bob = 0.05* Math.pow(Math.sin(runCycleAng + legSettings.bobPhase),2);
+
     var torsoMatrix = mat4.identity();
     mat4.translate(torsoMatrix, playerPosInterp);
+
+    mat4.translate(torsoMatrix, [0,bob,0]);
+
     //tilt by player acceleration
     var accMag = Math.hypot.apply(null, playerAcc);
     var accTurnAngle = Math.atan2(playerAcc[2],playerAcc[0]);
@@ -1219,9 +1242,9 @@ function drawScene(frameTime){
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);
+        drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
         gl.clear(gl.DEPTH_BUFFER_BIT);
-        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);    
+        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
 
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
         gl.bindFramebuffer(gl.FRAMEBUFFER, finalOrPenultimateView?.framebuffer);
@@ -1281,7 +1304,6 @@ function drawScene(frameTime){
         drawLeftOrRight(projMatrices.projMatLeft, quadBuffersLR.left);
         drawLeftOrRight(projMatrices.projMatRight, quadBuffersLR.right);
 
-
         function drawLeftOrRight(projMatrix, panelBuffers){
             mat4.set(projMatrix, pMatrix);
         
@@ -1293,9 +1315,9 @@ function drawScene(frameTime){
 
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-            drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);
+            drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
             gl.clear(gl.DEPTH_BUFFER_BIT);
-            drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);    
+            drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
 
 
             gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -1350,7 +1372,7 @@ function drawScene(frameTime){
         // NOTE can do this more efficiently, (what is best depends on FOV), by drawing to 1,2,or 4 panels (last is "quad view" used in 3-sphere project), but this is generally
         // more complex.
 
-        updateCubemap(unmirroredCameraMat, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);
+        updateCubemap(unmirroredCameraMat, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
 
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
         gl.bindFramebuffer(gl.FRAMEBUFFER, finalOrPenultimateView?.framebuffer);
@@ -1379,9 +1401,9 @@ function drawScene(frameTime){
         mat4.perspective(vFov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 
         pMatrix[9]=-0.3333;       //shift centre of perspective one third up from centre to top of screen (so is 1/3 down screen top to bottom)
 
-        drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);
+        drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
         gl.clear(gl.DEPTH_BUFFER_BIT);
-        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor);
+        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
     }
 
     if (finalOrPenultimateView){    //if not null
@@ -1405,7 +1427,7 @@ function drawScene(frameTime){
 }
 
 
-function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor){
+function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings){
         //NOTE passing in eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation is awkward. 
         //TODO create scene description and use for render?
 
@@ -1524,23 +1546,6 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
             //draw legs. 
 
-            //var runAmount = 0.5;  //TODO speed dependence
-
-            //bodge speed dependence. TODO get this right so no foot sliding! also what should cadence dependence really be? get a proper walk and run animation!
-            var playerSpeed = Math.sqrt(playerVel[0]*playerVel[0] + playerVel[2]*playerVel[2]);
-            var scaledSpeed = playerSpeed * 100;
-            var runAmount = Math.max(0,Math.min(1,scaledSpeed));
-
-            if (Math.random()<0.01){console.log(runAmount)}
-
-            var legSettings = getBlendedLegSettings(runAmount);
-
-            //TODO make movement correspond to movement speed and direction. 
-            //temporary - just constant animation.
-
-            
-            var cycleSpeed = runAmount*2 + (1-runAmount)*1;
-            runCycleAng+=cycleSpeed*0.008;
 
             var legSwing = legSettings.hipAngleHalfRange*Math.sin(runCycleAng);
             var kneeBendExtra = legSettings.kneeAngleHalfRange*Math.sin(runCycleAng -legSettings.kneeAngleLag);
