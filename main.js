@@ -34,6 +34,7 @@ var wheelBuffers={}
 var wheelBuffersMechanum={}
 var wheelBuffersMechanumFlipped={}
 var lucyBuffers={};
+var sphereBuffers={};
 
 var haveUnclickedFire = 0;
 
@@ -233,6 +234,9 @@ function init(){
 
 
     loadBuffersFromObj5File(lucyBuffers, "./data/lucy-withvertcolor.obj5", loadBufferData, 6);
+    loadBuffersFromObj2Or3File(sphereBuffers, "./data/miscobjs/smooth-sphere1.obj2", loadBufferData, 3);
+
+
 
     loadAnimationStuff();
 
@@ -486,6 +490,11 @@ var carCamera3Old = mat4.create(carCamera3);
 var lucyMatrix = mat4.identity();
 mat4.translate(lucyMatrix,[-8,3,-6]); //left, up a bit, forwards
 mat4.rotateY(lucyMatrix, -1);   //clockwise
+
+
+var sphereMatrix = mat4.identity();
+mat4.translate(sphereMatrix,[10,0,-6]);
+
 
 var armElevationMultiplier=1.2; //elevate arms more than player look direction. 
     // - suspect this is natural - head isn't 90 deg
@@ -1786,7 +1795,11 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     mat4.rotateY(mMatrix, boxRotation);
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
-
+    mat4.set(sphereMatrix, mMatrix);
+    mat4.scale(mMatrix,[1,1,1].map(x=>x*1));
+    if (sphereBuffers.isLoaded){
+        drawObjectFromBuffers(sphereBuffers, activeProg);
+    }
 
     // draw statue
     activeProg = shaderPrograms.vertexColorWithEnvmap;
