@@ -450,6 +450,7 @@ var playerRotation=0;
 var playerElevation=0;
 var playerRotationOld=0;
 var playerElevationOld=0;
+var playerElevationInterp=0;
 
 var runCycleAng = 0;
 var lastFrameTime = 0;
@@ -1103,7 +1104,7 @@ function drawScene(frameTime){
 
     var playerPosInterp = playerPos;
     var playerRotationInterp = playerRotation;
-    var playerElevationInterp = playerElevation;
+    playerElevationInterp = playerElevation;
 
     if (document.getElementById("interpolate-camera").checked){
         playerPosInterp = playerPos.map((xx,ii) => xx* (1-interpolationFactor) + playerPosOld[ii] * interpolationFactor);
@@ -1521,10 +1522,10 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
         //setup gun mat (also used later for x-hair
         var gunMat = mat4.create(torsoMatrix);
-        mat4.rotateX(gunMat, -playerElevation*torsoElevationMultiplier);
+        mat4.rotateX(gunMat, -playerElevationInterp*torsoElevationMultiplier);
         mat4.translate(gunMat, playerNeckPos);
         mat4.translate(gunMat, [0,0,-0.15]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
-        mat4.rotateX(gunMat, -playerElevation*(armElevationMultiplier-torsoElevationMultiplier) + gunElevTemp);
+        mat4.rotateX(gunMat, -playerElevationInterp*(armElevationMultiplier-torsoElevationMultiplier) + gunElevTemp);
         mat4.rotateX(gunMat, armRotationAdjustment);
 
         mat4.rotateY(gunMat, gunTurn);
@@ -1621,11 +1622,11 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
     function drawArm2(activeProg, torsoMatrix, handedness, doubleGuns){
         var armMat = mat4.create(torsoMatrix);
-        mat4.rotateX(armMat, -playerElevation*torsoElevationMultiplier + gunElevTemp);
+        mat4.rotateX(armMat, -playerElevationInterp*torsoElevationMultiplier + gunElevTemp);
         mat4.translate(armMat, playerNeckPos);
         mat4.translate(armMat, [0.15*handedness,0,-0.15]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
         
-        mat4.rotateX(armMat, -playerElevation*(armElevationMultiplier-torsoElevationMultiplier));
+        mat4.rotateX(armMat, -playerElevationInterp*(armElevationMultiplier-torsoElevationMultiplier));
         mat4.rotateX(armMat, armRotationAdjustment);
 
         mat4.rotateY(armMat, gunTurn);  //note with this arms don't quite match gun because order of rotations
