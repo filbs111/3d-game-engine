@@ -44,7 +44,7 @@ function sourceDataFromObjFileResponse(response, expectedVertLength){
         if (firstPart == 'v'){
             verts.push(floatArr);
             if (floatArr.length != expectedVertLength){
-               alert("vertex vector size " + floatArr.length + ", but expected length "+expectedVertLength , floatArr);
+               alert("v vertex vector size " + floatArr.length + ", but expected length "+expectedVertLength + ". ll = " + ll, floatArr);
             }
         }
         if (firstPart == 'vt'){
@@ -143,13 +143,13 @@ function sourceDataFromObj2Or3Or5FileResponse(response, expectedVertLength, inde
         if (firstPart == 'vp' || firstPart == 'v'){
             positions.push(floatArr);
             if (floatArr.length != 3){
-               alert("vertex vector size " + floatArr.length + ", but expected length 3. ll = " + ll + JSON.stringify(floatArr));
+               alert("vp vertex point vector size " + floatArr.length + ", but expected length 3. ll = " + ll + JSON.stringify(floatArr));
             }
         }
         if (firstPart == 'vc'){
             colours.push(floatArr);
             if (floatArr.length != expectedColoursLength){
-               alert("vertex colour vector size " + floatArr.length + ", but expected length "+ expectedColoursLength , floatArr);
+               alert("vc vertex colour vector size " + floatArr.length + ", but expected length "+ expectedColoursLength + ". ll = " + ll, floatArr);
             }
         }
         if (firstPart == 'vt'){
