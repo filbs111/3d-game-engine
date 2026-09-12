@@ -118,6 +118,7 @@ function initShaders(shaderProgs){
 		texmap:["texmap-vs", "texmap-fs"],
 		texmapWithDetail:["texmap-vs", "texmap-detail-fs"],
 		envmap:["envmap-vs", "envmap-fs"],
+		vertexColorWithTexmap:["vertcolor-texmap-vs", "texmap-fs"],
 		vertexColorWithEnvmap:["vertcolor-envmap-vs", "envmap-fs"],
 		fullscreenTextured:["cubemap-fisheye-vs", "fullscreen-fs"],
 		simpleCubemap:["cubemap-vs", "cubemap-fs"],	//used for skybox

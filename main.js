@@ -1819,10 +1819,24 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
 
     if (geiselBuildingBuffers.isLoaded){
+
+        activeProg = shaderPrograms.vertexColorWithTexmap;
+        // activeProg = shaderPrograms.envmap;
+
+        bind2dTextureIfRequired(concreteTex);
+
+        gl.useProgram(activeProg);
+        enableDisableAttributes(activeProg);
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [1,1,1].map(x=>0.05*x));
+        mat4.set(lucyMatrix, mMatrix);
+        mat4.scale(mMatrix,[1,1,1].map(x=>x*0.05));
+
         gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.25,0.25,0.25]);
         setupDrawMatrixForObjectAtPosition([-200,-1,0]);
         mat4.scale(mMatrix,[1,1,1].map(xx=>xx*4));  //TODO how big is this IRL?
         drawObjectFromBuffers(geiselBuildingBuffers, activeProg);
+
+        bind2dTextureIfRequired(bricktex);
     }
 
 

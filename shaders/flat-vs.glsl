@@ -15,7 +15,12 @@ void main(void) {
     //NOTE this is wierd because model matrix includes scale!
     // NOTE normalizing vector maybe is wrong for non-uniformly scaled objects. TODO fix, or just use unscaled objects.
     vec4 transformedNormal = (uMMatrix * vec4(aVertexNormal, 0.0));
-    float light = 0.5+0.5*dot(normalize(transformedNormal), vec4(0.,1.,0.,0.));
-    
+
+    float baselineBrightness = 0.05;
+    float halfColorRange = .5*(1. - baselineBrightness);
+    float colorMiddle = baselineBrightness + halfColorRange;
+
+    float light = colorMiddle+halfColorRange*dot(normalize(transformedNormal), vec4(0.,1.,0.,0.));
+
     vLightTimesColor = uFlatColor * vec3(light);
 }

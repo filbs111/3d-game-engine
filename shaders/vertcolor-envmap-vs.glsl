@@ -22,7 +22,11 @@ void main(void) {
     vec4 transformedNormal = normalize(uMMatrix * vec4(aVertexNormal, 0.0));
 
     //diffuse component
-    float light = 0.5+0.5*dot(transformedNormal, vec4(0.,1.,0.,0.));
+    float baselineBrightness = 0.05;
+    float halfColorRange = .5*(1. - baselineBrightness);
+    float colorMiddle = baselineBrightness + halfColorRange;
+
+    float light = colorMiddle+halfColorRange*dot(normalize(transformedNormal), vec4(0.,1.,0.,0.));
     vLightTimesColor = uFlatColor*aVertexColor * vec3(light);   //TODO use vert color just for ambient?
 
     //reflected vector - use this to blend env map in frag shader.

@@ -1,7 +1,7 @@
 #version 300 es
 precision mediump float;
 in vec2 vTextureCoord;
-in float vLight;
+in vec3 vLight;
 uniform sampler2D uSampler;
 uniform sampler2D uSampler2;
 
@@ -20,6 +20,6 @@ void main(void) {
     // fragColor = vec4(pow(preGamma, vec3(0.455)),1.0);
 
     //note this is likely correct, but looks wacky with ground texture image with colours adjusted for previous shader maths.
-    vec3 gammed = vec3(pow(vLight,0.455))*fcHack*fc2;
+    vec3 gammed = vec3(pow(vLight,vec3(0.455)))*fcHack*fc2;
     fragColor = vec4(gammed,1.0);
 }
