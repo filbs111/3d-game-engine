@@ -36,6 +36,8 @@ var wheelBuffersMechanumFlipped={}
 var lucyBuffers={};
 var sphereBuffers={};
 
+
+var geiselBuildingBuffers={}
 var haveUnclickedFire = 0;
 
 //TODO tidy this up, use momentum etc! 
@@ -232,7 +234,7 @@ function init(){
     loadBuffersFromObj2Or3File(wheelBuffersMechanum, "./data/miscobjs/mechanum.obj2", loadBufferData, 3);
     loadBuffersFromObj2Or3File(wheelBuffersMechanumFlipped, "./data/miscobjs/mechanum-flipped.obj2", loadBufferData, 3);
 
-
+    loadBuffersFromObj5File(geiselBuildingBuffers, "./data/miscobjs/geisel-building-vcolors.obj5", loadBufferData, 6);  //https://sketchfab.com/3d-models/geisel-library-simplified-for-small-3d-prints-652281d188694861a8c544cf570b63b4
     loadBuffersFromObj5File(lucyBuffers, "./data/lucy-withvertcolor.obj5", loadBufferData, 6);
     loadBuffersFromObj2Or3File(sphereBuffers, "./data/miscobjs/smooth-sphere1.obj2", loadBufferData, 3);
 
@@ -1813,6 +1815,14 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     mat4.scale(mMatrix,[1,1,1].map(x=>x*0.05));
     if (lucyBuffers.isLoaded){
         drawObjectFromBuffers(lucyBuffers, activeProg);
+    }
+
+
+    if (geiselBuildingBuffers.isLoaded){
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.25,0.25,0.25]);
+        setupDrawMatrixForObjectAtPosition([-200,-1,0]);
+        mat4.scale(mMatrix,[1,1,1].map(xx=>xx*4));  //TODO how big is this IRL?
+        drawObjectFromBuffers(geiselBuildingBuffers, activeProg);
     }
 
 
