@@ -49,6 +49,14 @@ var sphereStatue = {
     matrix:matForWorldPosYRotAndScale([10,0,-6],0,[1,1,1])
 };
 
+var torsoBuffers={};
+var rightThighBuffers={};
+var leftThighBuffers={};
+var rightCalfBuffers={};
+var leftCalfBuffers={};
+var rightArmBuffers={};
+var leftArmBuffers={};
+
 
 var haveUnclickedFire = 0;
 
@@ -251,6 +259,13 @@ function init(){
     loadBuffersFromObj2Or3File(sphereStatue.buffers, "./data/miscobjs/smooth-sphere1.obj2", loadBufferData, 3);
 
 
+    loadBuffersFromObj5File(torsoBuffers, "./data/miscobjs/nina-ttt-bust.obj5", loadBufferData, 3);
+    loadBuffersFromObj5File(rightThighBuffers, "./data/miscobjs/nina-ttt-right-thigh.obj5", loadBufferData, 3);
+    loadBuffersFromObj5File(leftThighBuffers, "./data/miscobjs/nina-ttt-left-thigh.obj5", loadBufferData, 3);
+    loadBuffersFromObj5File(rightCalfBuffers, "./data/miscobjs/nina-ttt-right-calf.obj5", loadBufferData, 3);
+    loadBuffersFromObj5File(leftCalfBuffers, "./data/miscobjs/nina-ttt-left-calf.obj5", loadBufferData, 3);
+    loadBuffersFromObj5File(rightArmBuffers, "./data/miscobjs/nina-ttt-right-arm.obj5", loadBufferData, 3);
+    loadBuffersFromObj5File(leftArmBuffers, "./data/miscobjs/nina-ttt-left-arm.obj5", loadBufferData, 3);
 
     loadAnimationStuff();
 
@@ -1141,7 +1156,7 @@ function drawScene(frameTime){
     var cycleSpeed = runAmount*2 + (1-runAmount)*1;
     runCycleAng+=cycleSpeed*elapsedTime*0.005;
 
-    var bob = 0.05* Math.pow(Math.sin(runCycleAng + legSettings.bobPhase),2);
+    var bob = 0.05* (1 + Math.pow(Math.sin(runCycleAng + legSettings.bobPhase),2));
 
     var torsoMatrix = mat4.identity();
     mat4.translate(torsoMatrix, playerPosInterp);
@@ -1523,7 +1538,12 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
 
     if (carMode == 0){
-        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.1,0.5,0.1]);
+
+        activeProg = shaderPrograms.envmap;
+        gl.useProgram(activeProg);
+        enableDisableAttributes(activeProg);
+
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.01,0.01,0.01]);
 
         //setup gun mat (also used later for x-hair
         var gunMat = mat4.create(torsoMatrix);
@@ -1535,7 +1555,8 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
         mat4.rotateY(gunMat, gunTurn);
 
-        mat4.translate(gunMat, [0,0.05,-0.7]);    //0.7m - end of arm, up by 5cm
+        mat4.translate(gunMat, [0,0.05,-0.65]);    //0.65m - end of arm, up by 5cm
+
 
         if (document.getElementById("drawbody").checked){
 
@@ -1546,22 +1567,28 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
             drawCubeWithScale(activeProg, neckMat, [0.05,0.05,0.05]); 
 
             //draw upper torso
-            drawCubeWithScale(activeProg, upperTorsoMat, [0.15,0.2,0.07]); 
+            //drawCubeWithScale(activeProg, upperTorsoMat, [0.15,0.2,0.07]); 
+
+            // upper torso/bust
+            mat4.set(upperTorsoMat, mMatrix);
+            mat4.scale(mMatrix, [1,1,1].map(xx=>xx*0.01));
+            mat4.rotateY(mMatrix, Math.PI); //otherwise points backwards
+            mat4.translate(mMatrix, [0,-10,0]); //move down
+            mat4.translate(mMatrix, [0,0,1]); //move forwards (TODO check how spine etc should be - just want to get into ~same place as existing placeholder box)
+
+            drawObjectFromBuffers(torsoBuffers, activeProg);
 
             // 58008
-            var tempMat1 = mat4.create(upperTorsoMat);
-            //mat4.translate(tempMat1, [0,0.2,0.2]);  //backpack?
-            mat4.translate(tempMat1, [0,0.1,-0.1]);  //backpack?
-            mat4.rotateX(tempMat1, Math.PI/4);
-            drawCubeWithScale(activeProg, tempMat1, [0.14,0.05,0.05]);
+            // var tempMat1 = mat4.create(upperTorsoMat);
+            // //mat4.translate(tempMat1, [0,0.2,0.2]);  //backpack?
+            // mat4.translate(tempMat1, [0,0.1,-0.1]);  //backpack?
+            // mat4.rotateX(tempMat1, Math.PI/4);
+            // drawCubeWithScale(activeProg, tempMat1, [0.14,0.05,0.05]);
 
             // draw torso
-            drawCubeWithScale(activeProg, torsoMatrix, [0.16,0.1,0.1]);  //32 cm wide, 20cm tall, 20cm deep. top is like bottom of rib cage
-
+            drawCubeWithScale(activeProg, torsoMatrix, [0.16,0.08,0.08]);  //32 cm wide, 16cm tall, 16cm deep. top is like bottom of rib cage
 
             //draw legs. 
-
-
             var legSwing = legSettings.hipAngleHalfRange*Math.sin(runCycleAng);
             var kneeBendExtra = legSettings.kneeAngleHalfRange*Math.sin(runCycleAng -legSettings.kneeAngleLag);
 
@@ -1588,27 +1615,54 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
             mat4.rotateX(legMat, legSwing + legCentreSwingAmount);
             mat4.translate(legMat, [0.1,-0.25,0]);
-            drawCubeWithScale(activeProg, legMat, [0.05,0.25,0.1]);   //right upper leg
+            //drawCubeWithScale(activeProg, legMat, [0.05,0.25,0.1]);   //right upper leg
+
+            mat4.set(legMat, mMatrix);
+            mat4.scale(mMatrix, [1,1,1].map(xx=>xx*0.01));
+            mat4.rotateY(mMatrix, Math.PI); //otherwise points backwards
+            mat4.translate(mMatrix, [0,40,0]); //move up
+            mat4.translate(mMatrix, [9,0,0]); //move sideways
+            drawObjectFromBuffers(rightThighBuffers, activeProg);
+
 
             mat4.translate(legMat, [0,-0.25,0]);
             mat4.rotateX(legMat, kneeAverageBendAmount + kneeBendExtra);
             mat4.translate(legMat, [0,-0.25,0]);
-            drawCubeWithScale(activeProg, legMat, [0.05,0.25,0.08]);   //right lower leg
+            //drawCubeWithScale(activeProg, legMat, [0.05,0.25,0.08]);   //right lower leg
 
+            mat4.set(legMat, mMatrix);
+            mat4.scale(mMatrix, [1,1,1].map(xx=>xx*0.01));
+            mat4.rotateY(mMatrix, Math.PI); //otherwise points backwards
+            mat4.translate(mMatrix, [0,90,0]); //move up
+            mat4.translate(mMatrix, [9,0,0]); //move sideways
+            drawObjectFromBuffers(rightCalfBuffers, activeProg);
 
             mat4.set(rotatedHipsMatrix, legMat);
             mat4.rotateZ(legMat, hipTiltIn);
 
             mat4.rotateX(legMat, -legSwing + legCentreSwingAmount);
             mat4.translate(legMat, [-0.1,-0.25,0]);
-            drawCubeWithScale(activeProg, legMat, [0.05,0.3,0.1]);   //left upper leg    
+            //drawCubeWithScale(activeProg, legMat, [0.05,0.3,0.1]);   //left upper leg    
         
+            mat4.set(legMat, mMatrix);
+            mat4.scale(mMatrix, [1,1,1].map(xx=>xx*0.01));
+            mat4.rotateY(mMatrix, Math.PI); //otherwise points backwards
+            mat4.translate(mMatrix, [0,40,0]); //move up
+            mat4.translate(mMatrix, [-9,0,0]); //move sideways
+            drawObjectFromBuffers(leftThighBuffers, activeProg);
+
+
             mat4.translate(legMat, [0,-0.25,0]);
             mat4.rotateX(legMat, kneeAverageBendAmount - kneeBendExtra);
             mat4.translate(legMat, [0,-0.25,0]);
-            drawCubeWithScale(activeProg, legMat, [0.05,0.25,0.08]);   //left lower leg
+            //drawCubeWithScale(activeProg, legMat, [0.05,0.25,0.08]);   //left lower leg
 
-
+            mat4.set(legMat, mMatrix);
+            mat4.scale(mMatrix, [1,1,1].map(xx=>xx*0.01));
+            mat4.rotateY(mMatrix, Math.PI); //otherwise points backwards
+            mat4.translate(mMatrix, [0,90,0]); //move up
+            mat4.translate(mMatrix, [-9,0,0]); //move sideways
+            drawObjectFromBuffers(leftCalfBuffers, activeProg);
 
             var doubleGuns = document.getElementById("doubleguns").checked;
             if (doubleGuns){
@@ -1636,16 +1690,40 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
 
         mat4.rotateY(armMat, gunTurn);  //note with this arms don't quite match gun because order of rotations
 
+
         if (!doubleGuns){
             mat4.rotateX(armMat, handedness*0.06);
-            mat4.rotateY(armMat, 0.2*handedness); //turn shoulder about up vector
+            mat4.rotateY(armMat, 0.25*handedness); //turn shoulder about up vector
         }else{
             mat4.rotateX(armMat, 0.06);
         }
 
         mat4.translate(armMat, [0,0,-0.3]);    //move forwards by 0.3 for elbow
 
-        drawCubeWithScale(activeProg, armMat, [0.05,0.05,0.35]); //10cm x 10cm x 0.7m
+        //drawCubeWithScale(activeProg, armMat, [0.05,0.05,0.35]); //10cm x 10cm x 0.7m
+
+        
+        mat4.set(armMat, mMatrix);
+        mat4.scale(mMatrix, [1,1,1].map(xx=>xx*0.01));
+
+        if (handedness==1){
+            mat4.rotateY(mMatrix, -Math.PI/2);  //point forwards
+
+            mat4.rotateX(mMatrix, -Math.PI/2);  //roll
+
+            mat4.translate(mMatrix, [0,-30,0]); //move sideways
+            mat4.translate(mMatrix, [0,0,1]); ///up/down?
+            mat4.translate(mMatrix, [50,0,0]); //move back towards body
+            drawObjectFromBuffers(rightArmBuffers, activeProg);
+        }else{
+            mat4.rotateY(mMatrix, Math.PI/2);  //point forwards
+            mat4.rotateX(mMatrix, -Math.PI/2);  //roll
+
+            mat4.translate(mMatrix, [0,-30,0]); //move sideways
+            mat4.translate(mMatrix, [0,0,1]); //up/down?
+            mat4.translate(mMatrix, [-50,0,0]); //move back towards body
+            drawObjectFromBuffers(leftArmBuffers, activeProg);
+        }
     }
 
 
