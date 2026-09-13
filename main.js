@@ -469,11 +469,11 @@ var lastFrameTime = null;
 var lastFixedTimestepUpdateTime = 0;
 var playerPos=[0,0,5];
 var playerPosOld=[0,0,5];
-var playerEyePosFromNeck=[0,0.2,-0.1]; //20cm above and ahead of neck, so 1.7m above groun d, 10cm forwards
-//var playerEyePosFromNeck=[0.4,0.2+0.3,-0.2+1]; //3rd person ish
+var playerEyePosFromNeck=[0,0.18,-0.15]; //18cm above and ahead of neck, so 1.68m above ground, 15cm forwards
+var thirdPersonEyePosFromNeck=[0.2,0.2+0.15,0.8]; //3rd person ish. last number is how far back
 
 
-var playerNeckPos=[0,0.5,0.05];  //relative to player centre which is 1m above ground.  1.5m above ground, 5cm back
+var playerNeckPos=[0,0.53,0.03];  //relative to player centre which is 1m above ground.  1.53m above ground, 3cm back
 var playerVel=[0,0,0];
 var playerAcc=[0,0,0];
 var preDragPlayerAcc=[0,0,0];
@@ -1196,7 +1196,10 @@ function drawScene(frameTime){
         //TODO have torso rotation do some of this adjustment (check looks sensible when have more humanlike model/proportions)
 
     var neckMat = mat4.create(eyeMat);
+    var thirdPersonCameraMat = mat4.create(eyeMat);
+
     mat4.translate(eyeMat, playerEyePosFromNeck);
+    mat4.translate(thirdPersonCameraMat, thirdPersonEyePosFromNeck);
 
     var carMode = getCarMode();
 
@@ -1215,6 +1218,7 @@ function drawScene(frameTime){
         mat4.rotateX(staticCamera, Math.asin(difference[1]/distance)); //tilt (elevation)
     }
 
+    var useThirdPersonCam = document.getElementById("thirdpersoncameratoggle").checked;
 
     var unmirroredCameraMat = mat4.create();
     if (document.getElementById("externalcam").checked){
@@ -1240,6 +1244,8 @@ function drawScene(frameTime){
         }else{
             mat4.set(carCamera3, unmirroredCameraMat);
         }
+    }else if(useThirdPersonCam){
+        mat4.set(thirdPersonCameraMat, unmirroredCameraMat);
     }else{
         mat4.set(eyeMat, unmirroredCameraMat);
     }
@@ -1276,9 +1282,9 @@ function drawScene(frameTime){
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
+        drawSingleScene(unmirroredCameraMat, true, eyeMat, thirdPersonCameraMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
         gl.clear(gl.DEPTH_BUFFER_BIT);
-        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
+        drawSingleScene(unmirroredCameraMat, false, eyeMat, thirdPersonCameraMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
 
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
         gl.bindFramebuffer(gl.FRAMEBUFFER, finalOrPenultimateView?.framebuffer);
@@ -1349,9 +1355,9 @@ function drawScene(frameTime){
 
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-            drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
+            drawSingleScene(unmirroredCameraMat, true, eyeMat, thirdPersonCameraMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
             gl.clear(gl.DEPTH_BUFFER_BIT);
-            drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
+            drawSingleScene(unmirroredCameraMat, false, eyeMat, thirdPersonCameraMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
 
 
             gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -1406,7 +1412,7 @@ function drawScene(frameTime){
         // NOTE can do this more efficiently, (what is best depends on FOV), by drawing to 1,2,or 4 panels (last is "quad view" used in 3-sphere project), but this is generally
         // more complex.
 
-        updateCubemap(unmirroredCameraMat, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
+        updateCubemap(unmirroredCameraMat, eyeMat, thirdPersonCameraMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
 
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
         gl.bindFramebuffer(gl.FRAMEBUFFER, finalOrPenultimateView?.framebuffer);
@@ -1435,9 +1441,9 @@ function drawScene(frameTime){
         mat4.perspective(vFov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 
         pMatrix[9]=-0.3333;       //shift centre of perspective one third up from centre to top of screen (so is 1/3 down screen top to bottom)
 
-        drawSingleScene(unmirroredCameraMat, true, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
+        drawSingleScene(unmirroredCameraMat, true, eyeMat, thirdPersonCameraMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
         gl.clear(gl.DEPTH_BUFFER_BIT);
-        drawSingleScene(unmirroredCameraMat, false, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
+        drawSingleScene(unmirroredCameraMat, false, eyeMat, thirdPersonCameraMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings);
     }
 
     if (finalOrPenultimateView){    //if not null
@@ -1461,7 +1467,7 @@ function drawScene(frameTime){
 }
 
 
-function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings){
+function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, thirdPersonCameraMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings){
         //NOTE passing in eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation is awkward. 
         //TODO create scene description and use for render?
 
@@ -1571,13 +1577,13 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
             mat4.set(eyeMat, mMatrix);
             mat4.scale(mMatrix, [1,1,1].map(xx=>xx*0.01));
             mat4.rotateY(mMatrix, Math.PI); //otherwise points backwards
-            mat4.translate(mMatrix, [0,-50,0]); //move down
+            mat4.translate(mMatrix, [0,-49,0]); //move down
             mat4.translate(mMatrix, [0,0,-10]); //move backwards
             drawObjectFromBuffers(headBuffers, activeProg);
 
 
             //draw neck
-            drawCubeWithScale(activeProg, neckMat, [0.05,0.05,0.05]); 
+            drawCubeWithScale(activeProg, neckMat, [0.04,0.04,0.04]); 
 
             //draw upper torso
             //drawCubeWithScale(activeProg, upperTorsoMat, [0.15,0.2,0.07]); 
