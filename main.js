@@ -33,11 +33,23 @@ var listerBuffers={};
 var wheelBuffers={}
 var wheelBuffersMechanum={}
 var wheelBuffersMechanumFlipped={}
-var lucyBuffers={};
-var sphereBuffers={};
+
+var lucyStatue = {
+    buffers:{},
+    matrix:matForWorldPosYRotAndScale([-8,3,-6],-1,[0.05,0.05,0.05])
+};
+
+var geiselBuilding = {
+    buffers:{},
+    matrix:matForWorldPosYRotAndScale([-200,-1,0],0,[4,4,4])  //TODO how big is this IRL?)
+};
+
+var sphereStatue = { 
+    buffers:{},
+    matrix:matForWorldPosYRotAndScale([10,0,-6],0,[1,1,1])
+};
 
 
-var geiselBuildingBuffers={}
 var haveUnclickedFire = 0;
 
 //TODO tidy this up, use momentum etc! 
@@ -234,9 +246,9 @@ function init(){
     loadBuffersFromObj2Or3File(wheelBuffersMechanum, "./data/miscobjs/mechanum.obj2", loadBufferData, 3);
     loadBuffersFromObj2Or3File(wheelBuffersMechanumFlipped, "./data/miscobjs/mechanum-flipped.obj2", loadBufferData, 3);
 
-    loadBuffersFromObj5File(geiselBuildingBuffers, "./data/miscobjs/geisel-building-vcolors.obj5", loadBufferData, 6);  //https://sketchfab.com/3d-models/geisel-library-simplified-for-small-3d-prints-652281d188694861a8c544cf570b63b4
-    loadBuffersFromObj5File(lucyBuffers, "./data/lucy-withvertcolor.obj5", loadBufferData, 6);
-    loadBuffersFromObj2Or3File(sphereBuffers, "./data/miscobjs/smooth-sphere1.obj2", loadBufferData, 3);
+    loadBuffersFromObj5File(geiselBuilding.buffers, "./data/miscobjs/geisel-building-vcolors.obj5", loadBufferData, 6);  //https://sketchfab.com/3d-models/geisel-library-simplified-for-small-3d-prints-652281d188694861a8c544cf570b63b4
+    loadBuffersFromObj5File(lucyStatue.buffers, "./data/lucy-withvertcolor.obj5", loadBufferData, 6);
+    loadBuffersFromObj2Or3File(sphereStatue.buffers, "./data/miscobjs/smooth-sphere1.obj2", loadBufferData, 3);
 
 
 
@@ -488,15 +500,6 @@ mat4.translate(carMatrix3,[12,-0.7,6]); //right, down a bit, back
 var carMatrix3Old = mat4.create(carMatrix3);
 var carCamera3 = mat4.create(carMatrix3);
 var carCamera3Old = mat4.create(carCamera3);
-
-
-var lucyMatrix = mat4.identity();
-mat4.translate(lucyMatrix,[-8,3,-6]); //left, up a bit, forwards
-mat4.rotateY(lucyMatrix, -1);   //clockwise
-
-
-var sphereMatrix = mat4.identity();
-mat4.translate(sphereMatrix,[10,0,-6]);
 
 
 var armElevationMultiplier=1.2; //elevate arms more than player look direction. 
@@ -1798,27 +1801,23 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
     mat4.rotateY(mMatrix, boxRotation);
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
-    mat4.set(sphereMatrix, mMatrix);
-    mat4.scale(mMatrix,[1,1,1].map(x=>x*1));
-    if (sphereBuffers.isLoaded){
-        drawObjectFromBuffers(sphereBuffers, activeProg);
+    if (sphereStatue.buffers.isLoaded){
+        mat4.set(sphereStatue.matrix, mMatrix);
+        drawObjectFromBuffers(sphereStatue.buffers, activeProg);
     }
 
-    // draw statue
-    activeProg = shaderPrograms.vertexColorWithEnvmap;
+    if (lucyStatue.buffers.isLoaded){
+        activeProg = shaderPrograms.vertexColorWithEnvmap;
         // activeProg = shaderPrograms.envmap;
-
-    gl.useProgram(activeProg);
-    enableDisableAttributes(activeProg);
-    gl.uniform3fv(activeProg.uniforms.uFlatColor, [1,1,1].map(x=>0.05*x));
-    mat4.set(lucyMatrix, mMatrix);
-    mat4.scale(mMatrix,[1,1,1].map(x=>x*0.05));
-    if (lucyBuffers.isLoaded){
-        drawObjectFromBuffers(lucyBuffers, activeProg);
+        gl.useProgram(activeProg);
+        enableDisableAttributes(activeProg);
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [1,1,1].map(x=>0.05*x));
+        mat4.set(lucyStatue.matrix, mMatrix);
+        drawObjectFromBuffers(lucyStatue.buffers, activeProg);
     }
 
 
-    if (geiselBuildingBuffers.isLoaded){
+    if (geiselBuilding.buffers.isLoaded){
 
         activeProg = shaderPrograms.vertexColorWithTexmap;
         // activeProg = shaderPrograms.envmap;
@@ -1828,13 +1827,11 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         gl.useProgram(activeProg);
         enableDisableAttributes(activeProg);
         gl.uniform3fv(activeProg.uniforms.uFlatColor, [1,1,1].map(x=>0.05*x));
-        mat4.set(lucyMatrix, mMatrix);
-        mat4.scale(mMatrix,[1,1,1].map(x=>x*0.05));
 
         gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.25,0.25,0.25]);
-        setupDrawMatrixForObjectAtPosition([-200,-1,0]);
-        mat4.scale(mMatrix,[1,1,1].map(xx=>xx*4));  //TODO how big is this IRL?
-        drawObjectFromBuffers(geiselBuildingBuffers, activeProg);
+        
+        mat4.set(geiselBuilding.matrix, mMatrix);
+        drawObjectFromBuffers(geiselBuilding.buffers, activeProg);
 
         bind2dTextureIfRequired(bricktex);
     }
@@ -1934,8 +1931,20 @@ function drawWheelsGeneral(frontness, backness, sideness, wheelScale, activeProg
 
 
 function setupDrawMatrixForObjectAtPosition(objPos){
-    mat4.identity(mMatrix);
-    mat4.translate(mMatrix, objPos);
+    setupMatrixForObjectAtPosition(mMatrix, objPos);
+}
+
+function setupMatrixForObjectAtPosition(matrix, objPos){
+    mat4.identity(matrix);
+    mat4.translate(matrix, objPos);
+}
+
+function matForWorldPosYRotAndScale(worldPos, yRot, scale){
+    var newMat = mat4.create();
+    setupMatrixForObjectAtPosition(newMat, worldPos);
+    mat4.rotateY(newMat, yRot);
+    mat4.scale(newMat,scale);
+    return newMat;
 }
 
 function updateSpeedInfo(vel, acc, carMovePerMs, carAccMsPerSec){
