@@ -56,6 +56,7 @@ var rightCalfBuffers={};
 var leftCalfBuffers={};
 var rightArmBuffers={};
 var leftArmBuffers={};
+var headBuffers={};
 
 
 var haveUnclickedFire = 0;
@@ -266,6 +267,7 @@ function init(){
     loadBuffersFromObj5File(leftCalfBuffers, "./data/miscobjs/nina-ttt-left-calf.obj5", loadBufferData, 3);
     loadBuffersFromObj5File(rightArmBuffers, "./data/miscobjs/nina-ttt-right-arm.obj5", loadBufferData, 3);
     loadBuffersFromObj5File(leftArmBuffers, "./data/miscobjs/nina-ttt-left-arm.obj5", loadBufferData, 3);
+    loadBuffersFromObj5File(headBuffers, "./data/miscobjs/nina-ttt-head.obj5", loadBufferData, 3);
 
     loadAnimationStuff();
 
@@ -489,9 +491,9 @@ var groundPos=[0,-11,0];
 
 //static camera position
 var staticCamera = mat4.identity();
-mat4.rotateX(staticCamera, -0.2); //elevate
+mat4.rotateX(staticCamera, -0.09); //elevate
 mat4.translate(staticCamera,[0,0,9]);  //move back
-mat4.rotateX(staticCamera, -0.2); //elevate more
+mat4.rotateX(staticCamera, -0.25); //elevate more
 var statCamPos = staticCamera.slice(12,15);
 
 var carMatrix = mat4.identity();
@@ -517,11 +519,11 @@ var carCamera3 = mat4.create(carMatrix3);
 var carCamera3Old = mat4.create(carCamera3);
 
 
-var armElevationMultiplier=1.2; //elevate arms more than player look direction. 
+var armElevationMultiplier=1.32; //elevate arms more than player look direction. 
     // - suspect this is natural - head isn't 90 deg
     //back when pointing gun upward.
      // NOTE could make gimbal lock situation worse - perhaps better use pointing direction and scale look elevation...
-var torsoElevationMultiplier=0.4;   //torso doesn't elevate as much as view. neck does remaining rotation
+var torsoElevationMultiplier=0.3;   //torso doesn't elevate as much as view. neck does remaining rotation
 
 var gunTurn=0;
 var gunElevTemp=0;
@@ -630,8 +632,8 @@ function iterateMechanics(timeChange){
     playerElevation-=elevationAdjustment;
 
     //cap elevation
-    playerElevation=Math.min(playerElevation, 0.7*Math.PI/2);   //pointing down!
-    playerElevation=Math.max(playerElevation, -0.8*Math.PI/2);
+    playerElevation=Math.min(playerElevation, 0.6*Math.PI/2);   //pointing down!
+    playerElevation=Math.max(playerElevation, -0.85*Math.PI/2);
         //0.7 because arms move more than view.
 
     var fireButtonDepressedNow = mouseInfo.buttons&1;
@@ -1205,7 +1207,9 @@ function drawScene(frameTime){
                         carMode == 1 ? carInfo.pos:
                         playerPosInterp;
 
-        var difference = [camTarget[0]-statCamPos[0], camTarget[1]-statCamPos[1], camTarget[2]-statCamPos[2]];
+        var camAimHigherAdjustment = 0.5;
+
+        var difference = [camTarget[0]-statCamPos[0], camTarget[1]+camAimHigherAdjustment-statCamPos[1], camTarget[2]-statCamPos[2]];
         mat4.rotateY(staticCamera, Math.atan2(-difference[0], -difference[2]));   //pan
         var distance = Math.hypot.apply(null, difference);
         mat4.rotateX(staticCamera, Math.asin(difference[1]/distance)); //tilt (elevation)
@@ -1561,7 +1565,16 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
         if (document.getElementById("drawbody").checked){
 
             //draw eye
-            drawCubeWithScale(activeProg, eyeMat, [0.05,0.05,0.05]);    //10cm cube
+            drawCubeWithScale(activeProg, eyeMat, [0.03,0.03,0.03]);    //6cm cube
+
+            //draw head. TODO make headMat position more obviously dependent on neck, then have eye linked to head.
+            mat4.set(eyeMat, mMatrix);
+            mat4.scale(mMatrix, [1,1,1].map(xx=>xx*0.01));
+            mat4.rotateY(mMatrix, Math.PI); //otherwise points backwards
+            mat4.translate(mMatrix, [0,-50,0]); //move down
+            mat4.translate(mMatrix, [0,0,-10]); //move backwards
+            drawObjectFromBuffers(headBuffers, activeProg);
+
 
             //draw neck
             drawCubeWithScale(activeProg, neckMat, [0.05,0.05,0.05]); 
@@ -1671,7 +1684,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, neckM
                 mat4.translate(gunMat, [0.3,0,0]);
                 drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
             }else{
-                drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
+                drawCubeWithScale(activeProg, gunMat, [0.025,0.08,0.08]);
             }
         
             drawArm2(activeProg, torsoMatrix, 1, doubleGuns);   //right arm
