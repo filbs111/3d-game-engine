@@ -5,8 +5,25 @@
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
     <title>Page Title</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
+
+    <style>
+      /*throw everything at the wall to get rid of fucking padding - turns out it's applied by Brave Browser to all pages!!!! */
+      html, body, canvas, #canvas-container {
+        /* height:100%; */
+        /* width:100%; */
+        margin:0;
+        padding:0;
+        overflow-x: hidden;
+        overflow-y: hidden;
+      }
+    </style>
+
+
     <!-- <link rel='stylesheet' type='text/css' media='screen' href='main.css'> -->
     <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
+    <script type="text/javascript" src="lib/datgui0.7.9/dat.gui.min.js"></script>
+    <script type="text/javascript" src="utils/settings.js"></script>
+
     <script type="text/javascript" src="lib/gl-matrix-min.js"></script>
     <script type="text/javascript" src="data/quad.js"></script>
     <script type="text/javascript" src="data/levelCubeData.js"></script>
@@ -29,107 +46,8 @@
 </head>
 <body onload="init()">
     <div id="canvas-container" style="position: relative; width: 1280px; height: 720px;">
-      <canvas id="bottom-canvas" width="100%" height="100%" style="position: absolute; top: 0; left: 0; z-index: 1;"></canvas>
-      <canvas id="top-canvas" style="width:100%; height:100%; position: absolute; top: 0; left: 0; z-index: 2;"></canvas>
+      <canvas id="bottom-canvas" width="100%" height="100%" style="position: absolute; top: 0; left: 0; z-index: 0;"></canvas>
+      <canvas id="top-canvas" style="width:100%; height:100%; position: absolute; top: 0; left: 0; z-index: 0;"></canvas>
     </div>
-
-    <div id="speedinfo"></div>
-    <div>
-    <input type="checkbox" id="externalcam" name="externalcamtoggle"/>
-    <label for="externalcamtoggle">External Cam</label>
-    <input type="checkbox" id="camfollowsplayer" name="camfollowsplayertoggle"/>
-    <label for="camfollowsplayertoggle">External Cam Follows Player</label>
-    <input type="checkbox" id="interpolate-camera" name="interpolate-camera" checked/>
-    <label for="interpolate-camera">Interpolate Camera</label>
-    <input type="checkbox" id="thirdpersoncameratoggle" name="thirdpersoncameratoggle"/>
-    <label for="thirdpersoncameratoggle">Third Person Camera</label>
-
-    <br>
-    <input type="checkbox" id="doubleguns" name="doublegunstoggle"/>
-    <label for="doublegunstoggle">Double Guns</label>
-    <input type="checkbox" id="autofire" name="autofiretoggle"/>
-    <label for="autofire">Autofire</label>
-
-    <input type="checkbox" id="drawbody" name="drawbodytoggle" checked/>
-    <label for="drawbodytoggle">Draw Body</label>
-
-  <br/>
-    <input type="checkbox" id="otherprojmat" name="otherprojmattoggle" checked/>
-    <label for="otherprojmattoggle">Use Experimental Projection Matrix</label>
-
-
-    <br/>
-    <p>Walk/Car Mode Selection:</p>
-    <input type="radio" id="carmode_off" name="carmoderadio"/>
-    <label for="carmode_off">Walk</label>
-    <input type="radio" id="carmode_1" name="carmoderadio"/>
-    <label for="carmode_1">Car 1</label>
-    <input type="radio" id="carmode_2" name="carmoderadio" checked/>
-    <label for="carmode_2">Car 2</label>
-    <input type="radio" id="carmode_3" name="carmoderadio"/>
-    <label for="carmode_3">Mechanum Car</label>
-
-    <br/>
-    <input type="range" id="brakebias" name="brakebias" min="30" max="70" step="1" value="60" />
-    <label for="brakebias">Brake Bias</label>
-
-    <br/>
-    <input type="checkbox" id="drawwheelmarkers" name="drawwheelmarkerstoggle" checked/>
-    <label for="drawwheelmarkerstoggle">Draw Wheel Markers</label>
-
-    <br/>
-    <input type="checkbox" id="final_stage_fxaa" name="final_stage_fxaa" checked>
-    <label for="final_stage_fxaa">Final Stage FXAA</label><br>
-
-    <br/>
-    <p>Fisheye Lens Selection:</p>
-    <input type="radio" id="fisheyeselection_off" name="fisheye_selection">
-    <label for="fisheyeselection_off">Off</label><br>
-
-    <input type="radio" id="fisheyeselection_singleview" name="fisheye_selection">
-    <label for="fisheyeselection_singleview">Single Intermediate View</label><br>
-
-    <input type="radio" id="fisheyeselection_doubleview" name="fisheye_selection" checked>
-    <label for="fisheyeselection_doubleview">Double Intermediate View</label><br>
-
-    <input type="radio" id="fisheyeselection_simple" name="fisheye_selection">
-    <label for="fisheyeselection_simple">Simple</label>
-    <input type="range" id="simple_strength" name="simple_strength" min="0" max="0.25" step="0.01" value="0.2" />
-    <label for="simple_strength">Simple Fisheye Strength</label>
-
-    <br/>
-    <input type="radio" id="fisheyeselection_stereographic" name="fisheye_selection">
-    <label for="fisheyeselection_stereographic">Stereographic</label>
-    <input type="radio" id="fisheyeselection_equidistant" name="fisheye_selection">
-    <label for="fisheyeselection_equidistant">Equidistant</label>
-    <input type="radio" id="fisheyeselection_equisolid" name="fisheye_selection">
-    <label for="fisheyeselection_equisolid">Equisolid</label>
-
-    <br/>
-    <input type="radio" id="fisheyeselection_thoby" name="fisheye_selection">
-    <label for="fisheyeselection_thoby">Thoby</label>
-    <input type="range" id="thobyk2" name="thobyk2" min="0.05" max="1" step="0.05" value="0.75" />
-    <label for="thobyk2">Thoby k2</label>
-
-    <br/>
-    <input type="radio" id="fisheyeselection_orthographic" name="fisheye_selection">
-    <label for="fisheyeselection_orthographic">Orthographic</label>
-    
-    <br/>
-    <input type="radio" id="fisheyeselection_tanktheta" name="fisheye_selection">
-    <label for="fisheyeselection_tanktheta">tan(k theta)</label>
-    <input type="range" id="tanktheta_k" name="tanktheta_k" min="0.05" max="1" step="0.05" value="0.75" />
-    <label for="tanktheta_k">tan(k theta) k value</label>
-
-    <br/>
-    <input type="radio" id="fisheyeselection_special" name="fisheye_selection">
-    <label for="fisheyeselection_special">special</label>
-    <input type="range" id="special_k" name="special_k" min="0.5" max="1" step="0.05" value="0.75" />
-    <label for="special_k">special k value</label>
-    
-    <br/>
-    <input type="range" id="camerazoom" name="camerazoom" min=".4" max="2" step="0.1" value="0.9" />
-    <label for="camerazoom">Camera Zoom</label>
-  </div>
 </body>
 </html>

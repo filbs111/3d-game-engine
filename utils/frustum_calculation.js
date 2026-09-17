@@ -118,7 +118,7 @@ function calculateProjectionMatrixForIntermediateView(screenWidth, screenHeight,
     // });
 
     //temp - try just use general method - makes depth buf wacky, but x,y looks almost OK. 
-    if (document.getElementById("otherprojmat").checked){
+    if (guiParams.useExperimentalProjectionMatrix){
         mat4.set(projMatGeneralMethod, projMat);
     }
 }

@@ -127,7 +127,10 @@ var carInfo3 = {    //mechanum
 var wheelColor = [0.001,0.001,0.001];
 
 
+
 function init(){
+
+    setupGui();
 
     //escape escapes pointer lock and exit fullscreen
 	// - browsers seem to have this already, but electron apparently doesn't!
@@ -161,30 +164,25 @@ function init(){
 					break;
                 case 69:    //E
                     //NOTE just switching between walk and car 2
-
-                    var carModeToggle = document.getElementById("carmode_2");
-
-                    if (carModeToggle.checked){
+                    if (guiParams.carMode == "car2"){
                         //get out of car
                         playerPos[0] = carInfo2.pos3[0];  //TODO appear at drivers side door
                         playerPos[2] = carInfo2.pos3[2];
-                        carModeToggle.checked = false;
+                        guiParams.carMode = "walk";
                     }else{
-                         //TODO check proximity
-                         carModeToggle.checked = !carModeToggle.checked;
+                        //TODO check proximity
+                        guiParams.carMode = "car2";
                     }
                     break;
                 case 84:    //T
-                    var mechanumToggle = document.getElementById("carmode_3");
-
-                    if (mechanumToggle.checked){
+                    if (guiParams.carMode == "mecanum"){
                         //get out of car
-                        playerPos[0] = carInfo3.pos3[0];  //TODO appear at drivers side door
-                        playerPos[2] = carInfo3.pos3[2];
-                        mechanumToggle.checked = false;
+                        playerPos[0] = carInfo3.pos[0];  //TODO appear at drivers side door
+                        playerPos[2] = carInfo3.pos[2];
+                        guiParams.carMode = "walk";
                     }else{
-                         //TODO check proximity
-                         mechanumToggle.checked = !mechanumToggle.checked;
+                        //TODO check proximity
+                        guiParams.carMode = "mecanum";
                     }
                     break;
 				default:
@@ -534,13 +532,6 @@ var cameraZoom = -1;
 var xMoveSmooth=0;
 var zMoveSmooth=0;
 
-function getCarMode(){
-    return  document.getElementById("carmode_3").checked ? 3 :  //mechanum
-            document.getElementById("carmode_2").checked ? 2 : 
-            document.getElementById("carmode_1").checked ? 1 :
-            0;
-}
-
 function iterateMechanics(timeChange){
     //TODO take inputs more frequently?
 
@@ -548,14 +539,13 @@ function iterateMechanics(timeChange){
     playerRotationOld = playerRotation;
     playerElevationOld = playerElevation;
 
-    var carMode = getCarMode();
-
     var forwardBack = keyThing.keystate(87)-keyThing.keystate(83);	//vertical W,S = up, down
     var leftRight = keyThing.keystate(65)-keyThing.keystate(68);    //lateral A,D
 
     //don't move player if in car
-    var forwardBackWalk = carMode == 0 ? forwardBack : 0;
-    var leftRightWalk = carMode == 0 ? leftRight : 0;
+    var forwardBackWalk = guiParams.carMode == "walk" ? forwardBack : 0;
+    var leftRightWalk = guiParams.carMode == "walk" ? leftRight : 0;
+
 
     var cosSin = [Math.cos(playerRotation), Math.sin(playerRotation)];
     var moveMultiplier = (forwardBackWalk==0 || leftRightWalk==0) ? 1: 0.7071
@@ -638,12 +628,11 @@ function iterateMechanics(timeChange){
 
     var fireButtonDepressedNow = mouseInfo.buttons&1;
 
-    var autofire = document.getElementById("autofire").checked;
     var timeSinceLastShot = lastFixedTimestepUpdateTime - lastShotTime;
     var roundsPerMin = 1200;
     var haveReloaded = timeSinceLastShot> 60_000/roundsPerMin;
 
-    if (fireButtonDepressedNow && haveReloaded && (haveUnclickedFire || autofire)){
+    if (fireButtonDepressedNow && haveReloaded && (haveUnclickedFire || guiParams.gun.autofire)){
         //jerk gun. TODO temporary jerk (decay towards where was aiming before)
         gunTurn+= 0.1*gaussRand();
         gunElevTemp+= 0.1*gaussRand();
@@ -684,7 +673,7 @@ function iterateMechanics(timeChange){
 
 
     //linear drag
-    if (carMode !=1 ){
+    if (guiParams.carMode != "car1" ){
         carInfo.speed*=0.99;    //apply handbrake if not in car. NOTE really this should be grip limited. TODO make handbrake more constant (presumably is like a dynamic friction when moving)
     }else{
         carInfo.speed*=0.9999;   //something like rolling resistance. NOTE current aero drag tuned to produce documented top speed with zero rolling resitance. TODO tune to regain top speed, select
@@ -697,7 +686,7 @@ function iterateMechanics(timeChange){
 
     var carForwardInput = 0;
     var steeringAngleTarget=0;
-    if (carMode == 1){
+    if (guiParams.carMode == "car1"){
         //a = v^2/r => r = a v^2
         // steering angle ~ car wheelbase / radius
         // so steering andle at which grip fails goes as 1/v^2.
@@ -779,9 +768,9 @@ function iterateMechanics(timeChange){
     mat4.translate(carCamera3, [0,2,4]);   //above and behind car
 
 
-    processCar2Mechanics(timeChange, leftRight, forwardBack, carMode == 2);
+    processCar2Mechanics(timeChange, leftRight, forwardBack, guiParams.carMode == "car2");
 
-    processMechanumCarMechanics(timeChange, leftRight, forwardBack, mechanumTurn, carMode == 3);
+    processMechanumCarMechanics(timeChange, leftRight, forwardBack, mechanumTurn, guiParams.carMode == "mecanum");
 }
 
 var car2steeringVel = 0;
@@ -887,7 +876,7 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     // for now, have zero slip ratio - freely driven light wheels. TODO modify for driven/braked wheels.
 
 
-    var brakebias = parseFloat(document.getElementById("brakebias").value)/100;
+    var brakebias = guiParams.car.brakeBias;
 
     var brakeAmount = 0.2*brake;   //rotate wheels slower than free wheeling speed. impact should mean constant braking force, but fading out near zero speed due
         //to smallValDeterminingLowSpeedResponse stuff. NOTE this number is quite large!
@@ -1092,7 +1081,6 @@ function drawScene(frameTime){
         while (lastFixedTimestepUpdateTime<frameTime){
             lastFixedTimestepUpdateTime+=timeChangeForTimestep;
             iterateMechanics(timeChangeForTimestep);
-            updateSpeedInfo(playerVel, playerAcc, carInfo.speed, carInfo.accVec );
         }        
     }
     var elapsedTime = frameTime - lastFrameTime;
@@ -1104,9 +1092,7 @@ function drawScene(frameTime){
                                                                                     // 1 means time to display is latest update - should display objects with "new" pose from latest physics iteration.
                                                                                     // intermediate value mean interpolate between old and new poses (linear blending might be fine unless angular step large.)
 
-    
-    var willDoFinalStageFxaa = document.getElementById("final_stage_fxaa").checked;
-    var finalOrPenultimateView = willDoFinalStageFxaa ? optionalPenultimateView : null;
+    var finalOrPenultimateView = guiParams.finalStageFxaa ? optionalPenultimateView : null;
 
 
     //console.log("drawing scene");
@@ -1128,7 +1114,7 @@ function drawScene(frameTime){
     var playerRotationInterp = playerRotation;
     playerElevationInterp = playerElevation;
 
-    if (document.getElementById("interpolate-camera").checked){
+    if (guiParams.camera.interpolate){
         playerPosInterp = playerPos.map((xx,ii) => xx* (1-interpolationFactor) + playerPosOld[ii] * interpolationFactor);
         playerRotationInterp = playerRotation * (1-interpolationFactor) + playerRotationOld * interpolationFactor;
         playerElevationInterp = playerElevation * (1-interpolationFactor) + playerElevationOld * interpolationFactor;
@@ -1147,8 +1133,6 @@ function drawScene(frameTime){
     var playerSpeed = Math.sqrt(playerVel[0]*playerVel[0] + playerVel[2]*playerVel[2]);
     var scaledSpeed = playerSpeed * 100;
     var runAmount = Math.max(0,Math.min(1,scaledSpeed));
-
-    if (Math.random()<0.01){console.log(runAmount)}
 
     var legSettings = getBlendedLegSettings(runAmount);
 
@@ -1201,13 +1185,11 @@ function drawScene(frameTime){
     mat4.translate(eyeMat, playerEyePosFromNeck);
     mat4.translate(thirdPersonCameraMat, thirdPersonEyePosFromNeck);
 
-    var carMode = getCarMode();
-
-    if (document.getElementById("camfollowsplayer").checked){
+    if (guiParams.externalCamFollowsPlayer){
         mat4.identity(staticCamera);
         mat4.translate(staticCamera, statCamPos);
-        var camTarget = carMode == 2 ? carInfo2.pos3:
-                        carMode == 1 ? carInfo.pos:
+        var camTarget = guiParams.carMode == "car2" ? carInfo2.pos3:
+                        guiParams.carMode == "car1" ? carInfo.pos:
                         playerPosInterp;
 
         var camAimHigherAdjustment = 0.5;
@@ -1218,27 +1200,27 @@ function drawScene(frameTime){
         mat4.rotateX(staticCamera, Math.asin(difference[1]/distance)); //tilt (elevation)
     }
 
-    var useThirdPersonCam = document.getElementById("thirdpersoncameratoggle").checked;
+    var useThirdPersonCam = guiParams.camera.type == "third person";
 
     var unmirroredCameraMat = mat4.create();
-    if (document.getElementById("externalcam").checked){
+    if (guiParams.camera.type == "fixed"){
         mat4.set(staticCamera, unmirroredCameraMat);
-    }else if(carMode == 1){
-        if (document.getElementById("interpolate-camera").checked){
+    }else if(guiParams.carMode == "car1"){
+        if (guiParams.camera.interpolate){
             var carCameraInterpolated = simpleMatrixInterpolation(carCamera, carCameraOld, interpolationFactor);
             mat4.set(carCameraInterpolated, unmirroredCameraMat);
         }else{
             mat4.set(carCamera, unmirroredCameraMat);
         }
-    }else if(carMode == 2){
-        if (document.getElementById("interpolate-camera").checked){
+    }else if(guiParams.carMode == "car2"){
+        if (guiParams.camera.interpolate){
             var carCameraInterpolated = simpleMatrixInterpolation(carCamera2, carCamera2Old, interpolationFactor);
             mat4.set(carCameraInterpolated, unmirroredCameraMat);
         }else{
             mat4.set(carCamera2, unmirroredCameraMat);
         }
-    }else if(carMode == 3){
-        if (document.getElementById("interpolate-camera").checked){
+    }else if(guiParams.carMode == "mecanum"){
+        if (guiParams.camera.interpolate){
             var carCameraInterpolated = simpleMatrixInterpolation(carCamera3, carCamera3Old, interpolationFactor);
             mat4.set(carCameraInterpolated, unmirroredCameraMat);
         }else{
@@ -1252,7 +1234,7 @@ function drawScene(frameTime){
     mat4.inverse(unmirroredCameraMat);    //note .transpose won't work like does in 3sphere games, because these are standard 3d gfx mats, not SO4s.
     
     
-    cameraZoom = parseFloat(document.getElementById("camerazoom").value);
+    cameraZoom = guiParams.camera.zoom;
     cameraZoom*=cameraZoomAdjustInputSmoothed;
 
     //calculation of fisheye zoom given ratio of distance from viewer to screen to distance for correct rectilinear viewing. 
@@ -1263,7 +1245,10 @@ function drawScene(frameTime){
     var nNow = 2.15*cameraZoomAdjustInputSmoothed; //divide or multiply?
     simpleStrengthGlobal =  (nNow*nNow - 1)/ (6*nNow*nNow);
 
-    if (document.getElementById("fisheyeselection_singleview").checked){
+    //simpleStrengthGlobal = 0.2;
+    // TODO increase fisheye FX retaining correct click to zoom behaviour.
+
+    if (guiParams.camera.fisheyeMapping == "1 panel intermediate"){
 
         var vertSizeFromVFov = cameraZoom;
         var horizSizeFromVFov = vertSizeFromVFov * (gl.viewportWidth/ gl.viewportHeight);
@@ -1328,7 +1313,7 @@ function drawScene(frameTime){
 
         drawObjectFromBuffers(quadBuffers, activeProg);
 
-    } else if (document.getElementById("fisheyeselection_doubleview").checked){
+    } else if (guiParams.camera.fisheyeMapping == "2 panel intermediate"){
 
         var vertSizeFromVFov = cameraZoom;
         var horizSizeFromVFov = vertSizeFromVFov * (gl.viewportWidth/ gl.viewportHeight);
@@ -1405,7 +1390,7 @@ function drawScene(frameTime){
             gl.enable(gl.CULL_FACE);
         }
 
-    }else if (!document.getElementById("fisheyeselection_off").checked){
+    }else if (guiParams.camera.fisheyeMapping != "off"){
 
         //draw cubemap about current camera.
         // but for simplicity, make initial version using cubemap for intermediate views. render 6 cameras for each cubemap side, then map from cubemap onto the screen.
@@ -1463,15 +1448,14 @@ function drawScene(frameTime){
 
     //update overlay
     overlaydisplay.clear();
-    overlaydisplay.drawDisplay(carMode);
+    overlaydisplay.drawDisplay();
+    overlaydisplay.updateSpeedInfo(playerVel, playerAcc, carInfo.speed, carInfo.accVec );
 }
 
 
 function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, thirdPersonCameraMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation, frameTime, armRotationAdjustment, interpolationFactor, legSettings){
         //NOTE passing in eyeMat, neckMat, upperTorsoMat, torsoMatrix, boxRotation is awkward. 
         //TODO create scene description and use for render?
-
-    var carMode = getCarMode();
 
     mat4.set(unmirroredCameraMat, cameraMat);
 
@@ -1547,7 +1531,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
 
-    if (carMode == 0){
+    if (guiParams.carMode == "walk"){
 
         activeProg = shaderPrograms.envmap;
         gl.useProgram(activeProg);
@@ -1568,7 +1552,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
         mat4.translate(gunMat, [0,0.05,-0.65]);    //0.65m - end of arm, up by 5cm
 
 
-        if (document.getElementById("drawbody").checked){
+        if (guiParams.drawBody){
 
             //draw eye
             drawCubeWithScale(activeProg, eyeMat, [0.03,0.03,0.03]);    //6cm cube
@@ -1683,7 +1667,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
             mat4.translate(mMatrix, [-9,0,0]); //move sideways
             drawObjectFromBuffers(leftCalfBuffers, activeProg);
 
-            var doubleGuns = document.getElementById("doubleguns").checked;
+            var doubleGuns = guiParams.gun.double;
             if (doubleGuns){
                 mat4.translate(gunMat, [-0.15,0,0]);
                 drawCubeWithScale(activeProg, gunMat, [0.025,0.1,0.1]);
@@ -1757,7 +1741,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
     enableDisableAttributes(activeProg);
     gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.0005,0.003,0.0005]);
 
-    if (document.getElementById("interpolate-camera").checked){
+    if (guiParams.camera.interpolate){
         var interpolatedCarMatrix = simpleMatrixInterpolation(carMatrix, carMatrixOld, interpolationFactor);
         mat4.set(interpolatedCarMatrix, mMatrix);
     }else{
@@ -1773,8 +1757,6 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
     // mat4.scale(mMatrix, carScale.map(xx=>1/xx));
     // mat4.translate(mMatrix,boxShift.map(x=>-x));
 
-    var drawWheelMarkers = document.getElementById("drawwheelmarkers").checked;
-
     var wheelScale = [1,1,1].map(x=>x*0.56);    //coincidentally same as vehicle scale?
 
     mat4.scale(mMatrix,[1,1,1].map(x=>x*0.56));  //guess correct size - default seems far too big
@@ -1787,7 +1769,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
         gl.uniform3fv(activeProg.uniforms.uFlatColor, wheelColor);
 
         if (wheelBuffers.isLoaded){
-            drawWheels(wheelScale, activeProg, drawWheelMarkers, -carInfo.steeringAngle, 0, 0);
+            drawWheels(wheelScale, activeProg, guiParams.car.drawWheelMarkers, -carInfo.steeringAngle, 0, 0);
         }
 
         mat4.scale(mMatrix,[1,1,1].map(x=>x/0.56)); //undo scale
@@ -1807,7 +1789,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
 
         //gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.02,0.02,0.04]);
 
-        if (document.getElementById("interpolate-camera").checked){
+        if (guiParams.camera.interpolate){
             var interpolatedCarMatrix = simpleMatrixInterpolation(carMatrix2, carMatrix2Old, interpolationFactor);
             mat4.set(interpolatedCarMatrix, mMatrix);
         }else{
@@ -1827,7 +1809,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
         enableDisableAttributes(activeProg);
 
         if (wheelBuffers.isLoaded){
-            drawWheels(wheelScale, activeProg, drawWheelMarkers, carInfo2.steeringAngle, carInfo2.frontWheelRotation, carInfo2.rearWheelRotation);
+            drawWheels(wheelScale, activeProg, guiParams.car.drawWheelMarkers, carInfo2.steeringAngle, carInfo2.frontWheelRotation, carInfo2.rearWheelRotation);
         }
 
         gl.uniform3fv(activeProg.uniforms.uFlatColor, wheelColor);  
@@ -1851,7 +1833,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
 
         //gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.02,0.02,0.04]);
 
-        if (document.getElementById("interpolate-camera").checked){
+        if (guiParams.camera.interpolate){
             var interpolatedCarMatrix = simpleMatrixInterpolation(carMatrix3, carMatrix3Old, interpolationFactor);
             mat4.set(interpolatedCarMatrix, mMatrix);
         }else{
@@ -1871,7 +1853,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
         enableDisableAttributes(activeProg);
 
         if (wheelBuffersMechanum.isLoaded && wheelBuffersMechanumFlipped.isLoaded){
-            drawWheelsMechanum(wheelScale, activeProg, drawWheelMarkers, 0, 
+            drawWheelsMechanum(wheelScale, activeProg, guiParams.car.drawWheelMarkers, 0, 
                 carInfo3.wheelForwardRotate, 
                 carInfo3.wheelSideRotate, 
                 carInfo3.wheelTurnRotate*2); //TODO correct scaling. 
@@ -1935,7 +1917,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
 
 
     //draw x-hair.
-    if (carMode == 0){
+    if (guiParams.carMode == "walk"){
         activeProg = shaderPrograms.flat;
         gl.useProgram(activeProg);
         enableDisableAttributes(activeProg);
@@ -2042,42 +2024,6 @@ function matForWorldPosYRotAndScale(worldPos, yRot, scale){
     mat4.rotateY(newMat, yRot);
     mat4.scale(newMat,scale);
     return newMat;
-}
-
-function updateSpeedInfo(vel, acc, carMovePerMs, carAccMsPerSec){
-    //world scale is metres
-    //vel is in metres per millisecond
-
-    var velMag = Math.hypot.apply(null, vel);
-    var personSpeeds = movePerMsToVariousSpeedUnits(velMag);
-
-    var carSpeeds = movePerMsToVariousSpeedUnits(Math.abs(carMovePerMs));
-
-    var accMag = Math.hypot.apply(null, acc);
-    var accMetresPerSecondSquared = accMag*1_000_000;
-    var accGees = accMetresPerSecondSquared/9.81;
-
-    //var carAccMetresPerSecondSquared = carAccMsPerSec*1_000_000;    //LONGITUDINAL ONLY
-    var carAccMag = Math.hypot.apply(null, carAccMsPerSec);
-    var carAccMetresPerSecondSquared = carAccMag*1_000_000;
-    var carAccGees = carAccMetresPerSecondSquared/9.81;
-
-    var carAccGeesVec = carAccMsPerSec.map(xx => xx*1_000_000/9.81);
-
-    overlaydisplay.setGeeMeter(carAccGeesVec);
-    overlaydisplay.setSpeedMph(carSpeeds.mph);
-
-    document.getElementById("speedinfo").innerHTML = 
-        "speed: " + 
-        personSpeeds.metresPerSecond.toFixed(2) + "m/s " + 
-        personSpeeds.kph.toFixed(2) + "km/h " +
-        personSpeeds.mph.toFixed(2)+"mph ," +
-        "acceleration: " +
-        accMetresPerSecondSquared.toFixed(2) + "m/s^2 " + 
-        accGees.toFixed(2) + "g. " + 
-        "car speed: " +
-        carSpeeds.mph.toFixed(0) + " mph, " + 
-        "car acceleration: " + carAccGees.toFixed(2)  + "g.";
 }
 
 function movePerMsToVariousSpeedUnits(movePerMs){

@@ -11,6 +11,7 @@ var overlaydisplay = (function(){
     var geeMeterReading = [0,0];
     var speedMph = 0;
 
+    var speedTextInfo="";
 
     function setSpeedMph(speed){
         speedMph = speed;
@@ -20,11 +21,52 @@ var overlaydisplay = (function(){
         overlaycontext.clearRect(0, 0, overlaycanvas.width, overlaycanvas.height);
     }
 
-    function drawDisplay(carMode){
-        
+    function updateSpeedInfo(vel, acc, carMovePerMs, carAccMsPerSec){
+        //world scale is metres
+        //vel is in metres per millisecond
+
+        var velMag = Math.hypot.apply(null, vel);
+        var personSpeeds = movePerMsToVariousSpeedUnits(velMag);
+
+        var carSpeeds = movePerMsToVariousSpeedUnits(Math.abs(carMovePerMs));
+
+        var accMag = Math.hypot.apply(null, acc);
+        var accMetresPerSecondSquared = accMag*1_000_000;
+        var accGees = accMetresPerSecondSquared/9.81;
+
+        //var carAccMetresPerSecondSquared = carAccMsPerSec*1_000_000;    //LONGITUDINAL ONLY
+        var carAccMag = Math.hypot.apply(null, carAccMsPerSec);
+        var carAccMetresPerSecondSquared = carAccMag*1_000_000;
+        var carAccGees = carAccMetresPerSecondSquared/9.81;
+
+        var carAccGeesVec = carAccMsPerSec.map(xx => xx*1_000_000/9.81);
+
+        setGeeMeter(carAccGeesVec);
+        setSpeedMph(carSpeeds.mph);
+
+        speedTextInfo = 
+            "speed: " + 
+            personSpeeds.metresPerSecond.toFixed(2) + "m/s " + 
+            personSpeeds.kph.toFixed(2) + "km/h " +
+            personSpeeds.mph.toFixed(2)+"mph ," +
+            "acceleration: " +
+            accMetresPerSecondSquared.toFixed(2) + "m/s^2 " + 
+            accGees.toFixed(2) + "g. " + 
+            "car speed: " +
+            carSpeeds.mph.toFixed(0) + " mph, " + 
+            "car acceleration: " + carAccGees.toFixed(2)  + "g.";
+    }
+
+    function drawDisplay(){
+
+        if (guiParams.debug.showSpeedInfo){
+            overlaycontext.fillStyle = "rgba(255,255,255,1)";
+            overlaycontext.fillText(speedTextInfo,20,700);
+        }
+
         var steeringAngleIndicatorLen = 20;
 
-        if (carMode == 0){return;}
+        if (guiParams.carMode == "walk"){return;}
 
         //gee meter background
         overlaycontext.beginPath()
@@ -37,7 +79,7 @@ var overlaydisplay = (function(){
         overlaycontext.fill();
         
 
-        if (carMode == 1){
+        if (guiParams.carMode == "car1"){
             //gee meter
             overlaycontext.fillStyle = "white";
             overlaycontext.fillRect(geeMeterCentre[0] + geeMeterRadiusOneGee*geeMeterReading[0] - 5, geeMeterCentre[1] + geeMeterRadiusOneGee*geeMeterReading[1] - 5, 10,10);
@@ -54,7 +96,7 @@ var overlaydisplay = (function(){
             drawSpeedo(100, 300, 70, -0.6, Math.PI + 1.2, 201, 20, speedMph);
         }
 
-        if (carMode == 2){
+        if (guiParams.carMode == "car2"){
             //gee meter
             overlaycontext.fillStyle = "white";
             var geeMeterReading2 = carInfo2.acceleration.map(xx=>xx/9.81);
@@ -214,7 +256,7 @@ var overlaydisplay = (function(){
 
     return {
         clear,
-        setSpeedMph,
+        updateSpeedInfo,
         drawDisplay,
         setGeeMeter
     }

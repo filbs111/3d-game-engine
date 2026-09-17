@@ -115,39 +115,43 @@ function rotateCameraForFace(mat, ii){
 var simpleStrengthGlobal=1;
 
 function renderViewUsingCmap(){
+
+    var fisheyeMapping = guiParams.camera.fisheyeMapping;
+
+    //TODO rewrite this as map? 
     var activeShaderProgram = 
-        document.getElementById("fisheyeselection_simple").checked ?            shaderPrograms.fisheyeCubemap:
-        document.getElementById("fisheyeselection_stereographic").checked ?     shaderPrograms.fisheyeStereographic:
-        document.getElementById("fisheyeselection_equidistant").checked ?       shaderPrograms.fisheyeEquidistant:
-        document.getElementById("fisheyeselection_thoby").checked ?             shaderPrograms.fisheyeThoby:
-        document.getElementById("fisheyeselection_equisolid").checked ?         shaderPrograms.fisheyeEquisolid:
-        document.getElementById("fisheyeselection_orthographic").checked ?      shaderPrograms.fisheyeOrthographic:
-        document.getElementById("fisheyeselection_tanktheta").checked ?         shaderPrograms.fisheyeTanktheta:
-                                                                                shaderPrograms.fisheyeSpecial;
+        fisheyeMapping == "simple" ?            shaderPrograms.fisheyeCubemap:
+        fisheyeMapping == "stereographic" ?     shaderPrograms.fisheyeStereographic:
+        fisheyeMapping == "equidistant" ?       shaderPrograms.fisheyeEquidistant:
+        fisheyeMapping == "equisolid" ?         shaderPrograms.fisheyeEquisolid:
+        fisheyeMapping == "thoby" ?             shaderPrograms.fisheyeThoby:
+        fisheyeMapping == "orthographic" ?      shaderPrograms.fisheyeOrthographic:
+        fisheyeMapping == "tan(kθ)" ?           shaderPrograms.fisheyeTanktheta:
+                                                shaderPrograms.fisheyeSpecial;
 
     gl.useProgram(activeShaderProgram);
     enableDisableAttributes(activeShaderProgram);
         //?? which uniform for cubemap framebuffers
 
-    if (document.getElementById("fisheyeselection_simple").checked){
-        var ss = parseFloat(document.getElementById("simple_strength").value);
+    if (fisheyeMapping == "simple"){
+        var ss = guiParams.camera.simpleFisheyeStrength;
 
         //NOTE overriding ss calculation, ignoring simple strength value
         gl.uniform1f(activeShaderProgram.uniforms.uSimpleStrength, simpleStrengthGlobal);
     }
 
-    if (document.getElementById("fisheyeselection_thoby").checked){
-        var k2 = parseFloat(document.getElementById("thobyk2").value);
+    if (fisheyeMapping == "thoby"){
+        var k2 = guiParams.camera.thobyK2;
         gl.uniform1f(activeShaderProgram.uniforms.uK2, k2);
     }
 
-    if (document.getElementById("fisheyeselection_tanktheta").checked){
-        var k = parseFloat(document.getElementById("tanktheta_k").value);
+    if (fisheyeMapping == "tan(kθ)"){
+        var k = guiParams.camera.tanKThetaK;
         gl.uniform1f(activeShaderProgram.uniforms.uK, k);
     }
 
-    if (document.getElementById("fisheyeselection_special").checked){
-        var k = parseFloat(document.getElementById("special_k").value);
+    if (fisheyeMapping == "special"){
+        var k = guiParams.camera.specialK;
         gl.uniform1f(activeShaderProgram.uniforms.uK, k);
     }
 
