@@ -1543,13 +1543,13 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
         var gunMat = mat4.create(torsoMatrix);
         mat4.rotateX(gunMat, -playerElevationInterp*torsoElevationMultiplier);
         mat4.translate(gunMat, playerNeckPos);
-        mat4.translate(gunMat, [0,0,-0.15]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
+        mat4.translate(gunMat, [0,-0.05,-0.05]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
         mat4.rotateX(gunMat, -playerElevationInterp*(armElevationMultiplier-torsoElevationMultiplier) + gunElevTemp);
         mat4.rotateX(gunMat, armRotationAdjustment);
 
         mat4.rotateY(gunMat, gunTurn);
 
-        mat4.translate(gunMat, [0,0.05,-0.65]);    //0.65m - end of arm, up by 5cm
+        mat4.translate(gunMat, [0,0.05,-0.65]);    //0.6m - end of arm, up by 5cm
 
 
         if (guiParams.drawBody){
@@ -1686,13 +1686,12 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
         var armMat = mat4.create(torsoMatrix);
         mat4.rotateX(armMat, -playerElevationInterp*torsoElevationMultiplier + gunElevTemp);
         mat4.translate(armMat, playerNeckPos);
-        mat4.translate(armMat, [0.15*handedness,0,-0.15]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
+        mat4.translate(armMat, [0.15*handedness,-0.05,-0.05]);  //moving forward in this frame maybe could do by shoulder centre pos instead. ( playerNeckPos + [0,0,0.2])
         
         mat4.rotateX(armMat, -playerElevationInterp*(armElevationMultiplier-torsoElevationMultiplier));
         mat4.rotateX(armMat, armRotationAdjustment);
 
         mat4.rotateY(armMat, gunTurn);  //note with this arms don't quite match gun because order of rotations
-
 
         if (!doubleGuns){
             mat4.rotateX(armMat, handedness*0.06);
@@ -1701,7 +1700,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
             mat4.rotateX(armMat, 0.06);
         }
 
-        mat4.translate(armMat, [0,0,-0.3]);    //move forwards by 0.3 for elbow
+        mat4.translate(armMat, [0,0,-0.35]);    //move forwards by 0.3 for elbow
 
         //drawCubeWithScale(activeProg, armMat, [0.05,0.05,0.35]); //10cm x 10cm x 0.7m
 
