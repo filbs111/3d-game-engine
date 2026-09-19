@@ -23,6 +23,7 @@ var guiParams={
         brakeBias:.6
     },
     debug:{
+        showFramerate:true,
         showSpeedInfo:false
     }
 };
@@ -60,5 +61,6 @@ function setupGui(){
     carFolder.add(guiParams.car, "brakeBias", .3, .7, .01);
 
     var debugFolder = gui.addFolder('debug');
+    debugFolder.add(guiParams.debug, "showFramerate");
     debugFolder.add(guiParams.debug, "showSpeedInfo");
 }

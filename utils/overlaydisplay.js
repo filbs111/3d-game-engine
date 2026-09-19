@@ -59,6 +59,11 @@ var overlaydisplay = (function(){
 
     function drawDisplay(){
 
+        if (guiParams.debug.showFramerate){
+            overlaycontext.fillStyle = "rgba(255,255,255,1)";
+            overlaycontext.fillText(framerateCalculator.get().toFixed(0),1000,20);
+        }
+
         if (guiParams.debug.showSpeedInfo){
             overlaycontext.fillStyle = "rgba(255,255,255,1)";
             overlaycontext.fillText(speedTextInfo,20,700);
