@@ -1515,7 +1515,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
 	//}
 
 
-    activeProg = shaderPrograms.flat;
+    activeProg = shaderPrograms.chequer;
     gl.useProgram(activeProg);
     enableDisableAttributes(activeProg);
 
@@ -1526,6 +1526,21 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
 
+    //draw some cubes like buildings to give idea of fisheye camera angles
+    [   {pos:[-40,0,20], scale:[10,10,10]},
+        {pos:[-40,20,0], scale:[10,10,10]},
+        {pos:[-40,20,20], scale:[10,10,10]},
+        {pos:[-40,20,40], scale:[10,10,10]},  //makes a t shape - side, high, forward
+
+        {pos:[-20,9,80], scale:[10,10,10]},
+        {pos:[-30,9,120], scale:[10,10,10]},
+        {pos:[20,9,80], scale:[10,10,10]},
+        {pos:[20,9,120], scale:[10,10,10]}, //2x2 blocks behind player initial position 
+    ].forEach( info => {
+        setupDrawMatrixForObjectAtPosition(info.pos);
+        mat4.scale(mMatrix, info.scale);
+        drawObjectFromBuffers(cubeBuffers, activeProg);
+    });
     //draw external camera (will be invisible if external camera checked because cull backfaces)
     mat4.set(staticCamera, mMatrix);
     gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.8,0.8,0.8]);

@@ -114,6 +114,7 @@ function initShaders(shaderProgs){
 	var initShaderTimeStart = performance.now();
 	var shaderProgNoVariationsList = {
 		flat:["flat-vs", "flat-fs"],
+		chequer:["greybox-vs", "greybox-chequer-fs"],
 		vertexColor:["vertcolor-vs", "flat-fs"],
 		texmap:["texmap-vs", "texmap-fs"],
 		texmapWithDetail:["texmap-vs", "texmap-detail-fs"],
