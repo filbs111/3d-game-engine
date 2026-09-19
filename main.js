@@ -1069,6 +1069,8 @@ function processMechanumCarMechanics(timeChange, leftRight, forwardBack, mechanu
 
 function drawScene(frameTime){
 	requestAnimationFrame(drawScene);
+
+    framerateCalculator.update(frameTime);
     
     if (lastFrameTime){
         var timeChange = frameTime-lastFrameTime;
