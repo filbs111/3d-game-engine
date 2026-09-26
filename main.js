@@ -21,6 +21,8 @@ var mvMatrix = mat4.create();
 var mMatrix = mat4.create();
 var pMatrix = mat4.create();
 
+var tempGunMat = mat4.create(); //temporary solution - just copy this when drawing. TODO calculate in mechanics step.
+
 var mouseInfo = {
 	x:0,
 	y:0,
@@ -48,6 +50,8 @@ var sphereStatue = {
     buffers:{},
     matrix:matForWorldPosYRotAndScale([10,0,-6],0,[1,1,1])
 };
+
+var lastGunRayHitPosition = [0,0,0];
 
 var torsoBuffers={};
 var rightThighBuffers={};
@@ -633,6 +637,16 @@ function iterateMechanics(timeChange){
     var haveReloaded = timeSinceLastShot> 60_000/roundsPerMin;
 
     if (fireButtonDepressedNow && haveReloaded && (haveUnclickedFire || guiParams.gun.autofire)){
+
+        //raycast from gun forwards
+        var gunPos = tempGunMat.slice(12,15);
+        mat4.translate(tempGunMat, [0,0,-100]);
+        var rayEndPos = tempGunMat.slice(12,15);
+        var collisionResult = lineSphereCollision(gunPos, rayEndPos, sphereStatue.matrix.slice(12,15), 1);
+        if (collisionResult.collided){
+            lastGunRayHitPosition = collisionResult.collisionPos;
+        }
+
         //jerk gun. TODO temporary jerk (decay towards where was aiming before)
         gunTurn+= 0.1*gaussRand();
         gunElevTemp+= 0.1*gaussRand();
@@ -1899,6 +1913,12 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
     if (sphereStatue.buffers.isLoaded){
         mat4.set(sphereStatue.matrix, mMatrix);
         drawObjectFromBuffers(sphereStatue.buffers, activeProg);
+
+        //draw ray collision test marker (position set on firing gun)
+        setupDrawMatrixForObjectAtPosition(lastGunRayHitPosition);
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [1,1,0]);
+        mat4.scale(mMatrix,[1,1,1].map(xx=>xx*0.05));
+        drawObjectFromBuffers(sphereStatue.buffers, activeProg);
     }
 
     if (lucyStatue.buffers.isLoaded){
@@ -1948,6 +1968,9 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
             mat4.scale(mMatrix,[1,1,1]); 
             drawObjectFromBuffers(cubeBuffers, activeProg);
         }
+
+        mat4.set(gunMat, tempGunMat);
+
         gl.enable(gl.DEPTH_TEST);
         gl.depthMask(true);
     }
