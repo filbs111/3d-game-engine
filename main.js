@@ -51,6 +51,11 @@ var sphereStatue = {
     matrix:matForWorldPosYRotAndScale([10,0,-6],0,[1,1,1])
 };
 
+var bodgeCapsule = {
+    start: [15,0,0],
+    end: [20,2,10]
+};
+
 var lastGunRayHitPosition = [0,0,0];
 
 var torsoBuffers={};
@@ -642,8 +647,12 @@ function iterateMechanics(timeChange){
         var gunPos = tempGunMat.slice(12,15);
         mat4.translate(tempGunMat, [0,0,-100]);
         var rayEndPos = tempGunMat.slice(12,15);
-        var collisionResult = lineSphereCollision(gunPos, rayEndPos, sphereStatue.matrix.slice(12,15), 1);
-        if (collisionResult.collided){
+
+        //var collisionResult = lineSphereCollision(gunPos, rayEndPos, sphereStatue.matrix.slice(12,15), 1);
+
+        var collisionResult = lineCapsuleCollision(gunPos, rayEndPos, bodgeCapsule.start, bodgeCapsule.end, 1);
+
+        if (collisionResult.fractionAlongRay<=1){
             lastGunRayHitPosition = collisionResult.collisionPos;
         }
 
@@ -1919,6 +1928,16 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
         gl.uniform3fv(activeProg.uniforms.uFlatColor, [1,1,0]);
         mat4.scale(mMatrix,[1,1,1].map(xx=>xx*0.05));
         drawObjectFromBuffers(sphereStatue.buffers, activeProg);
+
+        //draw a capsule quick and nasty way by drawing many spheres
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.5,0.5,0.5]);
+        for (var xx=0;xx<=1.01;xx+=0.025){  //NOTE 1.01 not 1 due to numerical error messing up and missing last ball otherwise
+            var oneMinusX = 1-xx;
+            var pos = bodgeCapsule.start.map((yy,ii)=> yy*oneMinusX + bodgeCapsule.end[ii]*xx);
+            setupDrawMatrixForObjectAtPosition(pos);
+            drawObjectFromBuffers(sphereStatue.buffers, activeProg);
+        }
+
     }
 
     if (lucyStatue.buffers.isLoaded){
