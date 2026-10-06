@@ -56,6 +56,13 @@ var bodgeCapsule = {
     end: [20,2,10]
 };
 
+var bodgeTriangle = [
+    [15,0,-5],
+    [20,2,-15],
+    [15,1,-15]
+];
+
+
 var lastGunRayHitPosition = [0,0,0];
 
 var torsoBuffers={};
@@ -1931,11 +1938,30 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
 
         //draw a capsule quick and nasty way by drawing many spheres
         gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.5,0.5,0.5]);
-        for (var xx=0;xx<=1.01;xx+=0.025){  //NOTE 1.01 not 1 due to numerical error messing up and missing last ball otherwise
+        for (var aa=0;aa<=25;aa++){
+            var xx = aa/25;
             var oneMinusX = 1-xx;
             var pos = bodgeCapsule.start.map((yy,ii)=> yy*oneMinusX + bodgeCapsule.end[ii]*xx);
             setupDrawMatrixForObjectAtPosition(pos);
             drawObjectFromBuffers(sphereStatue.buffers, activeProg);
+        }
+
+        //draw a fat triangle in a quick and nasty game
+        for (var aa=0;aa<=25;aa++){
+            for (var bb=0;bb<=aa;bb++){
+                var xx = aa/25;
+                var yy = bb/25;
+                var otherAmount = 1-xx-yy;
+
+                var from0 = bodgeTriangle[0].map(cc => cc*xx);
+                var from1 = bodgeTriangle[1].map(cc => cc*yy);
+                var from2 = bodgeTriangle[2].map(cc => cc*otherAmount);
+
+                var pos = vectorSum(vectorSum(from0,from1),from2);
+
+                setupDrawMatrixForObjectAtPosition(pos);
+                drawObjectFromBuffers(sphereStatue.buffers, activeProg);
+            }
         }
 
     }
