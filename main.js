@@ -657,8 +657,11 @@ function iterateMechanics(timeChange){
 
         //var collisionResult = lineSphereCollision(gunPos, rayEndPos, sphereStatue.matrix.slice(12,15), 1);
 
-        var collisionResult = lineCapsuleCollision(gunPos, rayEndPos, bodgeCapsule.start, bodgeCapsule.end, 1);
+        //var collisionResult = lineCapsuleCollision(gunPos, rayEndPos, bodgeCapsule.start, bodgeCapsule.end, 1);
 
+        var collisionResult = lineFatTriangleCollision(gunPos, rayEndPos, bodgeTriangle, 1);
+
+        
         if (collisionResult.fractionAlongRay<=1){
             lastGunRayHitPosition = collisionResult.collisionPos;
         }
@@ -1946,12 +1949,12 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
             drawObjectFromBuffers(sphereStatue.buffers, activeProg);
         }
 
-        //draw a fat triangle in a quick and nasty game
+        //draw a fat triangle in a quick and nasty way
         for (var aa=0;aa<=25;aa++){
             for (var bb=0;bb<=aa;bb++){
-                var xx = aa/25;
+                var xx = 1-aa/25;
                 var yy = bb/25;
-                var otherAmount = 1-xx-yy;
+                var otherAmount = 1-(xx+yy);
 
                 var from0 = bodgeTriangle[0].map(cc => cc*xx);
                 var from1 = bodgeTriangle[1].map(cc => cc*yy);

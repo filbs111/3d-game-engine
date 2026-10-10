@@ -138,3 +138,38 @@ function lineCapsuleCollision(rayStart, rayEnd, capsuleStartSphereCentre, capsul
 
     return collisionResult;
 }
+
+
+function lineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad){
+    //collision of ray with triangle bloated by a sphere, equivalent to spherecast with triangle.
+    // intermediate results eg cross products likely reusable.
+    // TODO more efficient version, use tests to compare functionality to this more obviously correct but inefficient version
+
+    //check collision with both sphere capsule end caps
+    var collisionWithCorners = triangleCorners.map(corner => {return lineSphereCollision(rayStart, rayEnd, corner, sphereRad)});
+
+    var collisionWithCylinders = triangleCorners.map( (corner, ii) => {
+        var otherCornerIdx = (ii+1)%3;
+        console.log(ii,otherCornerIdx);
+        var otherCorner = triangleCorners[otherCornerIdx];
+        return lineCylinderCollision(rayStart, rayEnd, corner, otherCorner, sphereRad);
+    });
+
+    //TODO collision with flat part
+    var collisionResult = {fractionAlongRay:Number.MAX_VALUE};    //no collision
+
+    for (var ii=0;ii<3;ii++){
+        if (collisionResult.fractionAlongRay>collisionWithCorners[ii].fractionAlongRay){
+            console.log("hit! " + ii);
+            collisionResult=collisionWithCorners[ii];
+        }
+       if (collisionResult.fractionAlongRay>collisionWithCylinders[ii].fractionAlongRay){collisionResult=collisionWithCylinders[ii]}
+    }
+
+    console.log({
+        collisionWithCorners,
+        collisionWithCylinders
+    })
+
+    return collisionResult;
+}
