@@ -63,7 +63,7 @@ var bodgeTriangle = [
 ];
 
 
-var lastGunRayHitPosition = [0,0,0];
+var lastGunRayHitPositions = [[0,0,0]];
 
 var torsoBuffers={};
 var rightThighBuffers={};
@@ -659,12 +659,20 @@ function iterateMechanics(timeChange){
 
         //var collisionResult = lineCapsuleCollision(gunPos, rayEndPos, bodgeCapsule.start, bodgeCapsule.end, 1);
 
-        var collisionResult = lineFatTriangleCollision(gunPos, rayEndPos, bodgeTriangle, 1);
-
-        
-        if (collisionResult.fractionAlongRay<=1){
-            lastGunRayHitPosition = collisionResult.collisionPos;
+        lastGunRayHitPositions = [];
+        var startTime = performance.now();
+        var numberOfTimes = 100;
+        for (var ii=0;ii<numberOfTimes;ii++){
+            var adjustedRayEnd = rayEndPos.map(xx=> xx+10*(Math.random()-0.5));
+            var collisionResult = lineFatTriangleCollision(gunPos, adjustedRayEnd, bodgeTriangle, 1);
+            if (collisionResult.fractionAlongRay<=1){
+                lastGunRayHitPositions.push(collisionResult.collisionPos);
+            }
         }
+        var timeTaken = performance.now() - startTime;
+        console.log("made " + numberOfTimes + " collision checks in " + timeTaken + " millis");
+        // 100 in 0.3 millis on test machine - too slow (1 ray vs 100k triangles would be 0.3 seconds!), but broad phase collision detection - bounding shapes, BVH - should make much faster
+
 
         //jerk gun. TODO temporary jerk (decay towards where was aiming before)
         gunTurn+= 0.1*gaussRand();
@@ -1934,10 +1942,12 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
         drawObjectFromBuffers(sphereStatue.buffers, activeProg);
 
         //draw ray collision test marker (position set on firing gun)
-        setupDrawMatrixForObjectAtPosition(lastGunRayHitPosition);
         gl.uniform3fv(activeProg.uniforms.uFlatColor, [1,1,0]);
-        mat4.scale(mMatrix,[1,1,1].map(xx=>xx*0.05));
-        drawObjectFromBuffers(sphereStatue.buffers, activeProg);
+        for (var ii=0;ii<lastGunRayHitPositions.length;ii++){
+            setupDrawMatrixForObjectAtPosition(lastGunRayHitPositions[ii]);
+            mat4.scale(mMatrix,[1,1,1].map(xx=>xx*0.05));
+            drawObjectFromBuffers(sphereStatue.buffers, activeProg);
+        }
 
         //draw a capsule quick and nasty way by drawing many spheres
         gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.5,0.5,0.5]);

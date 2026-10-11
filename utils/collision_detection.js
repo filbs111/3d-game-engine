@@ -28,18 +28,18 @@ function lineSphereCollision(rayStart, rayEnd, sphereCentre, sphereRad){
 
     var collisionPos = rayStart.map((xx,ii)=> xx + rayVec[ii]*fractionAlongRay);
 
-    console.log({
-        sphereRadSquared,
-        rayStartToSphereCentre,
-        rayCrossToSphere,
-        rayLengthSquared,
-        rayLength,
-        moveBackDistSq,
-        moveDistanceToLevelWithSphere,
-        moveDistanceToSphereSurf,
-        fractionAlongRay,
-        collisionPos
-    });
+    // console.log({
+    //     sphereRadSquared,
+    //     rayStartToSphereCentre,
+    //     rayCrossToSphere,
+    //     rayLengthSquared,
+    //     rayLength,
+    //     moveBackDistSq,
+    //     moveDistanceToLevelWithSphere,
+    //     moveDistanceToSphereSurf,
+    //     fractionAlongRay,
+    //     collisionPos
+    // });
 
     return {
         fractionAlongRay,
@@ -130,11 +130,11 @@ function lineCapsuleCollision(rayStart, rayEnd, capsuleStartSphereCentre, capsul
     if (collisionResult.fractionAlongRay>collisionWithEndSphere.fractionAlongRay){collisionResult=collisionWithEndSphere}
     if (collisionResult.fractionAlongRay>collisionWithCylinder.fractionAlongRay){collisionResult=collisionWithCylinder}
 
-    console.log({
-        collisionWithStartSphere,
-        collisionWithEndSphere,
-        collisionWithCylinder
-    });
+    // console.log({
+    //     collisionWithStartSphere,
+    //     collisionWithEndSphere,
+    //     collisionWithCylinder
+    // });
 
     return collisionResult;
 }
@@ -150,7 +150,6 @@ function lineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad){
 
     var collisionWithCylinders = triangleCorners.map( (corner, ii) => {
         var otherCornerIdx = (ii+1)%3;
-        console.log(ii,otherCornerIdx);
         var otherCorner = triangleCorners[otherCornerIdx];
         return lineCylinderCollision(rayStart, rayEnd, corner, otherCorner, sphereRad);
     });
@@ -207,16 +206,16 @@ function lineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad){
 
     for (var ii=0;ii<3;ii++){
         if (collisionResult.fractionAlongRay>collisionWithCorners[ii].fractionAlongRay){
-            console.log("hit! " + ii);
+            // console.log("hit! " + ii);
             collisionResult=collisionWithCorners[ii];
         }
        if (collisionResult.fractionAlongRay>collisionWithCylinders[ii].fractionAlongRay){collisionResult=collisionWithCylinders[ii]}
     }
 
-    console.log({
-        collisionWithCorners,
-        collisionWithCylinders
-    })
+    // console.log({
+    //     collisionWithCorners,
+    //     collisionWithCylinders
+    // });
 
     return collisionResult;
 }
