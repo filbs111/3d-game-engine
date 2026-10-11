@@ -155,7 +155,54 @@ function lineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad){
         return lineCylinderCollision(rayStart, rayEnd, corner, otherCorner, sphereRad);
     });
 
-    //TODO collision with flat part
+    //collision with flat part.
+    //if collides with near face then doesn't collide with anything else.
+    //similarly, if doesn't collide with near face and does collide with cylinders then doesn't collide with corners
+
+    var edges = [
+        vectorDifference(triangleCorners[0],triangleCorners[1]),
+        vectorDifference(triangleCorners[1],triangleCorners[2]),
+        vectorDifference(triangleCorners[2],triangleCorners[0])];
+
+    var surfNormal = crossProd(edges[0], edges[2]);
+    var edgeOutwardNormals = edges.map( edge => crossProd(edge, surfNormal));   //TODO check sign - outward or inward?
+    
+    var surfNormalLen = Math.sqrt(dotProd3(surfNormal,surfNormal));
+
+    var normalisedNormal = surfNormal.map(xx=>xx/surfNormalLen);
+
+    var rayStartInNormalDirection = dotProd3(normalisedNormal, rayStart);
+    var rayEndInNormalDirection = dotProd3(normalisedNormal, rayEnd);
+
+    var triangleInNormalDirection = dotProd3(normalisedNormal, triangleCorners[0]);
+
+    var sign = Math.sign(rayStartInNormalDirection - triangleInNormalDirection);
+
+    var relevanTriangleFaceInNormalDirection = triangleInNormalDirection + sign*sphereRad;
+
+    var triToRayStart = rayStartInNormalDirection - relevanTriangleFaceInNormalDirection;
+    var triToRayEnd = rayEndInNormalDirection - relevanTriangleFaceInNormalDirection;
+    //weight start and end position
+    var fractionAlongRay = triToRayStart / (triToRayStart - triToRayEnd);
+    var collisionPos = vectorSum( rayStart.map(xx=> xx*(1-fractionAlongRay)) , rayEnd.map(xx=> xx*fractionAlongRay));
+
+    //check collisionPos inside triangle using edgeOutwardNormals - if all same sign then goes through - either all +ve or all -ve
+    //this is a straightfoward intuitive test, but alternative might be to check "wrapping direction" of ray vs triangle edge. maybe can reuse more calculations for edge shared by 2 tris....
+    var edgeTestResult = 0;
+    for (var ii=0;ii<3;ii++){
+        var edgeInEdgeDirection = dotProd3(triangleCorners[ii], edgeOutwardNormals[ii]);    //this could be precomputed (store edge direction not as normalised?)
+        var collisionPointInEdgeDirection = dotProd3(collisionPos, edgeOutwardNormals[ii]);
+        var difference = edgeInEdgeDirection - collisionPointInEdgeDirection;
+        edgeTestResult += Math.sign(difference);
+    }
+
+    if (Math.abs(edgeTestResult) == 3){
+        return {
+            fractionAlongRay,
+            collisionPos
+        };
+    }
+
     var collisionResult = {fractionAlongRay:Number.MAX_VALUE};    //no collision
 
     for (var ii=0;ii<3;ii++){
