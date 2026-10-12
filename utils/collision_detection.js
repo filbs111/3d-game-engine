@@ -139,8 +139,44 @@ function lineCapsuleCollision(rayStart, rayEnd, capsuleStartSphereCentre, capsul
     return collisionResult;
 }
 
+function coarseLineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad){
+    //check whether bounding box collides with ray.
+    // can use in conjunction with BVH, can precalculate
+
+    var boundingBoxLimits = [0,1,2].map(ii => {
+        var valsForThisComponent = triangleCorners.map(cc => cc[ii]);
+        return [Math.min, Math.max].map(ff => ff.apply(null, valsForThisComponent));
+    });
+    
+    //could do something better here (ray vs box expanded by sphereRad), but simple alternative should do to discard ray vs most triangles
+    // just wrap the bounding box in a sphere, test infinte extended ray
+    // TODO check start, end if using a short ray, or perhaps for short rays just wrap whole ray in AABB so simple ray AABB vs triangle AABB test
+    var boxHalfDimensions = [0,1,2].map(ii=> (boundingBoxLimits[ii][1] - boundingBoxLimits[ii][0])/2);
+    var boxCentre = [0,1,2].map(ii=> (boundingBoxLimits[ii][1] + boundingBoxLimits[ii][0])/2);
+    var boundingSphereRadSq = boxHalfDimensions.reduce((sum, current) => sum+current*current, 0);
+    var totalRad = Math.sqrt(boundingSphereRadSq) + sphereRad;
+
+    //console.log({boundingBoxLimits, boxHalfDimensions, boxCentre, totalRad});
+
+    //what is closest approach of extended line to sphere?
+    var ray = vectorDifference(rayStart, rayEnd);
+    var toSphere = vectorDifference(rayStart, boxCentre);
+    var crossRayWithToSphere = crossProd(ray, toSphere);    //what if these are parallel? does this still work?
+    var crossAgain = crossProd(crossRayWithToSphere, ray);  //vector between sphere and point of closest approach of ray to sphere
+    var lenSqToNormalise = dotProd3(crossAgain, crossAgain);
+    if (lenSqToNormalise == 0){
+        return true;    //guess special case
+    }
+    var dotted = dotProd3(crossAgain, toSphere);
+    return dotted*dotted < lenSqToNormalise*totalRad*totalRad;
+}
 
 function lineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad){
+
+    if (!coarseLineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad)){
+        return {fractionAlongRay:Number.MAX_VALUE};    //no collision 
+    }
+
     //collision of ray with triangle bloated by a sphere, equivalent to spherecast with triangle.
     // intermediate results eg cross products likely reusable.
     // TODO more efficient version, use tests to compare functionality to this more obviously correct but inefficient version
