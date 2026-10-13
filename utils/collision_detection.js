@@ -3,12 +3,12 @@ function lineSphereCollision(rayStart, rayEnd, sphereCentre, sphereRad){
 
     var sphereRadSquared = sphereRad*sphereRad;
     var rayVec = vectorDifference(rayEnd, rayStart);
-    var rayLengthSquared = dotProd3(rayVec, rayVec);
+    var rayLengthSquared = dotProduct(rayVec, rayVec);
 
     var rayStartToSphereCentre = vectorDifference(sphereCentre, rayStart);
-    var rayCrossToSphere = crossProd(rayVec, rayStartToSphereCentre);   //TODO use distributive property to get from rayStart, rayEnd, sphereCentre without vector difference? faster?
+    var rayCrossToSphere = crossProduct(rayVec, rayStartToSphereCentre);   //TODO use distributive property to get from rayStart, rayEnd, sphereCentre without vector difference? faster?
 
-    var moveBackDistSq = sphereRadSquared - dotProd3(rayCrossToSphere,rayCrossToSphere)/rayLengthSquared;
+    var moveBackDistSq = sphereRadSquared - dotProduct(rayCrossToSphere,rayCrossToSphere)/rayLengthSquared;
 
     if (moveBackDistSq<=0){
         return noCollision;
@@ -16,7 +16,7 @@ function lineSphereCollision(rayStart, rayEnd, sphereCentre, sphereRad){
 
     var rayLength = Math.sqrt(rayLengthSquared);
 
-    var moveDistanceToLevelWithSphere = dotProd3(rayVec, rayStartToSphereCentre) / rayLength;
+    var moveDistanceToLevelWithSphere = dotProduct(rayVec, rayStartToSphereCentre) / rayLength;
 
     var moveDistanceToSphereSurf = moveDistanceToLevelWithSphere - Math.sqrt(moveBackDistSq);
 
@@ -54,15 +54,15 @@ function lineCylinderCollision(rayStart, rayEnd, capsuleStartSphereCentre, capsu
     
     var rayVec = vectorDifference(rayEnd, rayStart);
     var capsuleVec = vectorDifference(capsuleEndSphereCentre, capsuleStartSphereCentre);
-    var rayCrossLine = crossProd(rayVec, capsuleVec);
+    var rayCrossLine = crossProduct(rayVec, capsuleVec);
 
     //normalised direction to line at closest approach is this divided by the length of both lines
     //to get distance to closest approach, dot any vector from ray to line with this direction.
     var rayToLineVec = vectorDifference(rayStart, capsuleStartSphereCentre);
-    var dotted = dotProd3(rayCrossLine, rayToLineVec);
-    var capsuleVecLenSq = dotProd3(capsuleVec,capsuleVec);
+    var dotted = dotProduct(rayCrossLine, rayToLineVec);
+    var capsuleVecLenSq = dotProduct(capsuleVec,capsuleVec);
     //divide by lengths
-    var bothLengthsSquared = dotProd3(rayVec,rayVec)*capsuleVecLenSq;
+    var bothLengthsSquared = dotProduct(rayVec,rayVec)*capsuleVecLenSq;
     if (dotted/bothLengthsSquared > sphereRadSquared){
         return noCollision;
     }
@@ -78,11 +78,11 @@ function lineCylinderCollision(rayStart, rayEnd, capsuleStartSphereCentre, capsu
     var rayStartMinusLine = vectorDifference(rayStart, capsuleStartSphereCentre);
     var rayEndMinusLine = vectorDifference(rayEnd, capsuleStartSphereCentre);
 
-    var dotStart = dotProd3(rayStartMinusLine, capsuleVec);
+    var dotStart = dotProduct(rayStartMinusLine, capsuleVec);
     var toSubtractStart = capsuleVec.map(xx=> xx*dotStart/capsuleVecLenSq);
     var flattendStart = vectorDifference(rayStartMinusLine, toSubtractStart);
 
-    var dotEnd = dotProd3(rayEndMinusLine, capsuleVec);
+    var dotEnd = dotProduct(rayEndMinusLine, capsuleVec);
     var toSubtractEnd = capsuleVec.map(xx=> xx*dotEnd/capsuleVecLenSq);
     var flattendEnd = vectorDifference(rayEndMinusLine, toSubtractEnd);
 
@@ -96,10 +96,10 @@ function lineCylinderCollision(rayStart, rayEnd, capsuleStartSphereCentre, capsu
 
     var alongLineVec = rayVec.map(xx=>xx*lineCollisionHackResult.fractionAlongRay);
     
-    var howFarAlongLineFromRayStartToCollision = dotProd3(alongLineVec, capsuleVec)/capsuleVecLenSq;   //fraction of capsule lengths from ray start to ray collision
+    var howFarAlongLineFromRayStartToCollision = dotProduct(alongLineVec, capsuleVec)/capsuleVecLenSq;   //fraction of capsule lengths from ray start to ray collision
 
     var rayStartToLineStart = vectorDifference(capsuleStartSphereCentre, rayStart);
-    var howFarAlongLineFromRayStartToCapsuleStart = dotProd3(rayStartToLineStart, capsuleVec)/capsuleVecLenSq;  // Math.sqrt(capsuleVecLenSq * dotProd3(rayStartToLineStart,rayStartToLineStart));
+    var howFarAlongLineFromRayStartToCapsuleStart = dotProduct(rayStartToLineStart, capsuleVec)/capsuleVecLenSq;  // Math.sqrt(capsuleVecLenSq * dotProd3(rayStartToLineStart,rayStartToLineStart));
     var howFarAlongLine = howFarAlongLineFromRayStartToCollision - howFarAlongLineFromRayStartToCapsuleStart;
 
     // console.log({howFarAlongLine,howFarAlongLineFromRayStartToCapsuleStart,howFarAlongLineFromRayStartToCollision});
@@ -161,13 +161,13 @@ function coarseLineFatTriangleCollision(rayStart, rayEnd, triangleCorners, spher
     //what is closest approach of extended line to sphere?
     var ray = vectorDifference(rayStart, rayEnd);
     var toSphere = vectorDifference(rayStart, boxCentre);
-    var crossRayWithToSphere = crossProd(ray, toSphere);    //what if these are parallel? does this still work?
-    var crossAgain = crossProd(crossRayWithToSphere, ray);  //vector between sphere and point of closest approach of ray to sphere
-    var lenSqToNormalise = dotProd3(crossAgain, crossAgain);
+    var crossRayWithToSphere = crossProduct(ray, toSphere);    //what if these are parallel? does this still work?
+    var crossAgain = crossProduct(crossRayWithToSphere, ray);  //vector between sphere and point of closest approach of ray to sphere
+    var lenSqToNormalise = dotProduct(crossAgain, crossAgain);
     if (lenSqToNormalise == 0){
         return true;    //guess special case
     }
-    var dotted = dotProd3(crossAgain, toSphere);
+    var dotted = dotProduct(crossAgain, toSphere);
     return dotted*dotted < lenSqToNormalise*totalRad*totalRad;
 }
 
@@ -199,17 +199,17 @@ function lineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad){
         vectorDifference(triangleCorners[1],triangleCorners[2]),
         vectorDifference(triangleCorners[2],triangleCorners[0])];
 
-    var surfNormal = crossProd(edges[0], edges[2]);
-    var edgeOutwardNormals = edges.map( edge => crossProd(edge, surfNormal));   //TODO check sign - outward or inward?
+    var surfNormal = crossProduct(edges[0], edges[2]);
+    var edgeOutwardNormals = edges.map( edge => crossProduct(edge, surfNormal));   //TODO check sign - outward or inward?
     
-    var surfNormalLen = Math.sqrt(dotProd3(surfNormal,surfNormal));
+    var surfNormalLen = Math.sqrt(dotProduct(surfNormal,surfNormal));
 
     var normalisedNormal = surfNormal.map(xx=>xx/surfNormalLen);
 
-    var rayStartInNormalDirection = dotProd3(normalisedNormal, rayStart);
-    var rayEndInNormalDirection = dotProd3(normalisedNormal, rayEnd);
+    var rayStartInNormalDirection = dotProduct(normalisedNormal, rayStart);
+    var rayEndInNormalDirection = dotProduct(normalisedNormal, rayEnd);
 
-    var triangleInNormalDirection = dotProd3(normalisedNormal, triangleCorners[0]);
+    var triangleInNormalDirection = dotProduct(normalisedNormal, triangleCorners[0]);
 
     var toRayStartInNormalDirection = rayStartInNormalDirection - triangleInNormalDirection;
 
@@ -230,8 +230,8 @@ function lineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad){
         //this is a straightfoward intuitive test, but alternative might be to check "wrapping direction" of ray vs triangle edge. maybe can reuse more calculations for edge shared by 2 tris....
         var edgeTestResult = 0;
         for (var ii=0;ii<3;ii++){
-            var edgeInEdgeDirection = dotProd3(triangleCorners[ii], edgeOutwardNormals[ii]);    //this could be precomputed (store edge direction not as normalised?)
-            var collisionPointInEdgeDirection = dotProd3(collisionPos, edgeOutwardNormals[ii]);
+            var edgeInEdgeDirection = dotProduct(triangleCorners[ii], edgeOutwardNormals[ii]);    //this could be precomputed (store edge direction not as normalised?)
+            var collisionPointInEdgeDirection = dotProduct(collisionPos, edgeOutwardNormals[ii]);
             var difference = edgeInEdgeDirection - collisionPointInEdgeDirection;
             edgeTestResult += Math.sign(difference);
         }
@@ -258,6 +258,49 @@ function lineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad){
     //     collisionWithCorners,
     //     collisionWithCylinders
     // });
+
+    return collisionResult;
+}
+
+function rayBvhTriangleCollision(rayStart, rayEnd, bvh, bvhPosition, bvhScale, sphereRad){
+    //use 3D AABB generated using code from 3sphere project
+    //various options of increasing speed and complexity
+    // 1) test all triangles
+    // 2) single AABB check per triangle
+    // 3) use of heirarchy (check top level triangle etc). expect will be fast enough
+    // 4) test multiple rays together (3sphere project doesn't do this.)
+    // AABB checks can be ray vs AABB but ray vs bounding sphere likely OK.
+
+    if (!bvh.isLoaded){
+        return {fractionAlongRay:Number.MAX_VALUE};    //no collision
+    }
+
+    var rayStartRelative = vectorDifference(rayStart, bvhPosition).map(xx=>xx/bvhScale);
+    var rayEndRelative = vectorDifference(rayEnd, bvhPosition).map(xx=>xx/bvhScale);
+
+    sphereRad/=bvhScale;
+
+    var allTris = bvh.trisWithAABB;
+    var verts = bvh.verts;
+
+    var collisionResult = {fractionAlongRay:Number.MAX_VALUE, collisionPos:[0,0,0]};
+
+
+    for (var ii=0;ii<allTris.length;ii++){
+        var thisTri = allTris[ii];
+        var triangleCorners = thisTri.triangleIndices.map( idx => verts[idx]);
+        var thisCollisionResult = lineFatTriangleCollision(rayStartRelative, rayEndRelative, triangleCorners, sphereRad);
+        if (thisCollisionResult.fractionAlongRay < collisionResult.fractionAlongRay
+            && thisCollisionResult.fractionAlongRay>0){ //TODO move this test into lineFatTriangleCollision ?
+            collisionResult = thisCollisionResult;
+        }
+    }
+
+    var scaledCoords = collisionResult.collisionPos.map(xx=>xx*bvhScale);
+
+    collisionResult.collisionPos = vectorSum(scaledCoords, bvhPosition);
+
+    console.log(collisionResult);
 
     return collisionResult;
 }

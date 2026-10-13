@@ -58,7 +58,7 @@ function calculateProjectionMatrixForIntermediateView(screenWidth, screenHeight,
     var xyzDifference = [0, scaledCornerTop[1]-scaledCornerBottom[1], scaledCornerTop[2]-scaledCornerBottom[2]];
     var forwardDirection = [0, -xyzDifference[2], xyzDifference[1]];
 
-    var forwardMag = Math.sqrt(dotProd3(forwardDirection, forwardDirection));
+    var forwardMag = Math.sqrt(dotProduct(forwardDirection, forwardDirection));
     var normalisedForwardDirection = forwardDirection.map(xx=>xx/forwardMag);
 
     var upDirection = [0, xyzDifference[1], xyzDifference[2]];  
@@ -69,13 +69,13 @@ function calculateProjectionMatrixForIntermediateView(screenWidth, screenHeight,
 
 
     //check width (for fx of intermediate camera) calculated for both top and bottom directions matches
-    var widthCalculatedForTop = 1/ dotProd3(scaledCornerTop, normalisedForwardDirection);   //NOTE don't need to normalise forward direction for this. can just use unnormalised and mag here.
-    var widthCalculatedForBottom = 1/ dotProd3(scaledCornerBottom, normalisedForwardDirection);
+    var widthCalculatedForTop = 1/ dotProduct(scaledCornerTop, normalisedForwardDirection);   //NOTE don't need to normalise forward direction for this. can just use unnormalised and mag here.
+    var widthCalculatedForBottom = 1/ dotProduct(scaledCornerBottom, normalisedForwardDirection);
     var intermediateFx = widthCalculatedForTop;
 
     //expect height calculated to be different - from this can calculate fy and perspective shift of intermediate camera.
-    var heightCalculatedForTop = dotProd3(scaledCornerTop, upDirection)/dotProd3(scaledCornerTop, forwardDirection);   //NOTE could reuse this for above calc
-    var heightCalculatedForBottom = dotProd3(scaledCornerBottom, upDirection)/dotProd3(scaledCornerBottom, forwardDirection); //""
+    var heightCalculatedForTop = dotProduct(scaledCornerTop, upDirection)/dotProduct(scaledCornerTop, forwardDirection);   //NOTE could reuse this for above calc
+    var heightCalculatedForBottom = dotProduct(scaledCornerBottom, upDirection)/dotProduct(scaledCornerBottom, forwardDirection); //""
     var intermediateFy = 0.5*(heightCalculatedForTop -heightCalculatedForBottom);
     var intermediatePerspShift = heightCalculatedForTop + heightCalculatedForBottom;    //*0.5?
 
@@ -341,13 +341,13 @@ function calculateProjMatFromCorners2(c1,c2,c3,c4, near, far){
     // cross top and bottom normals to find vector pointing to side, cross sides to find vector pointing up/down. cross the side and up/down vecs to get 
     // a direction normal to rhombus cross sections (constant w).
 
-    var upDownDirections = [crossProd(c1,c2), crossProd(c3,c4)];
-    var sideDirections = [crossProd(c1,c3), crossProd(c2,c4)];
-    var upDownCross = crossProd(upDownDirections[0], upDownDirections[1]);
-    var sideCross = crossProd(sideDirections[0], sideDirections[1]);
-    var totalCross = crossProd(upDownCross, sideCross);
+    var upDownDirections = [crossProduct(c1,c2), crossProduct(c3,c4)];
+    var sideDirections = [crossProduct(c1,c3), crossProduct(c2,c4)];
+    var upDownCross = crossProduct(upDownDirections[0], upDownDirections[1]);
+    var sideCross = crossProduct(sideDirections[0], sideDirections[1]);
+    var totalCross = crossProduct(upDownCross, sideCross);
 
-    var totalCrossSq = dotProd3(totalCross,totalCross);
+    var totalCrossSq = dotProduct(totalCross,totalCross);
     var totalCrossMag = Math.sqrt(totalCrossSq);
     var totalCrossNormalised = totalCross.map(x=>x/totalCrossMag);
 
@@ -363,7 +363,7 @@ function calculateProjMatFromCorners2(c1,c2,c3,c4, near, far){
     
     var zPrimeEquals1Directions = cornerDirections.map(x => 
     {
-        var dot = dotProd3(x, totalCrossNormalised);
+        var dot = dotProduct(x, totalCrossNormalised);
         return x.map(xx=>xx/dot);
     });
     
@@ -428,12 +428,4 @@ function myMultiplyVecByMatrix(someMat4, someVec4){
         }
     }
     return output;
-}
-
-function crossProd(vec1, vec2){
-    return [
-        vec1[1]*vec2[2] - vec1[2]*vec2[1],
-        vec1[2]*vec2[0] - vec1[0]*vec2[2],
-        vec1[0]*vec2[1] - vec1[1]*vec2[0],
-    ];
 }

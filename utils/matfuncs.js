@@ -1,5 +1,5 @@
 
-function dotProd3(vec1,vec2){
+function dotProduct(vec1,vec2){
     return vec1[0]*vec2[0] + vec1[1]*vec2[1] + vec1[2]*vec2[2];
 }
 
@@ -7,7 +7,7 @@ function dotProd2(vec1,vec2){
     return vec1[0]*vec2[0] + vec1[1]*vec2[1];
 }
 
-function crossProd(vec1, vec2){
+function crossProduct(vec1, vec2){
     return [
         vec1[1]*vec2[2] - vec1[2]*vec2[1],
         vec1[2]*vec2[0] - vec1[0]*vec2[2],

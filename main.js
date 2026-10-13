@@ -65,6 +65,13 @@ var bodgeTriangle = [
 
 var lastGunRayHitPositions = [[0,0,0]];
 
+
+
+var cityBuffers={};
+var cityBvh={};
+var cityPosition=[-100,-7.5,0];
+var cityScale=20;
+
 var torsoBuffers={};
 var rightThighBuffers={};
 var leftThighBuffers={};
@@ -273,6 +280,10 @@ function init(){
     loadBuffersFromObj5File(lucyStatue.buffers, "./data/lucy-withvertcolor.obj5", loadBufferData, 6);
     loadBuffersFromObj2Or3File(sphereStatue.buffers, "./data/miscobjs/smooth-sphere1.obj2", loadBufferData, 3);
 
+    loadBuffersFromObj5File(cityBuffers, "./data/miscobjs/golden-city.obj5", (bufferObj, sourceData) =>{
+		loadBufferData(bufferObj, sourceData);
+		createBvhFrom3dObjectData(sourceData, cityBvh);
+	}, 3);
 
     loadBuffersFromObj5File(torsoBuffers, "./data/miscobjs/nina-ttt-bust.obj5", loadBufferData, 3);
     loadBuffersFromObj5File(rightThighBuffers, "./data/miscobjs/nina-ttt-right-thigh.obj5", loadBufferData, 3);
@@ -661,10 +672,13 @@ function iterateMechanics(timeChange){
 
         lastGunRayHitPositions = [];
         var startTime = performance.now();
-        var numberOfTimes = 100;
+        var numberOfTimes = 5;
         for (var ii=0;ii<numberOfTimes;ii++){
-            var adjustedRayEnd = rayEndPos.map(xx=> xx+10*(Math.random()-0.5));
-            var collisionResult = lineFatTriangleCollision(gunPos, adjustedRayEnd, bodgeTriangle, 1);
+            var adjustedRayEnd = rayEndPos.map(xx=> xx+5*(Math.random()-0.5));
+            //var collisionResult = lineFatTriangleCollision(gunPos, adjustedRayEnd, bodgeTriangle, 1);
+
+            var collisionResult = rayBvhTriangleCollision(gunPos, adjustedRayEnd, cityBvh, cityPosition, cityScale, 0.05);   //NOTE sphere rad small because testing with small balls
+
             if (collisionResult.fractionAlongRay<=1){
                 lastGunRayHitPositions.push(collisionResult.collisionPos);
             }
@@ -1582,6 +1596,16 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
         mat4.scale(mMatrix, info.scale);
         drawObjectFromBuffers(cubeBuffers, activeProg);
     });
+
+    if (cityBuffers.isLoaded){
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.25,0.25,0.25]);
+
+        //city
+        setupDrawMatrixForObjectAtPosition(cityPosition);  
+        mat4.scale(mMatrix,[1,1,1].map(xx=>xx*cityScale));  //buildings. TODO what scale?
+        drawObjectFromBuffers(cityBuffers, activeProg);
+    }
+
     //draw external camera (will be invisible if external camera checked because cull backfaces)
     mat4.set(staticCamera, mMatrix);
     gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.8,0.8,0.8]);
