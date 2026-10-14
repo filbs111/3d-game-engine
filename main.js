@@ -613,6 +613,15 @@ function iterateMechanics(timeChange){
     playerPos[2]+=playerVel[2]*timeChange;
     playerPos[0]+=playerVel[0]*timeChange;
 
+    //simple height- shoot vertical ray at this position.
+    var verticalCollision = rayBvhTriangleCollisionTopLevel([playerPos[0], 1000, playerPos[2]], [playerPos[0], -1000, playerPos[2]], cityBvh, cityPosition, cityScale, 1);
+    if (verticalCollision.fractionAlongRay<1){
+        playerPos = verticalCollision.collisionPos;
+    }else{
+        playerPos[1]=0;
+    }
+
+
     var amountToMove = new Array(2);
     var fractionToKeep = 0.9;
     for (var cc=0;cc<2;cc++){
@@ -1544,13 +1553,12 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
     // }
 
     //draw ground
-    // TODO draw ground partially transparent.
-    if (!mirrorInGroundPlane){
-        setupDrawMatrixForObjectAtPosition(groundPos);
-        var mapScaleFactor = 0.5* 100/91; //100m scale on image is 91px, and cube is 2 units wide
-        mat4.scale(mMatrix,[mapScaleFactor*1655,9.99,mapScaleFactor*1200]);   //9.99 so the blocker mirror plane is drawn in front! 
-        drawObjectFromBuffers(cubeBuffers, activeProg);
-    }
+    // if (!mirrorInGroundPlane){
+    //     setupDrawMatrixForObjectAtPosition(groundPos);
+    //     var mapScaleFactor = 0.5* 100/91; //100m scale on image is 91px, and cube is 2 units wide
+    //     mat4.scale(mMatrix,[mapScaleFactor*1655,9.99,mapScaleFactor*1200]);   //9.99 so the blocker mirror plane is drawn in front! 
+    //     drawObjectFromBuffers(cubeBuffers, activeProg);
+    // }
 
 
     var activeProg = shaderPrograms.simpleCubemap;
