@@ -622,7 +622,10 @@ function iterateMechanics(timeChange){
         playerOnFloorHeight = 0;
     }
 
-    playerPos[1] = Math.max( playerPos[1]-0.2 , playerOnFloorHeight);   //limit fall speed
+    playerVel[1] -= timeChange*timeChange*9.81/ 1_000_000;
+    newPlayerY= Math.max( playerPos[1]+playerVel[1] , playerOnFloorHeight);
+    playerVel[1] = newPlayerY - playerPos[1];
+    playerPos[1] = newPlayerY;
 
 
     var amountToMove = new Array(2);
