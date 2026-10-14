@@ -143,20 +143,22 @@ function coarseLineFatTriangleCollision(rayStart, rayEnd, triangleCorners, spher
     //check whether bounding box collides with ray.
     // can use in conjunction with BVH, can precalculate
 
-    var boundingBoxLimits = [0,1,2].map(ii => {
-        var valsForThisComponent = triangleCorners.map(cc => cc[ii]);
-        return [Math.min, Math.max].map(ff => ff.apply(null, valsForThisComponent));
-    });
-    
-    //could do something better here (ray vs box expanded by sphereRad), but simple alternative should do to discard ray vs most triangles
+    var aabb = [
+        [0,1,2].map( ii => Math.min.apply(null, triangleCorners.map(tt=>tt[ii])) ),
+        [0,1,2].map( ii => Math.max.apply(null, triangleCorners.map(tt=>tt[ii])) )
+    ];
+
+    return coarseRayAabbCollision(rayStart, rayEnd, aabb, sphereRad);
+}
+
+function coarseRayAabbCollision(rayStart, rayEnd, aabb, sphereRad){
+     //could do something better here (ray vs box expanded by sphereRad), but simple alternative should do to discard ray vs most triangles
     // just wrap the bounding box in a sphere, test infinte extended ray
     // TODO check start, end if using a short ray, or perhaps for short rays just wrap whole ray in AABB so simple ray AABB vs triangle AABB test
-    var boxHalfDimensions = [0,1,2].map(ii=> (boundingBoxLimits[ii][1] - boundingBoxLimits[ii][0])/2);
-    var boxCentre = [0,1,2].map(ii=> (boundingBoxLimits[ii][1] + boundingBoxLimits[ii][0])/2);
+    var boxHalfDimensions = [0,1,2].map(ii=> (aabb[1][ii] - aabb[0][ii])/2);
+    var boxCentre = [0,1,2].map(ii=> (aabb[1][ii] + aabb[0][ii])/2);
     var boundingSphereRadSq = boxHalfDimensions.reduce((sum, current) => sum+current*current, 0);
     var totalRad = Math.sqrt(boundingSphereRadSq) + sphereRad;
-
-    //console.log({boundingBoxLimits, boxHalfDimensions, boxCentre, totalRad});
 
     //what is closest approach of extended line to sphere?
     var ray = vectorDifference(rayStart, rayEnd);
@@ -171,9 +173,10 @@ function coarseLineFatTriangleCollision(rayStart, rayEnd, triangleCorners, spher
     return dotted*dotted < lenSqToNormalise*totalRad*totalRad;
 }
 
-function lineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad){
 
-    if (!coarseLineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad)){
+function lineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad, doCoarseCheck = true){
+
+    if (doCoarseCheck && !coarseLineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad)){
         return {fractionAlongRay:Number.MAX_VALUE};    //no collision 
     }
 
@@ -262,7 +265,7 @@ function lineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad){
     return collisionResult;
 }
 
-function rayBvhTriangleCollision(rayStart, rayEnd, bvh, bvhPosition, bvhScale, sphereRad){
+function rayBvhTriangleCollisionBasic(rayStart, rayEnd, bvh, bvhPosition, bvhScale, sphereRad){
     //use 3D AABB generated using code from 3sphere project
     //various options of increasing speed and complexity
     // 1) test all triangles
@@ -301,6 +304,55 @@ function rayBvhTriangleCollision(rayStart, rayEnd, bvh, bvhPosition, bvhScale, s
     collisionResult.collisionPos = vectorSum(scaledCoords, bvhPosition);
 
     console.log(collisionResult);
+
+    return collisionResult;
+}
+
+function rayBvhTriangleCollisionRecursive(rayStart, rayEnd, bvhTris, verts, sphereRad){
+
+    //do ray check vs top level AABBs
+    var collisionResult = {fractionAlongRay:Number.MAX_VALUE, collisionPos:[0,0,0]};    //no collision
+
+    //check AABB
+    if (!coarseRayAabbCollision(rayStart, rayEnd, bvhTris.AABB, sphereRad)){
+        //console.log("skip");
+        return collisionResult;
+    }
+    //console.log("continue");
+
+    if (bvhTris.group){
+        for (var ii=0;ii<bvhTris.group.length;ii++){
+            var subBvh = bvhTris.group[ii];
+            var resultForSubBvh = rayBvhTriangleCollisionRecursive(rayStart, rayEnd, subBvh, verts, sphereRad);
+            if (resultForSubBvh.fractionAlongRay<collisionResult.fractionAlongRay && resultForSubBvh.fractionAlongRay>0){
+                collisionResult = resultForSubBvh;
+            }
+        }
+        return collisionResult;
+    }
+
+    //leaf node. do standard check. don't do coarse check because checked AABB at top of this method already#
+    var triangleCorners = bvhTris.triangleIndices.map( idx => verts[idx]);
+    var resultForLeafNode = lineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad, false);
+    return resultForLeafNode;
+}
+
+function rayBvhTriangleCollisionTopLevel(rayStart, rayEnd, bvh, bvhPosition, bvhScale, sphereRad){
+    if (!bvh.isLoaded){
+        return {fractionAlongRay:Number.MAX_VALUE};    //no collision
+    }
+
+    var rayStartRelative = vectorDifference(rayStart, bvhPosition).map(xx=>xx/bvhScale);
+    var rayEndRelative = vectorDifference(rayEnd, bvhPosition).map(xx=>xx/bvhScale);
+    sphereRad/=bvhScale;
+
+    var collisionResult = rayBvhTriangleCollisionRecursive(rayStartRelative, rayEndRelative, bvh.tris, bvh.verts, sphereRad);
+
+    var scaledCoords = collisionResult.collisionPos.map(xx=>xx*bvhScale);
+
+    collisionResult.collisionPos = vectorSum(scaledCoords, bvhPosition);
+
+    //console.log(collisionResult);
 
     return collisionResult;
 }

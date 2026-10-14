@@ -677,8 +677,8 @@ function iterateMechanics(timeChange){
             var adjustedRayEnd = rayEndPos.map(xx=> xx+5*(Math.random()-0.5));
             //var collisionResult = lineFatTriangleCollision(gunPos, adjustedRayEnd, bodgeTriangle, 1);
 
-            var collisionResult = rayBvhTriangleCollision(gunPos, adjustedRayEnd, cityBvh, cityPosition, cityScale, 0.05);   //NOTE sphere rad small because testing with small balls
-
+            var collisionResult = rayBvhTriangleCollisionTopLevel(gunPos, adjustedRayEnd, cityBvh, cityPosition, cityScale, 0.05);   //NOTE sphere rad small because testing with small balls
+            
             if (collisionResult.fractionAlongRay<=1){
                 lastGunRayHitPositions.push(collisionResult.collisionPos);
             }
