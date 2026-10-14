@@ -614,7 +614,7 @@ function iterateMechanics(timeChange){
     playerPos[0]+=playerVel[0]*timeChange;
 
     //simple height- shoot vertical ray at this position.
-    var verticalCollision = rayBvhTriangleCollisionTopLevel([playerPos[0], 1000, playerPos[2]], [playerPos[0], -1000, playerPos[2]], cityBvh, cityPosition, cityScale, 1);
+    var verticalCollision = rayBvhTriangleCollisionTopLevel([playerPos[0], playerPos[1]+1, playerPos[2]], [playerPos[0], -1000, playerPos[2]], cityBvh, cityPosition, cityScale, 1);
     if (verticalCollision.fractionAlongRay<1){
         playerPos = verticalCollision.collisionPos;
     }else{
