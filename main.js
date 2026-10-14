@@ -616,10 +616,13 @@ function iterateMechanics(timeChange){
     //simple height- shoot vertical ray at this position.
     var verticalCollision = rayBvhTriangleCollisionTopLevel([playerPos[0], playerPos[1]+1, playerPos[2]], [playerPos[0], -1000, playerPos[2]], cityBvh, cityPosition, cityScale, 1);
     if (verticalCollision.fractionAlongRay<1){
-        playerPos = verticalCollision.collisionPos;
+        playerOnFloorHeight = verticalCollision.collisionPos[1];
+        //playerPos = verticalCollision.collisionPos;
     }else{
-        playerPos[1]=0;
+        playerOnFloorHeight = 0;
     }
+
+    playerPos[1] = Math.max( playerPos[1]-0.2 , playerOnFloorHeight);   //limit fall speed
 
 
     var amountToMove = new Array(2);
