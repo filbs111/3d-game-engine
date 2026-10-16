@@ -147,7 +147,7 @@ var carInfo3 = {    //mechanum
 }
 
 
-var wheelColor = [0.001,0.001,0.001];
+var wheelColor = [1,1,1].map(x=>x*0.002);
 
 
 

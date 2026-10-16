@@ -9,6 +9,8 @@ uniform mat4 uPMatrix;
 uniform vec3 uFlatColor;
 out vec3 vLightTimesColor;
 out vec3 vReflectedVec;  //don't need last component
+out vec3 vNormal;
+
 
 void main(void) {
 
@@ -19,6 +21,8 @@ void main(void) {
     //NOTE this is wierd because model matrix includes scale!
     // NOTE normalizing vector maybe is wrong for non-uniformly scaled objects. TODO fix, or just use unscaled objects.
     vec4 transformedNormal = normalize(uMMatrix * vec4(aVertexNormal, 0.0));
+
+    vNormal = transformedNormal.xyz;
 
     //diffuse component
     float light = 0.5+0.5*dot(transformedNormal, vec4(0.,1.,0.,0.));
@@ -31,5 +35,5 @@ void main(void) {
 
     vReflectedVec = eyeToPoint - 2.*transformedNormal.xyz*dot(transformedNormal.xyz, eyeToPoint);
 
-    vReflectedVec.z = -vReflectedVec.z; //?? likely to be consistent with cube background happens to be
+    //vReflectedVec.z = -vReflectedVec.z; //?? likely to be consistent with cube background happens to be
 }
