@@ -492,6 +492,9 @@ var camParams = {
 
 var lastFrameTime = null;
 var lastFixedTimestepUpdateTime = 0;
+var simulatedTimeTarget = 0;
+var numPhysUpdates = 0;
+
 var playerPos=[0,0,5];
 var playerPosOld=[0,0,5];
 var playerEyePosFromNeck=[0,0.18,-0.15]; //18cm above and ahead of neck, so 1.68m above ground, 15cm forwards
@@ -509,7 +512,6 @@ var playerElevationOld=0;
 var playerElevationInterp=0;
 
 var runCycleAng = 0;
-var lastFrameTime = 0;
 
 var boxPos=[0,0.1,0];   //move up a bit to sit above mirror plane
 var groundPos=[0,-11,0];
@@ -1142,24 +1144,28 @@ function drawScene(frameTime){
 
     framerateCalculator.update(frameTime);
     
+    var elapsedTime;
+
     if (lastFrameTime){
         var timeChange = frameTime-lastFrameTime;
 
         //prevent large time passing when switch back to tab
-        timeChange = Math.min(timeChange, 100);
+        elapsedTime = Math.min(timeChange, 100);
+
+        simulatedTimeTarget += elapsedTime;
 
         var timeChangeForTimestep=10;   // 100FPS mechanics. TODO interpolate displayed motion
         //fixed timestep mechanics. TODO interpolation
-        while (lastFixedTimestepUpdateTime<frameTime){
+        while (lastFixedTimestepUpdateTime<simulatedTimeTarget){
+            numPhysUpdates++;
             lastFixedTimestepUpdateTime+=timeChangeForTimestep;
             iterateMechanics(timeChangeForTimestep);
         }        
     }
-    var elapsedTime = frameTime - lastFrameTime;
     lastFrameTime=frameTime;
 
 
-    var interpolationFactor = (lastFixedTimestepUpdateTime-frameTime)/timeChangeForTimestep;    // from 0 to 1. shift back by 1 physics so 
+    var interpolationFactor = (lastFixedTimestepUpdateTime-simulatedTimeTarget)/timeChangeForTimestep;    // from 0 to 1. shift back by 1 physics so 
                                                                                     //0 means time to display physics time minus 1 timestep - should display objects with "old" poses before latest physics iteration
                                                                                     // 1 means time to display is latest update - should display objects with "new" pose from latest physics iteration.
                                                                                     // intermediate value mean interpolate between old and new poses (linear blending might be fine unless angular step large.)
