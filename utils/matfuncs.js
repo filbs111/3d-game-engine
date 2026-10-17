@@ -35,3 +35,13 @@ function vectorDifference(vec1, vec2){
         vec1[2] - vec2[2],
     ];
 }
+
+function multiply_quaternions(b,a){	//note switched input order for consistency with matrix multiplication
+	var prod=[];
+	prod[0]=a[0]*b[0]-(a[1]*b[1]+a[2]*b[2]+a[3]*b[3]);       //s1s2 - v1.v2
+    //vector part of product= s1v2+s2v1+s3v3 +v1 x v2
+	prod[1]=a[0]*b[1]+b[0]*a[1]+ a[2]*b[3]-a[3]*b[2];
+	prod[2]=a[0]*b[2]+b[0]*a[2]+ a[3]*b[1]-a[1]*b[3];
+	prod[3]=a[0]*b[3]+b[0]*a[3]+ a[1]*b[2]-a[2]*b[1];
+	return prod;
+}

@@ -146,6 +146,18 @@ var carInfo3 = {    //mechanum
     wheelTurnRotate:0
 }
 
+var carInfo4 = {    //for testing 6dof movement, wheels/suspension that sense ground.
+                    // then add slip stuff, engine, body collision etc...
+    pos:[0,0,0],
+    vel:[0,0,0],
+    quat:[0,0,0,1], //orientation
+    angVel:[0,0,0], //in frame of vehicle or world??
+    //TODO mass, angular momentum instead of angular vel, moment of inertia, wheel positions etc.
+
+    matrix: mat4.create()   //used for display (converted from pos, quat)
+}
+var testPointPositions = [];
+
 
 var wheelColor = [1,1,1].map(x=>x*0.002);
 
@@ -843,6 +855,8 @@ function iterateMechanics(timeChange){
     processCar2Mechanics(timeChange, leftRight, forwardBack, guiParams.carMode == "car2");
 
     processMechanumCarMechanics(timeChange, leftRight, forwardBack, mechanumTurn, guiParams.carMode == "mecanum");
+
+    processCar4Mechanics();
 }
 
 var car2steeringVel = 0;
@@ -1136,6 +1150,100 @@ function processMechanumCarMechanics(timeChange, leftRight, forwardBack, mechanu
 
     carInfo3.wheelForwardRotate += velInCarFrame[1]*timeChangeSeconds;
     carInfo3.wheelSideRotate -= velInCarFrame[0]*timeChangeSeconds;
+}
+
+
+function processCar4Mechanics(){
+    //carInfo4
+
+    //controls to move and control car. initial version - immediate movement and rotation. (no momentum)
+    //use quaternion for orientation
+    // conversion from quaternion to draw matrix
+
+    // ability to move car forwards/backwards
+    // conversion to car up/side vectors etc to draw test points showing car axes, wheel position
+    // use raycast to detect points under wheels
+    // linear momentum
+    // angular momentum simple isotropic mass distribution version
+    // apply torques from wheel/suspension
+    // ability to turn gravity on/off
+    // angular momentum, using moment of inertia, check behavious seems right with no gravity
+    // applying friction force due to movement of wheel contact point.
+    // rotating wheels, slip angle
+    // steered wheels
+    // brakes
+    // acceleration through wheels
+    // finding normal direction/actual wheel contact point (point on the sphere) - though small sphere cast probably works OK (roughly on ground)
+
+    // if (guiParams.carMode != "car4"){
+    //     return;
+    // }
+
+    var turnInput = keyThing.leftKey() - keyThing.rightKey();
+    var elevationInput = keyThing.upKey() - keyThing.downKey();
+
+    //TODO lib to create quaternion..
+    var turnAmount = turnInput*.004;
+    var elevAmount = elevationInput*.004;
+
+    //var turnQuat = [Math.cos(turnAmount),Math.sin(turnAmount),0,0];    //roll
+    var turnQuat = [Math.cos(turnAmount),0,Math.sin(turnAmount),0];
+    var elevQuat  = [Math.cos(elevAmount),0,0,-Math.sin(elevAmount)]; 
+        //maybe quats from 3sphere project have cos(theta) as 0th component, glmatrix has as 3rd, but seems to work ok
+
+    carInfo4.quat = multiply_quaternions(carInfo4.quat, turnQuat);  //TODO check order - might affect whether rotating in frame of rotated object or world
+    carInfo4.quat = multiply_quaternions(carInfo4.quat, elevQuat); 
+
+    //var adjustedQuat = [carInfo4.quat[1],carInfo4.quat[2],carInfo4.quat[3],carInfo4.quat[0]];
+    var adjustedQuat = carInfo4.quat;
+
+
+    var turnMat = mat4.create();
+    quat4.toMat3(adjustedQuat, turnMat);
+
+    //create matrix for displaying object - NOTE might wish to calc this when drawing, or even just pass quat and pos to shader.
+    //TODO get a matrix lib that can find docs for! don't just guess because takes ages.
+    //copy 3x3 part
+    for (var aa=0;aa<3;aa++){
+        for (var bb=0;bb<3;bb++){
+            carInfo4.matrix[aa*4+bb] = turnMat[aa*3+bb];
+        }
+    }
+
+    //set position part. just move back a bit
+    carInfo4.matrix[14]=3;
+
+    carInfo4.matrix[15]=1;  //IIRC this is standard
+
+
+    //some test point
+    testPointPositions = [];
+    var carPos = carInfo4.matrix.slice(12,15);
+    var sideDirection = carInfo4.matrix.slice(0,3);
+    var upDirection = carInfo4.matrix.slice(4,7);
+    var backDirection = carInfo4.matrix.slice(8,11);
+    testPointPositions.push(vectorSum(sideDirection, carPos));  //side
+    testPointPositions.push(vectorSum(backDirection.map(x=>x*-2.5), carPos));  //front
+    testPointPositions.push(vectorSum(upDirection, carPos));  //up
+
+
+    var frontWheelPos = vectorSum( vectorSum(backDirection.map(x=>x*-1.3), sideDirection), carPos);
+    var rearWheelPos = vectorSum( vectorSum(backDirection.map(x=>x*1.35), sideDirection), carPos);
+
+    var sphereCastLength = 2;
+    var sphereCastSphereRad = 0.1;
+    var belowFrontWheel = vectorSum( frontWheelPos, upDirection.map(x=>x*-sphereCastLength));
+    var frontWheelCollision = rayBvhTriangleCollisionTopLevel(frontWheelPos, belowFrontWheel, cityBvh, cityPosition, cityScale, sphereCastSphereRad);
+    
+    testPointPositions.push(frontWheelPos);
+    testPointPositions.push(belowFrontWheel);
+    if (frontWheelCollision.fractionAlongRay<1){
+        testPointPositions.push(frontWheelCollision.collisionPos);
+    }
+
+    testPointPositions.push(rearWheelPos);
+
+    
 }
 
 
@@ -1858,9 +1966,9 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
     // mat4.scale(mMatrix, carScale.map(xx=>1/xx));
     // mat4.translate(mMatrix,boxShift.map(x=>-x));
 
-    var wheelScale = [1,1,1].map(x=>x*0.56);    //coincidentally same as vehicle scale?
+    var wheelScale = [1,1,1].map(x=>x*0.54);
 
-    mat4.scale(mMatrix,[1,1,1].map(x=>x*0.56));  //guess correct size - default seems far too big
+    mat4.scale(mMatrix,[1,1,1].map(x=>x*0.54));  //guess correct size - default seems far too big
     if (listerBuffers.isLoaded){
         drawObjectFromBuffers(listerBuffers, activeProg);
 
@@ -1873,7 +1981,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
             drawWheels(wheelScale, activeProg, guiParams.car.drawWheelMarkers, -carInfo.steeringAngle, 0, 0);
         }
 
-        mat4.scale(mMatrix,[1,1,1].map(x=>x/0.56)); //undo scale
+        mat4.scale(mMatrix,[1,1,1].map(x=>x/0.54)); //undo scale
         //draw a black rect as temp shadow
         mat4.translate(mMatrix, [0,-0.3,-1.6+0.12]);
         mat4.scale(mMatrix,[1.05,0.005,2.12]);
@@ -1971,6 +2079,23 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
         drawObjectFromBuffers(cubeBuffers, activeProg);
     }
 
+    //car4
+    if (listerBuffers.isLoaded){
+
+        activeProg = shaderPrograms.envmap;
+        gl.useProgram(activeProg);
+        enableDisableAttributes(activeProg);
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.001,0.001,0.001]);
+        
+        mat4.set(carInfo4.matrix, mMatrix);
+        //move fprward a bit in frame of car because centre of car mesh is towards back
+        mat4.translate(mMatrix, [0,0,1.5]);
+
+        mat4.scale(mMatrix,[1,1,1].map(x=>x*0.56));  //guess correct size - default seems far too big
+        drawObjectFromBuffers(listerBuffers, activeProg);
+    }
+
+
 
 
     //draw cube
@@ -2021,6 +2146,14 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
             }
         }
 
+        //test points relative to car
+        for (var ii=0;ii<testPointPositions.length;ii++){
+            var testPointPosition = testPointPositions[ii];
+            gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.75,0,0]);
+            setupDrawMatrixForObjectAtPosition(testPointPosition);
+            mat4.scale(mMatrix,[1,1,1].map(xx=>xx*0.1));
+            drawObjectFromBuffers(sphereStatue.buffers, activeProg);
+        }
     }
 
     if (lucyStatue.buffers.isLoaded){
