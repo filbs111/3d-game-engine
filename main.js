@@ -867,7 +867,7 @@ function iterateMechanics(timeChange){
      //fourth car
     mat4.set(carCamera4, carCamera4Old);
     mat4.set(carInfo4.matrix, carCamera4);
-    mat4.rotateY(carCamera4, Math.PI/4);   //turn a bit to inspect wheels
+    mat4.rotateY(carCamera4, Math.PI/6);   //turn a bit to inspect wheels
     mat4.translate(carCamera4, [0,2,4]);   //above and behind car
 
     processCar2Mechanics(timeChange, leftRight, forwardBack, guiParams.carMode == "car2");
@@ -1196,25 +1196,25 @@ function processCar4Mechanics(){
     // acceleration through wheels
     // finding normal direction/actual wheel contact point (point on the sphere) - though small sphere cast probably works OK (roughly on ground)
 
-    if (guiParams.carMode == "car4"){
-        var turnInput = keyThing.leftKey() - keyThing.rightKey();
-        var elevationInput = keyThing.upKey() - keyThing.downKey();
+    // if (guiParams.carMode == "car4"){
+    //     var turnInput = keyThing.leftKey() - keyThing.rightKey();
+    //     var elevationInput = keyThing.upKey() - keyThing.downKey();
 
-        //TODO lib to create quaternion..
-        var turnAmount = turnInput*.004;
-        var elevAmount = elevationInput*.004;
+    //     //TODO lib to create quaternion..
+    //     var turnAmount = turnInput*.004;
+    //     var elevAmount = elevationInput*.004;
 
-        //var turnQuat = [Math.cos(turnAmount),Math.sin(turnAmount),0,0];    //roll
-        var turnQuat = [Math.cos(turnAmount),0,Math.sin(turnAmount),0];
-        var elevQuat  = [Math.cos(elevAmount),0,0,-Math.sin(elevAmount)]; 
-            //maybe quats from 3sphere project have cos(theta) as 0th component, glmatrix has as 3rd, but seems to work ok
+    //     //var turnQuat = [Math.cos(turnAmount),Math.sin(turnAmount),0,0];    //roll
+    //     var turnQuat = [Math.cos(turnAmount),0,Math.sin(turnAmount),0];
+    //     var elevQuat  = [Math.cos(elevAmount),0,0,-Math.sin(elevAmount)]; 
+    //         //maybe quats from 3sphere project have cos(theta) as 0th component, glmatrix has as 3rd, but seems to work ok
 
-        //var turnQuat = [0,Math.sin(turnAmount),0, Math.cos(turnAmount)];
-        //var elevQuat  = [0,0,-Math.sin(elevAmount), Math.cos(elevAmount)]; 
+    //     //var turnQuat = [0,Math.sin(turnAmount),0, Math.cos(turnAmount)];
+    //     //var elevQuat  = [0,0,-Math.sin(elevAmount), Math.cos(elevAmount)]; 
 
-        carInfo4.quat = multiply_quaternions(carInfo4.quat, turnQuat);  //TODO check order - might affect whether rotating in frame of rotated object or world
-        carInfo4.quat = multiply_quaternions(carInfo4.quat, elevQuat);
-    }
+    //     carInfo4.quat = multiply_quaternions(carInfo4.quat, turnQuat);  //TODO check order - might affect whether rotating in frame of rotated object or world
+    //     carInfo4.quat = multiply_quaternions(carInfo4.quat, elevQuat);
+    // }
 
     //var adjustedQuat = [carInfo4.quat[1],carInfo4.quat[2],carInfo4.quat[3],carInfo4.quat[0]];
     var adjustedQuat = carInfo4.quat;
@@ -1252,7 +1252,7 @@ function processCar4Mechanics(){
     
 
     var sphereCastLength = 1.4;
-    var sphereCastSphereRad = 0.1;
+    var sphereCastSphereRad = 0.2;
 
     var newWheelExtensions = [];
 
@@ -1277,8 +1277,8 @@ function processCar4Mechanics(){
     //apply forces, torques given wheel extensions (spring force), change in wheel extension (damper force)
     var wheelExtensionChanges = carInfo4.wheelExtensions.map( (xx,ii) => newWheelExtensions[ii]-xx);
 
-    var springConstant = -5;
-    var damperConstant = 50;
+    var springConstant = -6;
+    var damperConstant = 60;
     var wheelForces = newWheelExtensions.map( (xx,ii) => springConstant*(sphereCastLength-xx) + damperConstant*wheelExtensionChanges[ii])
         //TODO limit force to +ve
 
@@ -1291,17 +1291,26 @@ function processCar4Mechanics(){
         carTorqueTotal = vectorSum(carTorqueTotal, thisTorque);
     }
 
+
+    var turnInput = keyThing.leftKey() - keyThing.rightKey();
+    var elevationInput = keyThing.upKey() - keyThing.downKey();
+
+    carTorqueTotal[2]-= elevationInput;
+    carTorqueTotal[1]+= turnInput;
+
     //application of torque - could track angular momentum in world frame which is conserved, or track in car frame.
     //for now use isotropic moment of intertia so conserved in frame of car too.
 
+    var scaledTorque = carTorqueTotal.map(xx=>0.002*xx);  //quick adjustment to change amount of rotation
 
-    //just apply some rotation from torque in car frame to check are in the right direction. (no angular momentum just instant movement)
-    var scaledTorque = carTorqueTotal.map(xx=>0.01*xx);  //quick adjustment to change amount of rotation
-    var torqueMag = Math.hypot.apply(null, scaledTorque);
-    var sinAng = Math.sin(torqueMag);
-    var torqueTimesSine = scaledTorque.map(xx=>xx*sinAng);
-    var quatToRotate = [Math.cos(torqueMag), torqueTimesSine[0], torqueTimesSine[1], torqueTimesSine[2]];
-    //var quatToRotate = [torqueTimesSine[0], torqueTimesSine[1], torqueTimesSine[2], Math.cos(torqueMag)];
+    carInfo4.angVel = vectorSum(carInfo4.angVel, scaledTorque);
+
+    var angVelMag = Math.hypot.apply(null, carInfo4.angVel );
+
+    var sinAng = Math.sin(angVelMag);
+    var angvelTimesSine = carInfo4.angVel.map(xx=>xx*sinAng);
+    var quatToRotate = [Math.cos(angVelMag), angvelTimesSine[0], angvelTimesSine[1], angvelTimesSine[2]];
+    //var quatToRotate = [angvelTimesSine[0], angvelTimesSine[1], angvelTimesSine[2], Math.cos(angVelMag)];
     
     console.log(Math.hypot.apply(null, quatToRotate));
 
@@ -2250,7 +2259,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
             var testPointPosition = testPointPositions[ii];
             gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.75,0,0]);
             setupDrawMatrixForObjectAtPosition(testPointPosition);
-            mat4.scale(mMatrix,[1,1,1].map(xx=>xx*0.1));
+            mat4.scale(mMatrix,[1,1,1].map(xx=>xx*0.2));
             drawObjectFromBuffers(sphereStatue.buffers, activeProg);
         }
     }
