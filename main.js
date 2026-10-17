@@ -158,12 +158,12 @@ var carInfo4 = {    //for testing 6dof movement, wheels/suspension that sense gr
     matrix: mat4.identity(),   //used for display (converted from pos, quat)
     matrixOld: mat4.identity(), //used for interpolation for display
     wheelOffsets : [    //back, up, right 
-        [-1.3, 0, 1],   //front right
-        [-1.3, 0, -1],  //front left
-        [1.35, 0, 1],    //back right
-        [1.35, 0, -1]   //back left
+        [-1.3, 0, 0.95],   //front right
+        [-1.3, 0, -0.95],  //front left
+        [1.35, 0, 0.95],    //back right
+        [1.35, 0, -0.95]   //back left
     ],
-    wheelExtensions : [1,1,1,1].map(xx=>xx*1.4)
+    wheelExtensions : [1,1,1,1].map(xx=>xx*0.7)
 }
 var testPointPositions = [];
 
@@ -1251,7 +1251,7 @@ function processCar4Mechanics(){
 
     
 
-    var sphereCastLength = 1.4;
+    var sphereCastLength = 0.7;
     var sphereCastSphereRad = 0.2;
 
     var newWheelExtensions = [];
@@ -1277,9 +1277,9 @@ function processCar4Mechanics(){
     //apply forces, torques given wheel extensions (spring force), change in wheel extension (damper force)
     var wheelExtensionChanges = carInfo4.wheelExtensions.map( (xx,ii) => newWheelExtensions[ii]-xx);
 
-    var springConstant = -6;
-    var damperConstant = 60;
-    var wheelForces = newWheelExtensions.map( (xx,ii) => springConstant*(sphereCastLength-xx) + damperConstant*wheelExtensionChanges[ii])
+    var springConstant = -7;
+    var damperConstant = 100;
+    var wheelForces = newWheelExtensions.map( (xx,ii) => Math.min(0, springConstant*(sphereCastLength-xx) + damperConstant*wheelExtensionChanges[ii]))
         //TODO limit force to +ve
 
     var carUpForceTotal = 0;
@@ -1291,12 +1291,13 @@ function processCar4Mechanics(){
         carTorqueTotal = vectorSum(carTorqueTotal, thisTorque);
     }
 
+    if (guiParams.carMode == "car4"){
+        var turnInput = keyThing.leftKey() - keyThing.rightKey();
+        var elevationInput = keyThing.upKey() - keyThing.downKey();
 
-    var turnInput = keyThing.leftKey() - keyThing.rightKey();
-    var elevationInput = keyThing.upKey() - keyThing.downKey();
-
-    carTorqueTotal[2]-= elevationInput;
-    carTorqueTotal[1]+= turnInput;
+        carTorqueTotal[2]-= elevationInput;
+        carTorqueTotal[1]+= turnInput;
+    }
 
     //application of torque - could track angular momentum in world frame which is conserved, or track in car frame.
     //for now use isotropic moment of intertia so conserved in frame of car too.
@@ -2096,7 +2097,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
         activeProg = shaderPrograms.envmap;
         gl.useProgram(activeProg);
         enableDisableAttributes(activeProg);
-        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.001,0.002,0.003]);
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.5,0.005,0.005]);
 
         //gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.02,0.02,0.04]);
 
@@ -2123,7 +2124,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
             drawWheels(wheelScale, activeProg, guiParams.car.drawWheelMarkers, carInfo2.steeringAngle, carInfo2.frontWheelRotation, carInfo2.rearWheelRotation);
         }
 
-        gl.uniform3fv(activeProg.uniforms.uFlatColor, wheelColor);  
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, wheelColor); 
 
         mat4.scale(mMatrix,[1,1,1].map(x=>x/0.56)); //undo scale
         mat4.translate(mMatrix, carDrawPosOffset.map(x=>-x));   //undo translate
@@ -2187,7 +2188,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
         activeProg = shaderPrograms.envmap;
         gl.useProgram(activeProg);
         enableDisableAttributes(activeProg);
-        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.001,0.001,0.001]);
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.5,0.5,0.5]);
         
         if (guiParams.camera.interpolate){
             var interpolatedCarMatrix = simpleMatrixInterpolation(carInfo4.matrix, carInfo4.matrixOld, interpolationFactor);
@@ -2196,19 +2197,38 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
             mat4.set(carInfo4.matrix, mMatrix);
         }
 
+        var savedMat = mat4.create(mMatrix);
+
         //move forward a bit in frame of car because centre of car mesh is towards back
         mat4.translate(mMatrix, [0,0,1.5]);
 
         mat4.scale(mMatrix,[1,1,1].map(x=>x*0.56));  //guess correct size - default seems far too big
         drawObjectFromBuffers(listerBuffers, activeProg);
+
+        activeProg = shaderPrograms.flat;
+        gl.useProgram(activeProg);
+        enableDisableAttributes(activeProg);
+
+        if (wheelBuffers.isLoaded){
+            mat4.set(savedMat, mMatrix);
+            var wheelPositions=[];
+            for (var ww=0;ww<4;ww++){
+                var thisWheelOffset = carInfo4.wheelOffsets[ww];
+                var thisWheelExtension = carInfo4.wheelExtensions[ww];
+                var thisWheelPosition = vectorSum(thisWheelOffset, [0,-thisWheelExtension + 0.15, 0]); //weirdly, wheel offset front, side are switched!
+                wheelPositions.push(thisWheelPosition);
+            }
+
+            drawWheels2(wheelScale.map(xx=>xx*0.6), activeProg, wheelBuffers, wheelPositions);  //what should wheel scale be?? other cars include *0.5 scale factor?
+            //drawWheels(wheelScale, activeProg, guiParams.car.drawWheelMarkers, 0, 0, 0);
+        }
     }
-
-
 
 
     //draw cube
     activeProg = shaderPrograms.envmap;
     gl.useProgram(activeProg);
+    gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.001,0.001,0.001]);
     enableDisableAttributes(activeProg);
     setupDrawMatrixForObjectAtPosition(boxPos);
     mat4.rotateY(mMatrix, boxRotation);
@@ -2255,12 +2275,14 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
         }
 
         //test points relative to car
-        for (var ii=0;ii<testPointPositions.length;ii++){
-            var testPointPosition = testPointPositions[ii];
-            gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.75,0,0]);
-            setupDrawMatrixForObjectAtPosition(testPointPosition);
-            mat4.scale(mMatrix,[1,1,1].map(xx=>xx*0.2));
-            drawObjectFromBuffers(sphereStatue.buffers, activeProg);
+        if (guiParams.car.drawWheelMarkers){
+            for (var ii=0;ii<testPointPositions.length;ii++){
+                var testPointPosition = testPointPositions[ii];
+                gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.75,0,0]);
+                setupDrawMatrixForObjectAtPosition(testPointPosition);
+                mat4.scale(mMatrix,[1,1,1].map(xx=>xx*0.2));
+                drawObjectFromBuffers(sphereStatue.buffers, activeProg);
+            }
         }
     }
 
@@ -2387,6 +2409,24 @@ function drawWheelsGeneral(frontness, backness, sideness, wheelScale, activeProg
         drawObjectFromBuffers(cubeBuffers, activeProg);
 
         gl.uniform3fv(activeProg.uniforms.uFlatColor, wheelColor);  
+    }
+}
+
+function drawWheels2(wheelScale, activeProg, wheelMesh, wheelPositions){
+    var savedmMatrix = mat4.create(mMatrix);
+    gl.uniform3fv(activeProg.uniforms.uFlatColor, wheelColor);  
+
+    for (var ww=0;ww<wheelPositions.length;ww++){
+
+        var wp = wheelPositions[ww];
+        //some wierdness between glmatrix translate and new code. TODO fix properly? 
+        var newwp = [wp[2],wp[1],wp[0]];
+
+        mat4.set(savedmMatrix, mMatrix);
+        mat4.translate(mMatrix, newwp);   // +ve = right, up , back
+        //mat4.rotateX(mMatrix, rearRightWheelRotation);
+        mat4.scale(mMatrix, wheelScale);
+        drawObjectFromBuffers(wheelMesh, activeProg);
     }
 }
 
