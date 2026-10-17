@@ -148,7 +148,7 @@ var carInfo3 = {    //mechanum
 
 var carInfo4 = {    //for testing 6dof movement, wheels/suspension that sense ground.
                     // then add slip stuff, engine, body collision etc...
-    pos:[0,0,0],
+    pos:[3,0,3],
     vel:[0,0,0],
     quat:[0,0,0,1], //orientation
     //quat:[1,0,0,0], //orientation
@@ -162,7 +162,7 @@ var carInfo4 = {    //for testing 6dof movement, wheels/suspension that sense gr
         [1.35, 0, 1],    //back right
         [1.35, 0, -1]   //back left
     ],
-    wheelExtensions : [0,0,0,0]
+    wheelExtensions : [1,1,1,1].map(xx=>xx*1.5)
 }
 var testPointPositions = [];
 
@@ -1221,7 +1221,9 @@ function processCar4Mechanics(){
     }
 
     //set position part. just move back a bit
-    carInfo4.matrix[14]=3;
+    carInfo4.matrix[12]=carInfo4.pos[0];
+    carInfo4.matrix[13]=carInfo4.pos[1];
+    carInfo4.matrix[14]=carInfo4.pos[2];
 
     carInfo4.matrix[15]=1;  //IIRC this is standard
 
@@ -1238,7 +1240,7 @@ function processCar4Mechanics(){
 
     
 
-    var sphereCastLength = 2;
+    var sphereCastLength = 1.5;
     var sphereCastSphereRad = 0.1;
 
     var newWheelExtensions = [];
@@ -1264,9 +1266,10 @@ function processCar4Mechanics(){
     //apply forces, torques given wheel extensions (spring force), change in wheel extension (damper force)
     var wheelExtensionChanges = carInfo4.wheelExtensions.map( (xx,ii) => newWheelExtensions[ii]-xx);
 
-    var springConstant = 1;
-    var damperConstant = 1;
-    var wheelForces = newWheelExtensions.map( (xx,ii) => springConstant*xx + damperConstant*wheelExtensionChanges[ii])
+    var springConstant = -3;
+    var damperConstant = 50;
+    var wheelForces = newWheelExtensions.map( (xx,ii) => springConstant*(sphereCastLength-xx) + damperConstant*wheelExtensionChanges[ii])
+        //TODO limit force to +ve
 
     var carUpForceTotal = 0;
     var carTorqueTotal = [0,0,0];
@@ -1282,7 +1285,7 @@ function processCar4Mechanics(){
 
 
     //just apply some rotation from torque in car frame to check are in the right direction. (no angular momentum just instant movement)
-    var scaledTorque = carTorqueTotal.map(xx=>0.03*xx);  //quick adjustment to change amount of rotation
+    var scaledTorque = carTorqueTotal.map(xx=>0.01*xx);  //quick adjustment to change amount of rotation
     var torqueMag = Math.hypot.apply(null, scaledTorque);
     var sinAng = Math.sin(torqueMag);
     var torqueTimesSine = scaledTorque.map(xx=>xx*sinAng);
@@ -1299,6 +1302,13 @@ function processCar4Mechanics(){
 
 
     carInfo4.wheelExtensions = newWheelExtensions;
+
+
+    //gravity
+    carInfo4.vel[1]-=0.001;
+    carInfo4.vel = vectorSum(carInfo4.vel, [0,carUpForceTotal,0].map(xx=>xx*-0.0001));  //TODO apply force in upDirection
+
+    carInfo4.pos = vectorSum(carInfo4.pos, carInfo4.vel);
 }
 
 
