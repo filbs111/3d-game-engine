@@ -35,7 +35,7 @@ function setupGui(){
     gui.add(guiParams, "finalStageFxaa");
     gui.add(guiParams, "useExperimentalProjectionMatrix");
     gui.add(guiParams, "drawBody");
-    gui.add(guiParams, "carMode", ["walk", "car1", "car2", "mecanum"]).listen();;
+    gui.add(guiParams, "carMode", ["walk", "car1", "car2", "mecanum", "car4"]).listen();;
 
     var cameraFolder = gui.addFolder("camera");
     cameraFolder.add(guiParams.camera, "interpolate");

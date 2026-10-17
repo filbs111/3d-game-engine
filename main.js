@@ -155,16 +155,20 @@ var carInfo4 = {    //for testing 6dof movement, wheels/suspension that sense gr
     angVel:[0,0,0], //in frame of vehicle or world??
     //TODO mass, angular momentum instead of angular vel, moment of inertia, wheel positions etc.
 
-    matrix: mat4.create(),   //used for display (converted from pos, quat)
+    matrix: mat4.identity(),   //used for display (converted from pos, quat)
+    matrixOld: mat4.identity(), //used for interpolation for display
     wheelOffsets : [    //back, up, right 
         [-1.3, 0, 1],   //front right
         [-1.3, 0, -1],  //front left
         [1.35, 0, 1],    //back right
         [1.35, 0, -1]   //back left
     ],
-    wheelExtensions : [1,1,1,1].map(xx=>xx*1.5)
+    wheelExtensions : [1,1,1,1].map(xx=>xx*1.4)
 }
 var testPointPositions = [];
+
+var carCamera4 = mat4.create(carInfo4.matrix);
+var carCamera4Old = mat4.create(carCamera4);
 
 
 var wheelColor = [1,1,1].map(x=>x*0.002);
@@ -860,6 +864,12 @@ function iterateMechanics(timeChange){
     mat4.translate(carCamera3, [0,2,4]);   //above and behind car
 
 
+     //fourth car
+    mat4.set(carCamera4, carCamera4Old);
+    mat4.set(carInfo4.matrix, carCamera4);
+    mat4.rotateY(carCamera4, Math.PI/4);   //turn a bit to inspect wheels
+    mat4.translate(carCamera4, [0,2,4]);   //above and behind car
+
     processCar2Mechanics(timeChange, leftRight, forwardBack, guiParams.carMode == "car2");
 
     processMechanumCarMechanics(timeChange, leftRight, forwardBack, mechanumTurn, guiParams.carMode == "mecanum");
@@ -1162,6 +1172,9 @@ function processMechanumCarMechanics(timeChange, leftRight, forwardBack, mechanu
 
 
 function processCar4Mechanics(){
+
+    mat4.set(carInfo4.matrix, carInfo4.matrixOld);  //used for graphical interpolation
+
     //carInfo4
 
     //controls to move and control car. initial version - immediate movement and rotation. (no momentum)
@@ -1183,27 +1196,25 @@ function processCar4Mechanics(){
     // acceleration through wheels
     // finding normal direction/actual wheel contact point (point on the sphere) - though small sphere cast probably works OK (roughly on ground)
 
-    // if (guiParams.carMode != "car4"){
-    //     return;
-    // }
+    if (guiParams.carMode == "car4"){
+        var turnInput = keyThing.leftKey() - keyThing.rightKey();
+        var elevationInput = keyThing.upKey() - keyThing.downKey();
 
-    var turnInput = keyThing.leftKey() - keyThing.rightKey();
-    var elevationInput = keyThing.upKey() - keyThing.downKey();
+        //TODO lib to create quaternion..
+        var turnAmount = turnInput*.004;
+        var elevAmount = elevationInput*.004;
 
-    //TODO lib to create quaternion..
-    var turnAmount = turnInput*.004;
-    var elevAmount = elevationInput*.004;
+        //var turnQuat = [Math.cos(turnAmount),Math.sin(turnAmount),0,0];    //roll
+        var turnQuat = [Math.cos(turnAmount),0,Math.sin(turnAmount),0];
+        var elevQuat  = [Math.cos(elevAmount),0,0,-Math.sin(elevAmount)]; 
+            //maybe quats from 3sphere project have cos(theta) as 0th component, glmatrix has as 3rd, but seems to work ok
 
-    //var turnQuat = [Math.cos(turnAmount),Math.sin(turnAmount),0,0];    //roll
-    var turnQuat = [Math.cos(turnAmount),0,Math.sin(turnAmount),0];
-    var elevQuat  = [Math.cos(elevAmount),0,0,-Math.sin(elevAmount)]; 
-        //maybe quats from 3sphere project have cos(theta) as 0th component, glmatrix has as 3rd, but seems to work ok
+        //var turnQuat = [0,Math.sin(turnAmount),0, Math.cos(turnAmount)];
+        //var elevQuat  = [0,0,-Math.sin(elevAmount), Math.cos(elevAmount)]; 
 
-    //var turnQuat = [0,Math.sin(turnAmount),0, Math.cos(turnAmount)];
-    //var elevQuat  = [0,0,-Math.sin(elevAmount), Math.cos(elevAmount)]; 
-
-    carInfo4.quat = multiply_quaternions(carInfo4.quat, turnQuat);  //TODO check order - might affect whether rotating in frame of rotated object or world
-    carInfo4.quat = multiply_quaternions(carInfo4.quat, elevQuat);
+        carInfo4.quat = multiply_quaternions(carInfo4.quat, turnQuat);  //TODO check order - might affect whether rotating in frame of rotated object or world
+        carInfo4.quat = multiply_quaternions(carInfo4.quat, elevQuat);
+    }
 
     //var adjustedQuat = [carInfo4.quat[1],carInfo4.quat[2],carInfo4.quat[3],carInfo4.quat[0]];
     var adjustedQuat = carInfo4.quat;
@@ -1240,7 +1251,7 @@ function processCar4Mechanics(){
 
     
 
-    var sphereCastLength = 1.5;
+    var sphereCastLength = 1.4;
     var sphereCastSphereRad = 0.1;
 
     var newWheelExtensions = [];
@@ -1266,7 +1277,7 @@ function processCar4Mechanics(){
     //apply forces, torques given wheel extensions (spring force), change in wheel extension (damper force)
     var wheelExtensionChanges = carInfo4.wheelExtensions.map( (xx,ii) => newWheelExtensions[ii]-xx);
 
-    var springConstant = -3;
+    var springConstant = -5;
     var damperConstant = 50;
     var wheelForces = newWheelExtensions.map( (xx,ii) => springConstant*(sphereCastLength-xx) + damperConstant*wheelExtensionChanges[ii])
         //TODO limit force to +ve
@@ -1309,6 +1320,16 @@ function processCar4Mechanics(){
     carInfo4.vel = vectorSum(carInfo4.vel, [0,carUpForceTotal,0].map(xx=>xx*-0.0001));  //TODO apply force in upDirection
 
     carInfo4.pos = vectorSum(carInfo4.pos, carInfo4.vel);
+
+
+    //forward thrust
+    if (guiParams.carMode == "car4"){
+        var forwardBack = keyThing.keystate(87)-keyThing.keystate(83);	//vertical W,S = up, down
+        var forwardThrust = forwardBack*0.001;
+        var forwardThrustVec = backDirection.map( xx=> -xx*forwardThrust);
+        carInfo4.vel = vectorSum(carInfo4.vel, forwardThrustVec);
+    }
+
 }
 
 
@@ -1476,6 +1497,13 @@ function drawScene(frameTime){
             mat4.set(carCameraInterpolated, unmirroredCameraMat);
         }else{
             mat4.set(carCamera3, unmirroredCameraMat);
+        }
+    }else if(guiParams.carMode == "car4"){
+        if (guiParams.camera.interpolate){
+            var carCameraInterpolated = simpleMatrixInterpolation(carCamera4, carCamera4Old, interpolationFactor);
+            mat4.set(carCameraInterpolated, unmirroredCameraMat);
+        }else{
+            mat4.set(carCamera4, unmirroredCameraMat);
         }
     }else if(useThirdPersonCam){
         mat4.set(thirdPersonCameraMat, unmirroredCameraMat);
@@ -2152,8 +2180,14 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
         enableDisableAttributes(activeProg);
         gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.001,0.001,0.001]);
         
-        mat4.set(carInfo4.matrix, mMatrix);
-        //move fprward a bit in frame of car because centre of car mesh is towards back
+        if (guiParams.camera.interpolate){
+            var interpolatedCarMatrix = simpleMatrixInterpolation(carInfo4.matrix, carInfo4.matrixOld, interpolationFactor);
+            mat4.set(interpolatedCarMatrix, mMatrix);
+        }else{
+            mat4.set(carInfo4.matrix, mMatrix);
+        }
+
+        //move forward a bit in frame of car because centre of car mesh is towards back
         mat4.translate(mMatrix, [0,0,1.5]);
 
         mat4.scale(mMatrix,[1,1,1].map(x=>x*0.56));  //guess correct size - default seems far too big
