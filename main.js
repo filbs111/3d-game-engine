@@ -1226,24 +1226,32 @@ function processCar4Mechanics(){
     testPointPositions.push(vectorSum(backDirection.map(x=>x*-2.5), carPos));  //front
     testPointPositions.push(vectorSum(upDirection, carPos));  //up
 
-
-    var frontWheelPos = vectorSum( vectorSum(backDirection.map(x=>x*-1.3), sideDirection), carPos);
-    var rearWheelPos = vectorSum( vectorSum(backDirection.map(x=>x*1.35), sideDirection), carPos);
+    var wheelOffsets = [    //back, up, right 
+        [-1.3, 0, 1],   //front right
+        [-1.3, 0, -1],  //front left
+        [1.35, 0, 1],    //back right
+        [1.35, 0, -1]   //back left
+    ];
 
     var sphereCastLength = 2;
     var sphereCastSphereRad = 0.1;
-    var belowFrontWheel = vectorSum( frontWheelPos, upDirection.map(x=>x*-sphereCastLength));
-    var frontWheelCollision = rayBvhTriangleCollisionTopLevel(frontWheelPos, belowFrontWheel, cityBvh, cityPosition, cityScale, sphereCastSphereRad);
+
+    //explicitly moves these points, though could just do mat4 translate, and this is basically just a matrix multiply
+    for (var ww=0;ww<wheelOffsets.length;ww++){
+        var wheelOffset = wheelOffsets[ww];
+
+        var wheelStartPos = vectorSum( vectorSum( backDirection.map(x=>x*wheelOffset[0]), sideDirection.map(x=>x*wheelOffset[2])), vectorSum(upDirection.map(x=>x*wheelOffset[1]), carPos));    //NOTE could write as matrix methods.
+        var wheelEndPos =  vectorSum( wheelStartPos, upDirection.map(x=>x*-sphereCastLength));
+        var wheelCollision = rayBvhTriangleCollisionTopLevel(wheelStartPos, wheelEndPos, cityBvh, cityPosition, cityScale, sphereCastSphereRad);
     
-    testPointPositions.push(frontWheelPos);
-    testPointPositions.push(belowFrontWheel);
-    if (frontWheelCollision.fractionAlongRay<1){
-        testPointPositions.push(frontWheelCollision.collisionPos);
+        testPointPositions.push(wheelStartPos);
+        testPointPositions.push(wheelEndPos);
+
+        if (wheelCollision.fractionAlongRay<1){
+            testPointPositions.push(wheelCollision.collisionPos);
+        }
     }
 
-    testPointPositions.push(rearWheelPos);
-
-    
 }
 
 
