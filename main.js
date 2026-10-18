@@ -1222,24 +1222,7 @@ function processCar4Mechanics(timeChange){
     //var adjustedQuat = [carInfo4.quat[1],carInfo4.quat[2],carInfo4.quat[3],carInfo4.quat[0]];
     var adjustedQuat = carInfo4.quat;
 
-    var turnMat = mat4.create();
-    quat4.toMat3(adjustedQuat, turnMat);
-
-    //create matrix for displaying object - NOTE might wish to calc this when drawing, or even just pass quat and pos to shader.
-    //TODO get a matrix lib that can find docs for! don't just guess because takes ages.
-    //copy 3x3 part
-    for (var aa=0;aa<3;aa++){
-        for (var bb=0;bb<3;bb++){
-            carInfo4.matrix[aa*4+bb] = turnMat[aa*3+bb];
-        }
-    }
-
-    //set position part. just move back a bit
-    carInfo4.matrix[12]=carInfo4.pos[0];
-    carInfo4.matrix[13]=carInfo4.pos[1];
-    carInfo4.matrix[14]=carInfo4.pos[2];
-
-    carInfo4.matrix[15]=1;  //IIRC this is standard
+    carInfo4.matrix = matFromPosAndQuat(carInfo4.pos, carInfo4.quat);
 
 
     //some test point
@@ -1518,7 +1501,14 @@ function drawScene(frameTime){
             var carCameraInterpolated = simpleMatrixInterpolation(carCamera4, carCamera4Old, interpolationFactor);
             mat4.set(carCameraInterpolated, unmirroredCameraMat);
         }else{
-            mat4.set(carCamera4, unmirroredCameraMat);
+            //make camera more upright. suspect way to do this is to scale 2 quat components towards zero and normalise
+            var cameraQuat = [0.2*carInfo4.quat[0], carInfo4.quat[1], 0.2*carInfo4.quat[2], carInfo4.quat[3]];
+            normalise_quat(cameraQuat);
+
+            var mat = matFromPosAndQuat(carInfo4.pos, cameraQuat);
+            //mat4.rotateY(mat, Math.PI/6);   //turn a bit to inspect wheels
+            mat4.translate(mat, [0,2,4]);   //above and behind car
+            mat4.set(mat, unmirroredCameraMat);
         }
     }else if(useThirdPersonCam){
         mat4.set(thirdPersonCameraMat, unmirroredCameraMat);
