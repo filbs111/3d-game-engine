@@ -874,7 +874,12 @@ function iterateMechanics(timeChange){
 
     processMechanumCarMechanics(timeChange, leftRight, forwardBack, mechanumTurn, guiParams.carMode == "mecanum");
 
-    processCar4Mechanics();
+    mat4.set(carInfo4.matrix, carInfo4.matrixOld);  //used for graphical interpolation
+    var car4NumSubsteps = 5;
+    var car4SubstepsTimeChange = timeChange/car4NumSubsteps;
+    for (var ii=0;ii<car4NumSubsteps;ii++){
+        processCar4Mechanics(car4SubstepsTimeChange);
+    }
 }
 
 var car2steeringVel = 0;
@@ -911,7 +916,6 @@ function processCar2Mechanics(timeChange, leftRight, forwardBack, enableControl)
     mat4.set(carMatrix2, carMatrix2Old);
 
     /*
-
     //2nd car with different physics model
     var carInfo2 = {
         pos3: [0,0],
@@ -1171,9 +1175,8 @@ function processMechanumCarMechanics(timeChange, leftRight, forwardBack, mechanu
 }
 
 
-function processCar4Mechanics(){
-
-    mat4.set(carInfo4.matrix, carInfo4.matrixOld);  //used for graphical interpolation
+function processCar4Mechanics(timeChange){
+        //NOTE doing multiple samll timestep physics updates to avoid simulation blowing up, but some of this only needs to be done for rendering. TODO move out rendering only parts.
 
     //carInfo4
 
@@ -1276,10 +1279,11 @@ function processCar4Mechanics(){
 
     //apply forces, torques given wheel extensions (spring force), change in wheel extension (damper force)
     var wheelExtensionChanges = carInfo4.wheelExtensions.map( (xx,ii) => newWheelExtensions[ii]-xx);
+    var wheelExtensionSpeedsOfChange = wheelExtensionChanges.map(xx=>xx/timeChange);
 
-    var springConstant = -7;
-    var damperConstant = 100;
-    var wheelForces = newWheelExtensions.map( (xx,ii) => Math.min(0, springConstant*(sphereCastLength-xx) + damperConstant*wheelExtensionChanges[ii]))
+    var springConstant = -10;
+    var damperConstant = 1000;
+    var wheelForces = newWheelExtensions.map( (xx,ii) => Math.min(0, springConstant*(sphereCastLength-xx) + damperConstant*wheelExtensionSpeedsOfChange[ii]))
         //TODO limit force to +ve
 
     var carUpForceTotal = 0;
@@ -1302,18 +1306,19 @@ function processCar4Mechanics(){
     //application of torque - could track angular momentum in world frame which is conserved, or track in car frame.
     //for now use isotropic moment of intertia so conserved in frame of car too.
 
-    var scaledTorque = carTorqueTotal.map(xx=>0.002*xx);  //quick adjustment to change amount of rotation
+    var scaledTorqueImpulse = carTorqueTotal.map(xx=>0.0002*timeChange*xx);  //quick adjustment to change amount of rotation
 
-    carInfo4.angVel = vectorSum(carInfo4.angVel, scaledTorque);
+    carInfo4.angVel = vectorSum(carInfo4.angVel, scaledTorqueImpulse);
+    var angImpulse = carInfo4.angVel.map(xx=>xx*timeChange/10);
 
-    var angVelMag = Math.hypot.apply(null, carInfo4.angVel );
+    var angImpulseMag = Math.hypot.apply(null, angImpulse );
 
-    var sinAng = Math.sin(angVelMag);
-    var angvelTimesSine = carInfo4.angVel.map(xx=>xx*sinAng);
-    var quatToRotate = [Math.cos(angVelMag), angvelTimesSine[0], angvelTimesSine[1], angvelTimesSine[2]];
-    //var quatToRotate = [angvelTimesSine[0], angvelTimesSine[1], angvelTimesSine[2], Math.cos(angVelMag)];
+    var sinAng = Math.sin(angImpulseMag);
+    var angImpulseTimesSine = angImpulse.map(xx=>xx*sinAng);
+    var quatToRotate = [Math.cos(angImpulseMag), angImpulseTimesSine[0], angImpulseTimesSine[1], angImpulseTimesSine[2]];
+    //var quatToRotate = [angImpulseTimesSine[0], angImpulseTimesSine[1], angImpulseTimesSine[2], Math.cos(angImpulseMag)];
     
-    console.log(Math.hypot.apply(null, quatToRotate));
+    //console.log(Math.hypot.apply(null, quatToRotate));
 
     carInfo4.quat = multiply_quaternions(carInfo4.quat, quatToRotate); 
 
@@ -1326,16 +1331,16 @@ function processCar4Mechanics(){
 
 
     //gravity
-    carInfo4.vel[1]-=0.001;
-    carInfo4.vel = vectorSum(carInfo4.vel, [0,carUpForceTotal,0].map(xx=>xx*-0.0001));  //TODO apply force in upDirection
-
-    carInfo4.pos = vectorSum(carInfo4.pos, carInfo4.vel);
+    carInfo4.vel[1]-=0.0001*timeChange;
+    carInfo4.vel = vectorSum(carInfo4.vel, [0,carUpForceTotal*timeChange,0].map(xx=>xx*-0.00001));  //TODO apply force in upDirection
+    
+    carInfo4.pos = vectorSum(carInfo4.pos, carInfo4.vel.map(xx=>xx*timeChange*0.1));
 
 
     //forward thrust
     if (guiParams.carMode == "car4"){
         var forwardBack = keyThing.keystate(87)-keyThing.keystate(83);	//vertical W,S = up, down
-        var forwardThrust = forwardBack*0.001;
+        var forwardThrust = forwardBack*0.0001*timeChange;
         var forwardThrustVec = backDirection.map( xx=> -xx*forwardThrust);
         carInfo4.vel = vectorSum(carInfo4.vel, forwardThrustVec);
     }
