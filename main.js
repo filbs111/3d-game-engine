@@ -1319,16 +1319,16 @@ function processCar4Mechanics(timeChange){
 
 
     //gravity
-    carInfo4.vel[1]-=0.0001*timeChange;
-    carInfo4.vel = vectorSum(carInfo4.vel, [0,carUpForceTotal*timeChange,0].map(xx=>xx*-0.00001));  //TODO apply force in upDirection
+    carInfo4.vel[1]-=0.00981*timeChange;
+    carInfo4.vel = vectorSum(carInfo4.vel, [0,carUpForceTotal*timeChange,0].map(xx=>xx*-0.001));  //TODO apply force in upDirection
     
-    carInfo4.pos = vectorSum(carInfo4.pos, carInfo4.vel.map(xx=>xx*timeChange*0.1));
+    carInfo4.pos = vectorSum(carInfo4.pos, carInfo4.vel.map(xx=>xx*timeChange*0.001));
 
 
     //forward thrust
     if (guiParams.carMode == "car4"){
         var forwardBack = keyThing.keystate(87)-keyThing.keystate(83);	//vertical W,S = up, down
-        var forwardThrust = forwardBack*0.0001*timeChange;
+        var forwardThrust = forwardBack*0.01*timeChange;
         var forwardThrustVec = backDirection.map( xx=> -xx*forwardThrust);
         carInfo4.vel = vectorSum(carInfo4.vel, forwardThrustVec);
     }
