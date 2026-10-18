@@ -82,3 +82,18 @@ function matFromPosAndQuat(pos, quat){
 
     return matToReturn;
 }
+
+function quatInterpolation(newQuat, oldQuat, interpolationFactor){
+    var interpolatedQuat = vectorInterpolation(newQuat, oldQuat, interpolationFactor);
+    normalise_quat(interpolatedQuat);
+    return interpolatedQuat;
+}
+
+function vectorInterpolation(newVec, oldVec, interpolationFactor){
+    var interpolationFactor2 = 1-interpolationFactor;
+    var vecToReturn = new Array(newVec.length);
+    for (var ii=0;ii<newVec.length;ii++){
+        vecToReturn[ii] = newVec[ii] *interpolationFactor2 + oldVec[ii]*interpolationFactor;
+    }
+    return vecToReturn;
+}

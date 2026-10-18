@@ -149,6 +149,7 @@ var carInfo3 = {    //mechanum
 var carInfo4 = {    //for testing 6dof movement, wheels/suspension that sense ground.
                     // then add slip stuff, engine, body collision etc...
     pos:[3,0,3],
+    posOld:[3,0,3], //used for display interpolation (currently for camera. TODO use for car too)
     vel:[0,0,0],
     quat:[0,0,0,1], //orientation
     //quat:[1,0,0,0], //orientation
@@ -167,8 +168,8 @@ var carInfo4 = {    //for testing 6dof movement, wheels/suspension that sense gr
 }
 var testPointPositions = [];
 
-var carCamera4 = mat4.create(carInfo4.matrix);
-var carCamera4Old = mat4.create(carCamera4);
+var carCamera4Quat = [0,0,0,1];
+var carCamera4QuatOld = [0,0,0,1];
 
 
 var wheelColor = [1,1,1].map(x=>x*0.002);
@@ -864,11 +865,15 @@ function iterateMechanics(timeChange){
     mat4.translate(carCamera3, [0,2,4]);   //above and behind car
 
 
-     //fourth car
-    mat4.set(carCamera4, carCamera4Old);
-    mat4.set(carInfo4.matrix, carCamera4);
-    mat4.rotateY(carCamera4, Math.PI/6);   //turn a bit to inspect wheels
-    mat4.translate(carCamera4, [0,2,4]);   //above and behind car
+    //fourth car camera
+    carInfo4.posOld = carInfo4.pos.map(xx=>xx);
+    carCamera4QuatOld = carCamera4Quat;
+    carCamera4Quat = carInfo4.quat.map( (xx, ii) => 0.1*xx+ carCamera4Quat[ii]);    //exponential decay towards car orientation
+    //make camera more upright. suspect way to do this is to scale 2 quat components towards zero and normalise
+    carCamera4Quat[0]*=0.2;
+    carCamera4Quat[2]*=0.2;
+    normalise_quat(carCamera4Quat);
+
 
     processCar2Mechanics(timeChange, leftRight, forwardBack, guiParams.carMode == "car2");
 
@@ -1497,19 +1502,12 @@ function drawScene(frameTime){
             mat4.set(carCamera3, unmirroredCameraMat);
         }
     }else if(guiParams.carMode == "car4"){
-        if (guiParams.camera.interpolate){
-            var carCameraInterpolated = simpleMatrixInterpolation(carCamera4, carCamera4Old, interpolationFactor);
-            mat4.set(carCameraInterpolated, unmirroredCameraMat);
-        }else{
-            //make camera more upright. suspect way to do this is to scale 2 quat components towards zero and normalise
-            var cameraQuat = [0.2*carInfo4.quat[0], carInfo4.quat[1], 0.2*carInfo4.quat[2], carInfo4.quat[3]];
-            normalise_quat(cameraQuat);
-
-            var mat = matFromPosAndQuat(carInfo4.pos, cameraQuat);
-            //mat4.rotateY(mat, Math.PI/6);   //turn a bit to inspect wheels
-            mat4.translate(mat, [0,2,4]);   //above and behind car
-            mat4.set(mat, unmirroredCameraMat);
-        }
+        var cameraQuat = guiParams.camera.interpolate ? quatInterpolation(carCamera4Quat, carCamera4QuatOld, interpolationFactor) : carCamera4Quat;
+        var cameraPos = guiParams.camera.interpolate ? vectorInterpolation(carInfo4.pos, carInfo4.posOld, interpolationFactor) : carInfo4.pos;
+        var mat = matFromPosAndQuat(cameraPos, cameraQuat);
+        //mat4.rotateY(mat, Math.PI/6);   //turn a bit to inspect wheels
+        mat4.translate(mat, [0,2,4]);   //above and behind car
+        mat4.set(mat, unmirroredCameraMat);
     }else if(useThirdPersonCam){
         mat4.set(thirdPersonCameraMat, unmirroredCameraMat);
     }else{

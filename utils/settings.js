@@ -5,7 +5,7 @@ var guiParams={
     drawBody:true,
     carMode:"walk",
     camera:{
-        interpolate:false,
+        interpolate:true,
         type:"first person",
         fisheyeMapping: "2 panel intermediate",
         simpleFisheyeStrength: 0.2,
