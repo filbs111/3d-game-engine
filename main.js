@@ -1336,7 +1336,9 @@ function processCar4Mechanics(timeChange){
 
     //gravity
     carInfo4.vel[1]-=0.00981*timeChange;
-    carInfo4.vel = vectorSum(carInfo4.vel, [0,carUpForceTotal*timeChange,0].map(xx=>xx*-0.001));  //TODO apply force in upDirection
+
+    var upImpulse = -0.001*carUpForceTotal*timeChange;
+    carInfo4.vel = vectorSum(carInfo4.vel, upDirection.map(xx=>xx*upImpulse));  //TODO apply force in upDirection in frame of car
     
     carInfo4.pos = vectorSum(carInfo4.pos, carInfo4.vel.map(xx=>xx*timeChange*0.001));
 
