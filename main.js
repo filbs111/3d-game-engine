@@ -164,8 +164,18 @@ var carInfo4 = {    //for testing 6dof movement, wheels/suspension that sense gr
         [1.35, 0, 0.95],    //back right
         [1.35, 0, -0.95]   //back left
     ],
-    wheelExtensions : [1,1,1,1].map(xx=>xx*0.7)
+    wheelExtensions : [1,1,1,1].map(xx=>xx*0.6),
+
+    sphereCastLength : 0.45,
+    springConstant: -40,
+    damperConstant: 3000,
+
+    steeringAngle:0
 }
+carInfo4.wheelExtensions = [1,1,1,1].map(xx=>xx*carInfo4.sphereCastLength);
+
+
+
 var testPointPositions = [];
 
 var carCamera4Quat = [0,0,0,1];
@@ -880,6 +890,14 @@ function iterateMechanics(timeChange){
     processMechanumCarMechanics(timeChange, leftRight, forwardBack, mechanumTurn, guiParams.carMode == "mecanum");
 
     mat4.set(carInfo4.matrix, carInfo4.matrixOld);  //used for graphical interpolation
+
+    carInfo4.steeringAngle *= 0.95;
+    var steeringAngleTarget=0;
+    var steeringStrength = 1;   //TODO speed dependence like car2
+    steeringStrength = Math.min(0.7, steeringStrength); //max out steering angle at low speed.
+    steeringAngleTarget = 0.02*leftRight*steeringStrength;
+    carInfo4.steeringAngle += steeringAngleTarget;
+
     var car4NumSubsteps = 5;
     var car4SubstepsTimeChange = timeChange/car4NumSubsteps;
     for (var ii=0;ii<car4NumSubsteps;ii++){
@@ -1242,7 +1260,7 @@ function processCar4Mechanics(timeChange){
 
     
 
-    var sphereCastLength = 0.7;
+    var sphereCastLength = carInfo4.sphereCastLength;
     var sphereCastSphereRad = 0.2;
 
     var newWheelExtensions = [];
@@ -1269,9 +1287,7 @@ function processCar4Mechanics(timeChange){
     var wheelExtensionChanges = carInfo4.wheelExtensions.map( (xx,ii) => newWheelExtensions[ii]-xx);
     var wheelExtensionSpeedsOfChange = wheelExtensionChanges.map(xx=>xx/timeChange);
 
-    var springConstant = -10;
-    var damperConstant = 1000;
-    var wheelForces = newWheelExtensions.map( (xx,ii) => Math.min(0, springConstant*(sphereCastLength-xx) + damperConstant*wheelExtensionSpeedsOfChange[ii]))
+    var wheelForces = newWheelExtensions.map( (xx,ii) => Math.min(0, carInfo4.springConstant*(sphereCastLength-xx) + carInfo4.damperConstant*wheelExtensionSpeedsOfChange[ii]))
         //TODO limit force to +ve
 
     var carUpForceTotal = 0;
@@ -2212,7 +2228,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
                 wheelPositions.push(thisWheelPosition);
             }
 
-            drawWheels2(wheelScale.map(xx=>xx*0.6), activeProg, wheelBuffers, wheelPositions);  //what should wheel scale be?? other cars include *0.5 scale factor?
+            drawWheels2(wheelScale.map(xx=>xx*0.6), activeProg, wheelBuffers, wheelPositions, carInfo4.steeringAngle);  //what should wheel scale be?? other cars include *0.5 scale factor?
             //drawWheels(wheelScale, activeProg, guiParams.car.drawWheelMarkers, 0, 0, 0);
         }
     }
@@ -2405,9 +2421,11 @@ function drawWheelsGeneral(frontness, backness, sideness, wheelScale, activeProg
     }
 }
 
-function drawWheels2(wheelScale, activeProg, wheelMesh, wheelPositions){
+function drawWheels2(wheelScale, activeProg, wheelMesh, wheelPositions, steeringAngle){
     var savedmMatrix = mat4.create(mMatrix);
     gl.uniform3fv(activeProg.uniforms.uFlatColor, wheelColor);  
+
+    var steeringAngles = [steeringAngle,steeringAngle,0,0];
 
     for (var ww=0;ww<wheelPositions.length;ww++){
 
@@ -2417,6 +2435,9 @@ function drawWheels2(wheelScale, activeProg, wheelMesh, wheelPositions){
 
         mat4.set(savedmMatrix, mMatrix);
         mat4.translate(mMatrix, newwp);   // +ve = right, up , back
+
+        mat4.rotateY(mMatrix, steeringAngles[ww]);
+
         //mat4.rotateX(mMatrix, rearRightWheelRotation);
         mat4.scale(mMatrix, wheelScale);
         drawObjectFromBuffers(wheelMesh, activeProg);
