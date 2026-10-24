@@ -160,6 +160,58 @@ var overlaydisplay = (function(){
 
             drawSpeedo(100, 300, 70, -0.6, Math.PI + 1.2, 201, 20, speedMph);
         }
+
+        if (guiParams.carMode == "car4"){
+            
+            var wheelDebugDisplayCentres = carInfo4.wheelOffsets.map(xx=> [100+40*xx[2],500+40*xx[0]]);
+
+            //wheel circles with radius proportional to reaction force (showing circle of grip)
+            overlaycontext.fillStyle = "rgba(0,0,0,0.5)";
+            for (var ww=0;ww<4;ww++){
+                var displayCentre = wheelDebugDisplayCentres[ww];
+                var reactionForce = carInfo4.wheelReactionForces[ww];
+                var gripCircleRadius = -10*reactionForce;
+
+                overlaycontext.beginPath()
+                
+                overlaycontext.beginPath();
+                overlaycontext.arc(displayCentre[0], displayCentre[1], gripCircleRadius, 0, 2 * Math.PI);
+                overlaycontext.fill();
+            }
+
+            //overlay steering angle
+            var steeringDirectionFront = [Math.sin(carInfo4.steeringAngle), Math.cos(carInfo4.steeringAngle)];
+            var steeringDirectionBack = [0,1];
+            var steeringDirections = [steeringDirectionFront,steeringDirectionFront,steeringDirectionBack,steeringDirectionBack];
+            overlaycontext.strokeStyle = "rgba(255,255,255,0.5)";
+
+            for (var ww=0;ww<4;ww++){
+                var displayCentre = wheelDebugDisplayCentres[ww];
+                var steeringDirectionScaled = steeringDirections[ww].map(xx=>xx*20);
+
+                overlaycontext.beginPath();
+                overlaycontext.moveTo(displayCentre[0]-steeringDirectionScaled[0], displayCentre[1]-steeringDirectionScaled[1]);
+                overlaycontext.lineTo(displayCentre[0]+steeringDirectionScaled[0], displayCentre[1]+steeringDirectionScaled[1]);
+                overlaycontext.stroke();
+            }
+
+            //contact patch velocities to check calculation showing in correct direction
+            // wheelContactPointInCarFrameVelocities
+
+            for (var ww=0;ww<4;ww++){
+                var displayCentre = wheelDebugDisplayCentres[ww];
+                var lineDisplacement = carInfo4.wheelContactPointInCarFrameVelocities[ww];
+
+                overlaycontext.beginPath();
+                overlaycontext.moveTo(displayCentre[0], displayCentre[1]);
+                overlaycontext.lineTo(displayCentre[0]+lineDisplacement[2], displayCentre[1]+lineDisplacement[0]);
+                overlaycontext.stroke();
+            }
+
+            //tyre deflection (capped within grip circle)
+
+
+        }
     }
 
 

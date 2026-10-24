@@ -164,6 +164,8 @@ var carInfo4 = {    //for testing 6dof movement, wheels/suspension that sense gr
         [1.35, 0, 0.95],    //back right
         [1.35, 0, -0.95]   //back left
     ],
+    wheelReactionForces: [0,0,0,0], //stored for debug display
+
     wheelExtensions : [1,1,1,1].map(xx=>xx*0.6),
 
     sphereCastLength : 0.45,
@@ -173,7 +175,7 @@ var carInfo4 = {    //for testing 6dof movement, wheels/suspension that sense gr
     steeringAngle:0
 }
 carInfo4.wheelExtensions = [1,1,1,1].map(xx=>xx*carInfo4.sphereCastLength);
-
+carInfo4.wheelContactPointInCarFrameVelocities = [1,1,1,1].map(xx=>[0,0,0]);    //for debug display. 
 
 
 var testPointPositions = [];
@@ -220,7 +222,7 @@ function init(){
 				case 70:	//F
 					goFullscreen(canvascontainer);
 					break;
-                case 69:    //E
+                case 82:    //R
                     //NOTE just switching between walk and car 2
                     if (guiParams.carMode == "car2"){
                         //get out of car
@@ -1302,9 +1304,11 @@ function processCar4Mechanics(timeChange){
     if (guiParams.carMode == "car4"){
         var turnInput = keyThing.leftKey() - keyThing.rightKey();
         var elevationInput = keyThing.upKey() - keyThing.downKey();
+        var rollInput = keyThing.keystate(69)-keyThing.keystate(81);
 
-        carTorqueTotal[2]-= elevationInput;
-        carTorqueTotal[1]+= turnInput;
+        carTorqueTotal[2]-= 10*elevationInput;
+        carTorqueTotal[1]+= 10*turnInput;
+        carTorqueTotal[0]+= 10*rollInput;
     }
 
     //application of torque - could track angular momentum in world frame which is conserved, or track in car frame.
@@ -1313,13 +1317,23 @@ function processCar4Mechanics(timeChange){
     var scaledTorqueImpulse = carTorqueTotal.map(xx=>0.0002*timeChange*xx);  //quick adjustment to change amount of rotation
 
     carInfo4.angVel = vectorSum(carInfo4.angVel, scaledTorqueImpulse);
-    var angImpulse = carInfo4.angVel.map(xx=>xx*timeChange/10);
+
+    //just decay angvel for testing
+    carInfo4.angVel = carInfo4.angVel.map(xx=>xx*0.998);
+
+    var angImpulse = carInfo4.angVel.map(xx=>xx*timeChange*0.001);
+
+    angImpulse = angImpulse.map(xx=>0.5*xx);    //0.5 because quaternion axis angle formula has theta/2
 
     var angImpulseMag = Math.hypot.apply(null, angImpulse );
 
     var sinAng = Math.sin(angImpulseMag);
-    var angImpulseTimesSine = angImpulse.map(xx=>xx*sinAng);
-    var quatToRotate = [Math.cos(angImpulseMag), angImpulseTimesSine[0], angImpulseTimesSine[1], angImpulseTimesSine[2]];
+    var factor = angImpulseMag == 0 ? 0 : sinAng/angImpulseMag;
+    var angImpulseTimesSineNormalised = angImpulse.map(xx=>xx*factor);
+    var quatToRotate = [Math.cos(angImpulseMag), angImpulseTimesSineNormalised[0], angImpulseTimesSineNormalised[1], angImpulseTimesSineNormalised[2]];
+
+    normalise_quat(quatToRotate);
+
     //var quatToRotate = [angImpulseTimesSine[0], angImpulseTimesSine[1], angImpulseTimesSine[2], Math.cos(angImpulseMag)];
     
     //console.log(Math.hypot.apply(null, quatToRotate));
@@ -1335,10 +1349,12 @@ function processCar4Mechanics(timeChange){
 
 
     //gravity
-    carInfo4.vel[1]-=0.00981*timeChange;
+    if (guiParams.car.gravity){
+        carInfo4.vel[1]-=0.00981*timeChange;
+    }
 
     var upImpulse = -0.001*carUpForceTotal*timeChange;
-    carInfo4.vel = vectorSum(carInfo4.vel, upDirection.map(xx=>xx*upImpulse));  //TODO apply force in upDirection in frame of car
+    carInfo4.vel = vectorSum(carInfo4.vel, upDirection.map(xx=>xx*upImpulse));
     
     carInfo4.pos = vectorSum(carInfo4.pos, carInfo4.vel.map(xx=>xx*timeChange*0.001));
 
@@ -1351,6 +1367,30 @@ function processCar4Mechanics(timeChange){
         carInfo4.vel = vectorSum(carInfo4.vel, forwardThrustVec);
     }
 
+
+    //TODO
+    //calculate wheel spin speeds (free wheeling)
+    //calculate wheel speed relative to ground
+    //calculate deflections y combining influence of movement over frame, and existing deflection
+    //limit deflections to circle of grip
+    //apply force/torque using deflections. spring and damper.
+
+
+
+    //for debug display
+    carInfo4.wheelReactionForces = wheelForces;
+
+    var carVelInCarFrame = [backDirection,upDirection,sideDirection].map(vec=>dotProduct(vec, carInfo4.vel));   //1st part from carMatrix. TODO formulate more neatly?
+    var patchVelocities = [];
+    for (var ww=0;ww<4;ww++){
+        var thisWheelOffset = carInfo4.wheelOffsets[ww];    //TODO adjust downward to get bottom of tyre in car frame
+        var contactPatchPositionInCarFrame = thisWheelOffset;   //TODO adjust vertical position of contact in car frame due to suspension displacement
+        var patchVelocityDueToAngVel = crossProduct(contactPatchPositionInCarFrame, carInfo4.angVel);
+            //TODO include upward component due to rate of change of suspension movement (though currently not used for display/force calculation)
+        var patchVelocity = vectorSum(carVelInCarFrame, patchVelocityDueToAngVel);
+        patchVelocities.push(patchVelocity);
+    }
+    carInfo4.wheelContactPointInCarFrameVelocities = patchVelocities;
 }
 
 

@@ -19,8 +19,9 @@ var guiParams={
         autofire:false
     },
     car:{
-        drawWheelMarkers:true,
-        brakeBias:.6
+        drawWheelMarkers:false,
+        brakeBias:.6,
+        gravity:true,
     },
     debug:{
         showFramerate:true,
@@ -50,7 +51,7 @@ function setupGui(){
     cameraFolder.add(guiParams.camera, "tanKThetaK", 0.05, 1, 0.05);
     cameraFolder.add(guiParams.camera, "specialK", 0, 1, 0.05);
 
-    cameraFolder.add(guiParams.camera, "zoom", .4, 2, .05);
+    cameraFolder.add(guiParams.camera, "zoom", .4, 4, .05);
 
     var gunFolder = gui.addFolder('gun');
     gunFolder.add(guiParams.gun, "double");
@@ -59,6 +60,7 @@ function setupGui(){
     var carFolder = gui.addFolder('car');
     carFolder.add(guiParams.car, "drawWheelMarkers");
     carFolder.add(guiParams.car, "brakeBias", .3, .7, .01);
+    carFolder.add(guiParams.car, "gravity");
 
     var debugFolder = gui.addFolder('debug');
     debugFolder.add(guiParams.debug, "showFramerate");

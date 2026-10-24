@@ -97,3 +97,26 @@ function vectorInterpolation(newVec, oldVec, interpolationFactor){
     }
     return vecToReturn;
 }
+
+
+
+//tyre stuff
+
+function tyreDeflectionWeights(inputX){
+    var existingDeflection = Math.exp(-Math.abs(inputX));
+    var newMovement = roughOneMinusExpMinusX(inputX);
+    return {newMovement, existingDeflection}
+}
+
+function roughOneMinusExpMinusX(inputX){
+    // (1 - exp(-x))/x.
+    //used for decay of tyre deflection, because want something like integral of tyre deflection over time weighted by exp(-tyre movement)
+    // new deflection = old deflection * (exp(-const*omega*deltaT)) + vel*deltaT* ( 1- exp(-const*omega*deltaT))/(const*omega*deltaT)
+    // where vel is velocity of point on wheel rim relative to ground,
+    // omega is angular velocity of wheel (in case where wheel is rolling freely makes sense. TODO consider whether makes sense generally)
+    //... 
+    // because rolling in negative direction should not make this function go >1, and don't want x to be too small
+    var someSmallAmount = 0.00001;
+    var modifiedX = Math.sqrt(inputX*inputX + someSmallAmount);
+    return (1-Math.exp(-modifiedX))/modifiedX;
+}
