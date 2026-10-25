@@ -179,15 +179,12 @@ var overlaydisplay = (function(){
                 overlaycontext.fill();
             }
 
-            //overlay steering angle
-            var steeringDirectionFront = [Math.sin(carInfo4.steeringAngle), Math.cos(carInfo4.steeringAngle)];
-            var steeringDirectionBack = [0,1];
-            var steeringDirections = [steeringDirectionFront,steeringDirectionFront,steeringDirectionBack,steeringDirectionBack];
+            //steering angle
             overlaycontext.strokeStyle = "rgba(255,255,255,0.5)";
 
             for (var ww=0;ww<4;ww++){
                 var displayCentre = wheelDebugDisplayCentres[ww];
-                var steeringDirectionScaled = steeringDirections[ww].map(xx=>xx*20);
+                var steeringDirectionScaled = carInfo4.steeringDirections[ww].map(xx=>xx*20);
 
                 overlaycontext.beginPath();
                 overlaycontext.moveTo(displayCentre[0]-steeringDirectionScaled[0], displayCentre[1]-steeringDirectionScaled[1]);
@@ -206,6 +203,9 @@ var overlaydisplay = (function(){
                 overlaycontext.moveTo(displayCentre[0], displayCentre[1]);
                 overlaycontext.lineTo(displayCentre[0]+lineDisplacement[2], displayCentre[1]+lineDisplacement[0]);
                 overlaycontext.stroke();
+
+                //show roll speed
+                overlaycontext.fillText(carInfo4.wheelRollSpeeds[ww].toFixed(2), displayCentre[0], displayCentre[1]);
             }
 
             //tyre deflection (capped within grip circle)

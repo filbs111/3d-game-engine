@@ -172,10 +172,13 @@ var carInfo4 = {    //for testing 6dof movement, wheels/suspension that sense gr
     springConstant: -40,
     damperConstant: 3000,
 
-    steeringAngle:0
+    steeringAngle:0,
+    steeringDirections:[[0,1],[0,1],[0,1],[0,1]]
 }
 carInfo4.wheelExtensions = [1,1,1,1].map(xx=>xx*carInfo4.sphereCastLength);
-carInfo4.wheelContactPointInCarFrameVelocities = [1,1,1,1].map(xx=>[0,0,0]);    //for debug display. 
+carInfo4.wheelContactPointInCarFrameVelocities = [1,1,1,1].map(xx=>[0,0,0]);    //for debug display.
+carInfo4.wheelRollSpeeds = [0,0,0,0]; 
+carInfo4.wheelContactPointInCarFrameVelocitiesWithoutWheelRoll = [1,1,1,1].map(xx=>[0,0,0]);    //for debug display. 
 
 
 var testPointPositions = [];
@@ -1371,10 +1374,15 @@ function processCar4Mechanics(timeChange){
     //TODO
     //calculate wheel spin speeds (free wheeling)
     //calculate wheel speed relative to ground
+    //calculate motion of point at bottom of wheel relative to ground, subtract motion in roll direction (assume free wheeling)
     //calculate deflections y combining influence of movement over frame, and existing deflection
     //limit deflections to circle of grip
     //apply force/torque using deflections. spring and damper.
 
+
+    var steeringDirectionFront = [Math.sin(carInfo4.steeringAngle), Math.cos(carInfo4.steeringAngle)];
+    var steeringDirectionBack = [0,1];
+    carInfo4.steeringDirections = [steeringDirectionFront,steeringDirectionFront,steeringDirectionBack,steeringDirectionBack];
 
 
     //for debug display
@@ -1382,6 +1390,7 @@ function processCar4Mechanics(timeChange){
 
     var carVelInCarFrame = [backDirection,upDirection,sideDirection].map(vec=>dotProduct(vec, carInfo4.vel));   //1st part from carMatrix. TODO formulate more neatly?
     var patchVelocities = [];
+    var wheelRollSpeeds = [];
     for (var ww=0;ww<4;ww++){
         var thisWheelOffset = carInfo4.wheelOffsets[ww];    //TODO adjust downward to get bottom of tyre in car frame
         var contactPatchPositionInCarFrame = thisWheelOffset;   //TODO adjust vertical position of contact in car frame due to suspension displacement
@@ -1389,8 +1398,15 @@ function processCar4Mechanics(timeChange){
             //TODO include upward component due to rate of change of suspension movement (though currently not used for display/force calculation)
         var patchVelocity = vectorSum(carVelInCarFrame, patchVelocityDueToAngVel);
         patchVelocities.push(patchVelocity);
+
+        var steerDir2d = carInfo4.steeringDirections[ww];
+        var steerDir3d = [steerDir2d[1], 0, steerDir2d[0]];
+        var wheelRollSpeed = dotProduct(patchVelocity,steerDir3d);
+        wheelRollSpeeds.push(wheelRollSpeed);
     }
     carInfo4.wheelContactPointInCarFrameVelocities = patchVelocities;
+    carInfo4.wheelRollSpeeds = wheelRollSpeeds;
+        //TODO use for visible wheel rotation
 }
 
 
