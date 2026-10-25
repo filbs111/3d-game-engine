@@ -178,7 +178,7 @@ var carInfo4 = {    //for testing 6dof movement, wheels/suspension that sense gr
 carInfo4.wheelExtensions = [1,1,1,1].map(xx=>xx*carInfo4.sphereCastLength);
 carInfo4.wheelContactPointInCarFrameVelocities = [1,1,1,1].map(xx=>[0,0,0]);    //for debug display.
 carInfo4.wheelRollSpeeds = [0,0,0,0]; 
-carInfo4.wheelContactPointInCarFrameVelocitiesWithoutWheelRoll = [1,1,1,1].map(xx=>[0,0,0]);    //for debug display. 
+carInfo4.patchFreewheelingVelocities = [1,1,1,1].map(xx=>[0,0,0]); 
 
 
 var testPointPositions = [];
@@ -1391,6 +1391,7 @@ function processCar4Mechanics(timeChange){
     var carVelInCarFrame = [backDirection,upDirection,sideDirection].map(vec=>dotProduct(vec, carInfo4.vel));   //1st part from carMatrix. TODO formulate more neatly?
     var patchVelocities = [];
     var wheelRollSpeeds = [];
+    var patchFreewheelingVelocities = [];
     for (var ww=0;ww<4;ww++){
         var thisWheelOffset = carInfo4.wheelOffsets[ww];    //TODO adjust downward to get bottom of tyre in car frame
         var contactPatchPositionInCarFrame = thisWheelOffset;   //TODO adjust vertical position of contact in car frame due to suspension displacement
@@ -1403,6 +1404,10 @@ function processCar4Mechanics(timeChange){
         var steerDir3d = [steerDir2d[1], 0, steerDir2d[0]];
         var wheelRollSpeed = dotProduct(patchVelocity,steerDir3d);
         wheelRollSpeeds.push(wheelRollSpeed);
+
+        var velToSubtract = steerDir3d.map(xx=>xx*wheelRollSpeed);  //TODO check sign
+        var patchFreewheelingVelocity = vectorDifference(patchVelocity, velToSubtract);
+        patchFreewheelingVelocities.push(patchFreewheelingVelocity);
     }
     carInfo4.wheelContactPointInCarFrameVelocities = patchVelocities;
     carInfo4.wheelRollSpeeds = wheelRollSpeeds;

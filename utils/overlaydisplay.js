@@ -197,7 +197,8 @@ var overlaydisplay = (function(){
 
             for (var ww=0;ww<4;ww++){
                 var displayCentre = wheelDebugDisplayCentres[ww];
-                var lineDisplacement = carInfo4.wheelContactPointInCarFrameVelocities[ww];
+                //var lineDisplacement = carInfo4.wheelContactPointInCarFrameVelocities[ww];
+                var lineDisplacement = carInfo4.patchFreewheelingVelocities[ww];
 
                 overlaycontext.beginPath();
                 overlaycontext.moveTo(displayCentre[0], displayCentre[1]);
