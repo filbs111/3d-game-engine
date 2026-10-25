@@ -1298,11 +1298,11 @@ function processCar4Mechanics(timeChange){
     var wheelForces = newWheelExtensions.map( (xx,ii) => Math.min(0, carInfo4.springConstant*(sphereCastLength-xx) + carInfo4.damperConstant*wheelExtensionSpeedsOfChange[ii]))
         //TODO limit force to +ve
 
-    var carUpForceTotal = 0;
+    var carForceTotal = [0,0,0];
     var carTorqueTotal = [0,0,0];
     for (var ww=0;ww<carInfo4.wheelOffsets.length;ww++){
         var wheelOffset = carInfo4.wheelOffsets[ww];
-        carUpForceTotal += wheelForces[ww]; //this is force in frame of car
+        carForceTotal[1] += wheelForces[ww]; //this is force in frame of car
         var thisTorque = crossProduct([0,wheelForces[ww],0],wheelOffset);   //torque in frame of car
         carTorqueTotal = vectorSum(carTorqueTotal, thisTorque);
     }
@@ -1317,52 +1317,8 @@ function processCar4Mechanics(timeChange){
         carTorqueTotal[0]+= 10*rollInput;
     }
 
-    //application of torque - could track angular momentum in world frame which is conserved, or track in car frame.
-    //for now use isotropic moment of intertia so conserved in frame of car too.
-
-    var scaledTorqueImpulse = carTorqueTotal.map(xx=>0.0002*timeChange*xx);  //quick adjustment to change amount of rotation
-
-    carInfo4.angVel = vectorSum(carInfo4.angVel, scaledTorqueImpulse);
-
-    //just decay angvel for testing
-    carInfo4.angVel = carInfo4.angVel.map(xx=>xx*0.998);
-
-    var angImpulse = carInfo4.angVel.map(xx=>xx*timeChange*0.001);
-
-    angImpulse = angImpulse.map(xx=>0.5*xx);    //0.5 because quaternion axis angle formula has theta/2
-
-    var angImpulseMag = Math.hypot.apply(null, angImpulse );
-
-    var sinAng = Math.sin(angImpulseMag);
-    var factor = angImpulseMag == 0 ? 0 : sinAng/angImpulseMag;
-    var angImpulseTimesSineNormalised = angImpulse.map(xx=>xx*factor);
-    var quatToRotate = [Math.cos(angImpulseMag), angImpulseTimesSineNormalised[0], angImpulseTimesSineNormalised[1], angImpulseTimesSineNormalised[2]];
-
-    normalise_quat(quatToRotate);
-
-    //var quatToRotate = [angImpulseTimesSine[0], angImpulseTimesSine[1], angImpulseTimesSine[2], Math.cos(angImpulseMag)];
     
-    //console.log(Math.hypot.apply(null, quatToRotate));
-
-    carInfo4.quat = multiply_quaternions(carInfo4.quat, quatToRotate); 
-
-    //normalise quat? seems quat tend to be bit less than length 1
-    var quatLen = Math.hypot.apply(null, carInfo4.quat);
-    carInfo4.quat = carInfo4.quat.map(xx=>xx/quatLen);
-
-
     carInfo4.wheelExtensions = newWheelExtensions;
-
-
-    //gravity
-    if (guiParams.car.gravity){
-        carInfo4.vel[1]-=0.00981*timeChange;
-    }
-
-    var upImpulse = -0.001*carUpForceTotal*timeChange;
-    carInfo4.vel = vectorSum(carInfo4.vel, upDirection.map(xx=>xx*upImpulse));
-    
-    carInfo4.pos = vectorSum(carInfo4.pos, carInfo4.vel.map(xx=>xx*timeChange*0.001));
 
 
     //forward thrust
@@ -1434,6 +1390,11 @@ function processCar4Mechanics(timeChange){
         }
 
         carInfo4.patchDisplacements[ww] = patchDisplacement;
+
+        var forceToAdd = patchDisplacement.map(xx=>100*xx); //TODO multiplier
+        carForceTotal = vectorSum(carForceTotal, forceToAdd);
+        var torqueToAdd = crossProduct(thisWheelOffset, forceToAdd); //todo reuse code to add both linear and angular impuluse (used elsewhere for reaction forces)
+        carTorqueTotal = vectorSum(carTorqueTotal, torqueToAdd);
     }
     carInfo4.wheelContactPointInCarFrameVelocities = patchVelocities;
     carInfo4.wheelRollSpeeds = wheelRollSpeeds;
@@ -1441,6 +1402,63 @@ function processCar4Mechanics(timeChange){
         carInfo4.wheelRotations[ww] = carInfo4.wheelRotations[ww] + carInfo4.wheelRollSpeeds[ww]*timeChange*0.001/0.56;  //0.56 = wheel radius
     }
     carInfo4.patchFreewheelingVelocities = patchFreewheelingVelocities;
+
+
+
+
+
+    //application of torque - could track angular momentum in world frame which is conserved, or track in car frame.
+    //for now use isotropic moment of intertia so conserved in frame of car too.
+
+    var scaledTorqueImpulse = carTorqueTotal.map(xx=>0.0002*timeChange*xx);  //quick adjustment to change amount of rotation
+
+    carInfo4.angVel = vectorSum(carInfo4.angVel, scaledTorqueImpulse);
+
+    //just decay angvel for testing
+    carInfo4.angVel = carInfo4.angVel.map(xx=>xx*0.998);
+
+    var angImpulse = carInfo4.angVel.map(xx=>xx*timeChange*0.001);
+
+    angImpulse = angImpulse.map(xx=>0.5*xx);    //0.5 because quaternion axis angle formula has theta/2
+
+    var angImpulseMag = Math.hypot.apply(null, angImpulse );
+
+    var sinAng = Math.sin(angImpulseMag);
+    var factor = angImpulseMag == 0 ? 0 : sinAng/angImpulseMag;
+    var angImpulseTimesSineNormalised = angImpulse.map(xx=>xx*factor);
+    var quatToRotate = [Math.cos(angImpulseMag), angImpulseTimesSineNormalised[0], angImpulseTimesSineNormalised[1], angImpulseTimesSineNormalised[2]];
+
+    normalise_quat(quatToRotate);
+
+    //var quatToRotate = [angImpulseTimesSine[0], angImpulseTimesSine[1], angImpulseTimesSine[2], Math.cos(angImpulseMag)];
+    
+    //console.log(Math.hypot.apply(null, quatToRotate));
+
+    carInfo4.quat = multiply_quaternions(carInfo4.quat, quatToRotate); 
+
+    //normalise quat? seems quat tend to be bit less than length 1
+    var quatLen = Math.hypot.apply(null, carInfo4.quat);
+    carInfo4.quat = carInfo4.quat.map(xx=>xx/quatLen);
+
+
+
+    //gravity
+    if (guiParams.car.gravity){
+        carInfo4.vel[1]-=0.00981*timeChange;
+    }
+
+    var impulse = carForceTotal.map(xx=> -0.001*xx*timeChange);
+
+    var backImpulse = impulse[0];
+    var upImpulse = impulse[1];
+    var sideImpulse = impulse[2];
+
+    carInfo4.vel = vectorSum(carInfo4.vel, backDirection.map(xx=>xx*backImpulse));  //TODO matrix formulation
+    carInfo4.vel = vectorSum(carInfo4.vel, upDirection.map(xx=>xx*upImpulse));
+    carInfo4.vel = vectorSum(carInfo4.vel, sideDirection.map(xx=>xx*sideImpulse));
+
+    carInfo4.pos = vectorSum(carInfo4.pos, carInfo4.vel.map(xx=>xx*timeChange*0.001));
+
 }
 
 
