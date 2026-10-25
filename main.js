@@ -173,12 +173,14 @@ var carInfo4 = {    //for testing 6dof movement, wheels/suspension that sense gr
     damperConstant: 3000,
 
     steeringAngle:0,
-    steeringDirections:[[0,1],[0,1],[0,1],[0,1]]
+    steeringDirections:[[0,1],[0,1],[0,1],[0,1]],
+    wheelRotations:[0,0,0,0]
 }
 carInfo4.wheelExtensions = [1,1,1,1].map(xx=>xx*carInfo4.sphereCastLength);
 carInfo4.wheelContactPointInCarFrameVelocities = [1,1,1,1].map(xx=>[0,0,0]);    //for debug display.
 carInfo4.wheelRollSpeeds = [0,0,0,0]; 
 carInfo4.patchFreewheelingVelocities = [1,1,1,1].map(xx=>[0,0,0]); 
+carInfo4.patchDisplacements = [1,1,1,1].map(xx=>[0,0,0]);
 
 
 var testPointPositions = [];
@@ -1408,10 +1410,21 @@ function processCar4Mechanics(timeChange){
         var velToSubtract = steerDir3d.map(xx=>xx*wheelRollSpeed);  //TODO check sign
         var patchFreewheelingVelocity = vectorDifference(patchVelocity, velToSubtract);
         patchFreewheelingVelocities.push(patchFreewheelingVelocity);
+
+        
+        var patchDisplacementMultipliers = tyreDeflectionWeights(patchFreewheelingVelocity);    //TODO input multiplier
+
+        var existingPatchDisplacement = carInfo4.patchDisplacements[ww];
+        var newMovementPatchDisplacement = patchFreewheelingVelocity.map(xx=>xx*timeChange*0.001);  //TODO units?
+        carInfo4.patchDisplacements[ww] = vectorSum( existingPatchDisplacement.map(xx=>xx*patchDisplacementMultipliers.existingDeflection), newMovementPatchDisplacement.map(xx=>xx*patchDisplacementMultipliers.newMovement));
     }
     carInfo4.wheelContactPointInCarFrameVelocities = patchVelocities;
     carInfo4.wheelRollSpeeds = wheelRollSpeeds;
+    for(var ww=0;ww<4;ww++){
+        carInfo4.wheelRotations[ww] = carInfo4.wheelRotations[ww] + carInfo4.wheelRollSpeeds[ww]*timeChange*0.001/0.56;  //0.56 = wheel radius
+    }
         //TODO use for visible wheel rotation
+    carInfo4.patchFreewheelingVelocities = patchFreewheelingVelocities;
 }
 
 
@@ -2291,7 +2304,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
                 wheelPositions.push(thisWheelPosition);
             }
 
-            drawWheels2(wheelScale.map(xx=>xx*0.6), activeProg, wheelBuffers, wheelPositions, carInfo4.steeringAngle);  //what should wheel scale be?? other cars include *0.5 scale factor?
+            drawWheels2(wheelScale.map(xx=>xx*0.6), activeProg, wheelBuffers, wheelPositions, carInfo4.steeringAngle, carInfo4.wheelRotations);  //what should wheel scale be?? other cars include *0.5 scale factor?
             //drawWheels(wheelScale, activeProg, guiParams.car.drawWheelMarkers, 0, 0, 0);
         }
     }
@@ -2484,7 +2497,7 @@ function drawWheelsGeneral(frontness, backness, sideness, wheelScale, activeProg
     }
 }
 
-function drawWheels2(wheelScale, activeProg, wheelMesh, wheelPositions, steeringAngle){
+function drawWheels2(wheelScale, activeProg, wheelMesh, wheelPositions, steeringAngle, wheelRotations){
     var savedmMatrix = mat4.create(mMatrix);
     gl.uniform3fv(activeProg.uniforms.uFlatColor, wheelColor);  
 
@@ -2501,9 +2514,23 @@ function drawWheels2(wheelScale, activeProg, wheelMesh, wheelPositions, steering
 
         mat4.rotateY(mMatrix, steeringAngles[ww]);
 
+        mat4.rotateX(mMatrix, wheelRotations[ww]);
+
         //mat4.rotateX(mMatrix, rearRightWheelRotation);
         mat4.scale(mMatrix, wheelScale);
         drawObjectFromBuffers(wheelMesh, activeProg);
+        drawTestMarker();
+    }
+
+    function drawTestMarker(){
+        //if (!drawDebugMarkers){return;}
+
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [1,1,1]);  
+        mat4.translate(mMatrix, [0,0.5,0]);
+        mat4.scale(mMatrix, [0.5,0.5,0.1]);
+        drawObjectFromBuffers(cubeBuffers, activeProg);
+
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, wheelColor);  
     }
 }
 
