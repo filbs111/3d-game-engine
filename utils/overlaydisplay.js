@@ -166,14 +166,13 @@ var overlaydisplay = (function(){
             var wheelDebugDisplayCentres = carInfo4.wheelOffsets.map(xx=> [100+40*xx[2],500+40*xx[0]]);
 
             //wheel circles with radius proportional to reaction force (showing circle of grip)
-            overlaycontext.fillStyle = "rgba(0,0,0,0.5)";
+            
             for (var ww=0;ww<4;ww++){
                 var displayCentre = wheelDebugDisplayCentres[ww];
                 var reactionForce = carInfo4.wheelReactionForces[ww];
                 var gripCircleRadius = -10*reactionForce;
 
-                overlaycontext.beginPath()
-                
+                overlaycontext.fillStyle = carInfo4.hittingDisplacementLimit[ww] ? "rgba(255,0,0,0.5)" : "rgba(0,0,0,0.5)";
                 overlaycontext.beginPath();
                 overlaycontext.arc(displayCentre[0], displayCentre[1], gripCircleRadius, 0, 2 * Math.PI);
                 overlaycontext.fill();
@@ -193,7 +192,7 @@ var overlaydisplay = (function(){
             }
 
             //contact patch velocities to check calculation showing in correct direction
-            // wheelContactPointInCarFrameVelocities
+            overlaycontext.fillStyle = "rgba(0,0,0,0.5)";   //for text
 
             for (var ww=0;ww<4;ww++){
                 var displayCentre = wheelDebugDisplayCentres[ww];

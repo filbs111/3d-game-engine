@@ -174,7 +174,8 @@ var carInfo4 = {    //for testing 6dof movement, wheels/suspension that sense gr
 
     steeringAngle:0,
     steeringDirections:[[0,1],[0,1],[0,1],[0,1]],
-    wheelRotations:[0,0,0,0]
+    wheelRotations:[0,0,0,0],
+    hittingDisplacementLimit:[false,false,false,false]
 }
 carInfo4.wheelExtensions = [1,1,1,1].map(xx=>xx*carInfo4.sphereCastLength);
 carInfo4.wheelContactPointInCarFrameVelocities = [1,1,1,1].map(xx=>[0,0,0]);    //for debug display.
@@ -1412,18 +1413,33 @@ function processCar4Mechanics(timeChange){
         patchFreewheelingVelocities.push(patchFreewheelingVelocity);
 
         
-        var patchDisplacementMultipliers = tyreDeflectionWeights(patchFreewheelingVelocity);    //TODO input multiplier
+        var patchDisplacementMultipliers = tyreDeflectionWeights(0.01*wheelRollSpeed);    //TODO tune input multiplier, work out what decay length implies. critical slip angle at high speed
+                                                                                            //can test approximately by moving car forward with wheel side forces turned off, see what slip angle (like angle of attack)
+                                                                                            //  before deflection hits limit. smaller multiplier gives smaller slip angle to hit tyre deflection limit.
 
         var existingPatchDisplacement = carInfo4.patchDisplacements[ww];
         var newMovementPatchDisplacement = patchFreewheelingVelocity.map(xx=>xx*timeChange*0.001);  //TODO units?
-        carInfo4.patchDisplacements[ww] = vectorSum( existingPatchDisplacement.map(xx=>xx*patchDisplacementMultipliers.existingDeflection), newMovementPatchDisplacement.map(xx=>xx*patchDisplacementMultipliers.newMovement));
+        var patchDisplacement = vectorSum( existingPatchDisplacement.map(xx=>xx*patchDisplacementMultipliers.existingDeflection), newMovementPatchDisplacement.map(xx=>xx*patchDisplacementMultipliers.newMovement));
+
+        //limit displacement to circle with radius proportional to ground reaction force. TODO tune to get ~1G / set a variable that use both to get displacement limit and from displacement to force.
+        var uncappedPatchDisplacementMag = Math.hypot.apply(null, patchDisplacement);
+        var displacementLimit = 0.01*Math.abs(wheelForces[ww]); // TODO tune constant so sensible. want displacement max something like 1 cm
+
+        if (uncappedPatchDisplacementMag>displacementLimit){
+            var multiplier = displacementLimit/uncappedPatchDisplacementMag;
+            patchDisplacement = patchDisplacement.map(xx=>xx*multiplier);
+            carInfo4.hittingDisplacementLimit[ww] = true;
+        }else{
+            carInfo4.hittingDisplacementLimit[ww] = false;
+        }
+
+        carInfo4.patchDisplacements[ww] = patchDisplacement;
     }
     carInfo4.wheelContactPointInCarFrameVelocities = patchVelocities;
     carInfo4.wheelRollSpeeds = wheelRollSpeeds;
     for(var ww=0;ww<4;ww++){
         carInfo4.wheelRotations[ww] = carInfo4.wheelRotations[ww] + carInfo4.wheelRollSpeeds[ww]*timeChange*0.001/0.56;  //0.56 = wheel radius
     }
-        //TODO use for visible wheel rotation
     carInfo4.patchFreewheelingVelocities = patchFreewheelingVelocities;
 }
 
