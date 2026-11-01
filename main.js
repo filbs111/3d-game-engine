@@ -146,6 +146,9 @@ var carInfo3 = {    //mechanum
     wheelTurnRotate:0
 }
 
+var car4LastVel = [0,0,0];  //for acceleration measurement
+var car4MeasuredAcc = [0,0,0];
+
 var carInfo4 = {    //for testing 6dof movement, wheels/suspension that sense ground.
                     // then add slip stuff, engine, body collision etc...
     pos:[3,0,3],
@@ -916,6 +919,11 @@ function iterateMechanics(timeChange){
     for (var ii=0;ii<car4NumSubsteps;ii++){
         processCar4Mechanics(car4SubstepsTimeChange);
     }
+
+    //measure acceleration of car4
+    car4MeasuredAcc = vectorDifference(carInfo4.vel, car4LastVel).map(xx=>xx*1000/timeChange);
+    car4LastVel = carInfo4.vel.map(x=>x);
+
 }
 
 var car2steeringVel = 0;

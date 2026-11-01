@@ -222,8 +222,11 @@ var overlaydisplay = (function(){
                 overlaycontext.fillText(carInfo4.wheelRollSpeeds[ww].toFixed(2), displayCentre[0], displayCentre[1]);
             }
 
-            //tyre deflection (capped within grip circle)
+            //display gees 
+            var car4AccMagMetresPerSec = Math.hypot.apply(null, car4MeasuredAcc);
+            var car4AccMagGees = car4AccMagMetresPerSec/9.81;
 
+            overlaycontext.fillText(car4AccMagGees.toFixed(2)+"G", 500,500);
 
         }
     }
