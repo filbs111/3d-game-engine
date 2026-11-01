@@ -163,7 +163,7 @@ var overlaydisplay = (function(){
 
         if (guiParams.carMode == "car4"){
             
-            var wheelDebugDisplayCentres = carInfo4.wheelOffsets.map(xx=> [100+40*xx[2],500+40*xx[0]]);
+            var wheelDebugDisplayCentres = carInfo4.wheelOffsets.map(xx=> [100+40*xx[0],500+40*xx[2]]);
 
             //wheel circles with radius proportional to reaction force (showing circle of grip)
             
@@ -201,21 +201,21 @@ var overlaydisplay = (function(){
                 overlaycontext.strokeStyle = "white";
                 overlaycontext.beginPath();
                 overlaycontext.moveTo(displayCentre[0], displayCentre[1]);
-                overlaycontext.lineTo(displayCentre[0]+lineDisplacement1[2], displayCentre[1]+lineDisplacement1[0]);
+                overlaycontext.lineTo(displayCentre[0]+lineDisplacement1[0], displayCentre[1]+lineDisplacement1[2]);
                 overlaycontext.stroke();
 
                 var lineDisplacement2 = carInfo4.patchFreewheelingVelocities[ww];
                 overlaycontext.strokeStyle = "cyan";
                 overlaycontext.beginPath();
                 overlaycontext.moveTo(displayCentre[0], displayCentre[1]);
-                overlaycontext.lineTo(displayCentre[0]+lineDisplacement2[2], displayCentre[1]+lineDisplacement2[0]);
+                overlaycontext.lineTo(displayCentre[0]+lineDisplacement2[0], displayCentre[1]+lineDisplacement2[2]);
                 overlaycontext.stroke();
 
                 var lineDisplacement3 = carInfo4.patchFreewheelingVelocities[ww];
                 overlaycontext.strokeStyle = "red";
                 overlaycontext.beginPath();
                 overlaycontext.moveTo(displayCentre[0], displayCentre[1]);
-                overlaycontext.lineTo(displayCentre[0]+lineDisplacement3[2], displayCentre[1]+lineDisplacement3[0]);
+                overlaycontext.lineTo(displayCentre[0]+lineDisplacement3[0], displayCentre[1]+lineDisplacement3[2]);
                 overlaycontext.stroke();
 
                 //show roll speed
