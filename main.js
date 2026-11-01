@@ -235,9 +235,14 @@ function init(){
                         playerPos[0] = carInfo2.pos3[0];  //TODO appear at drivers side door
                         playerPos[2] = carInfo2.pos3[2];
                         guiParams.carMode = "walk";
+                    }
+                    else if (guiParams.carMode == "car4"){
+                        //get out of car
+                        playerPos = carInfo4.pos.map(x=>x);  //TODO appear at drivers side door
+                        guiParams.carMode = "walk";
                     }else{
                         //TODO check proximity
-                        guiParams.carMode = "car2";
+                        guiParams.carMode = "car4";
                     }
                     break;
                 case 84:    //T
