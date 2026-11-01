@@ -22,6 +22,7 @@ var guiParams={
         drawWheelMarkers:false,
         brakeBias:.6,
         gravity:true,
+        angularDrag:true
     },
     debug:{
         showFramerate:true,
@@ -61,6 +62,7 @@ function setupGui(){
     carFolder.add(guiParams.car, "drawWheelMarkers");
     carFolder.add(guiParams.car, "brakeBias", .3, .7, .01);
     carFolder.add(guiParams.car, "gravity");
+    carFolder.add(guiParams.car, "angularDrag");
 
     var debugFolder = gui.addFolder('debug');
     debugFolder.add(guiParams.debug, "showFramerate");

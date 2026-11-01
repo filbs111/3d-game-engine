@@ -1415,7 +1415,9 @@ function processCar4Mechanics(timeChange){
     carInfo4.angVel = vectorSum(carInfo4.angVel, scaledTorqueImpulse);
 
     //just decay angvel for testing
-    carInfo4.angVel = carInfo4.angVel.map(xx=>xx*0.998);
+    if (guiParams.car.angularDrag){
+        carInfo4.angVel = carInfo4.angVel.map(xx=>xx*0.998);
+    }
 
     var angImpulse = carInfo4.angVel.map(xx=>xx*timeChange*0.001);
 
