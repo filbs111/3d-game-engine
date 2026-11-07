@@ -1334,6 +1334,14 @@ function processCar4Mechanics(timeChange){
     }
 
 
+    var brakeInput = keyThing.bKey();
+    carInfo4.brakePedal = carInfo2.brakePedal*0.9+ 0.1*brakeInput;  //timestep dependence
+    var brake = carInfo4.brakePedal;
+
+
+
+
+
     //calculate wheel spin speeds (free wheeling)
     //calculate wheel speed relative to ground
     //calculate motion of point at bottom of wheel relative to ground, subtract motion in roll direction (assume free wheeling)
