@@ -1404,11 +1404,18 @@ function processCar4Mechanics(timeChange){
             carInfo4.hittingDisplacementLimit[ww] = false;
         }
 
+        patchDisplacement[1]=0; //y patch displacement makes no sense. TODO consider whether this should be countered earlier.
+
+        var changeInPatchDisplacement = vectorDifference(patchDisplacement,carInfo4.patchDisplacements[ww]);
+
         carInfo4.patchDisplacements[ww] = patchDisplacement;
 
-        var forceToAdd = patchDisplacement.map(xx=>100*xx); //TODO multiplier
+        var forceToAdd = vectorSum( patchDisplacement.map(xx=>100*xx), changeInPatchDisplacement.map(xx=>10000*xx/timeChange)); //TODO choose sensible multipliers
+
         carForceTotal = vectorSum(carForceTotal, forceToAdd);
+
         var torqueToAdd = crossProduct(thisWheelOffset, forceToAdd); //todo reuse code to add both linear and angular impuluse (used elsewhere for reaction forces)
+
         carTorqueTotal = vectorSum(carTorqueTotal, torqueToAdd);
     }
     carInfo4.wheelContactPointInCarFrameVelocities = patchVelocities;
