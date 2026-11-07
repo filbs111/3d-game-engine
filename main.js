@@ -1368,7 +1368,10 @@ function processCar4Mechanics(timeChange){
         var wheelRollSpeed = dotProduct(patchVelocity, steerDir3d);
         wheelRollSpeeds.push(wheelRollSpeed);
 
-        var velToSubtract = steerDir3d.map(xx=>xx*wheelRollSpeed);  //TODO check sign
+        var rollSpeedAccountingForBraking = wheelRollSpeed * (1- 0.13*brake);    //simple braking. tuned so just enough to get 1g deceleration
+            //since grip force prop to displacement, and displacement max prop to wheel loading, adding brake balance so that more heavily loaded wheels brake harder might be useful
+
+        var velToSubtract = steerDir3d.map(xx=>xx*rollSpeedAccountingForBraking);  //TODO check sign
         var patchFreewheelingVelocity = vectorDifference(patchVelocity, velToSubtract);
         patchFreewheelingVelocities.push(patchFreewheelingVelocity);
 
