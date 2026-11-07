@@ -2324,7 +2324,8 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
         var savedMat = mat4.create(mMatrix);
 
         //move forward a bit in frame of car because centre of car mesh is towards back
-        mat4.translate(mMatrix, [0,0,1.5]);
+        // + move downward because centre of mass of model is above origin.
+        mat4.translate(mMatrix, [0,-0.2,1.5]);
 
         mat4.scale(mMatrix,[1,1,1].map(x=>x*0.56));  //guess correct size - default seems far too big
         drawObjectFromBuffers(listerBuffers, activeProg);
