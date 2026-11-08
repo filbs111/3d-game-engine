@@ -180,7 +180,9 @@ var carInfo4 = {    //for testing 6dof movement, wheels/suspension that sense gr
     steeringAngle:0,
     steeringDirections:[[0,1],[0,1],[0,1],[0,1]],
     wheelRotations:[0,0,0,0],
-    hittingDisplacementLimit:[false,false,false,false]
+    hittingDisplacementLimit:[false,false,false,false],
+    brakePedal:0,
+    acceleratorPedal:0
 }
 carInfo4.wheelExtensions = [1,1,1,1].map(xx=>xx*carInfo4.sphereCastLength);
 carInfo4.wheelContactPointInCarFrameVelocities = [1,1,1,1].map(xx=>[0,0,0]);    //for debug display.
@@ -1335,10 +1337,13 @@ function processCar4Mechanics(timeChange){
 
 
     var brakeInput = keyThing.bKey();
-    carInfo4.brakePedal = carInfo2.brakePedal*0.9+ 0.1*brakeInput;  //timestep dependence
+    var acceleratorInput = keyThing.nKey();   //TODO use w/s for this!
+
+    carInfo4.brakePedal = carInfo4.brakePedal*0.9+ 0.1*brakeInput;  //timestep dependence
+    carInfo4.acceleratorPedal = carInfo4.acceleratorPedal*0.9+ 0.1*acceleratorInput;
+
     var brake = carInfo4.brakePedal;
-
-
+    var accelerator = carInfo4.acceleratorPedal; 
 
 
 
@@ -1376,7 +1381,8 @@ function processCar4Mechanics(timeChange){
         var wheelRollSpeed = dotProduct(patchVelocity, steerDir3d);
         wheelRollSpeeds.push(wheelRollSpeed);
 
-        var rollSpeedAccountingForBraking = wheelRollSpeed * (1- 0.13*brake);    //simple braking. tuned so just enough to get 1g deceleration
+        var accelerationFactorThisWheel = ww>1 ? accelerator : 0;   //TODO limit to engine power
+        var rollSpeedAccountingForBraking = wheelRollSpeed * (1- 0.13*brake + 0.13*accelerationFactorThisWheel);    //simple braking. tuned so just enough to get 1g deceleration
             //since grip force prop to displacement, and displacement max prop to wheel loading, adding brake balance so that more heavily loaded wheels brake harder might be useful
 
         var velToSubtract = steerDir3d.map(xx=>xx*rollSpeedAccountingForBraking);  //TODO check sign
