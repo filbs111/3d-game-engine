@@ -196,6 +196,9 @@ var testPoints = [];
 var carCamera4Quat = [0,0,0,1];
 var carCamera4QuatOld = [0,0,0,1];
 
+var car4QuatTest1 = [0,0,0,0];
+var car4QuatTest2 = [0,0,0,0];
+
 
 var wheelColor = [1,1,1].map(x=>x*0.002);
 
@@ -898,7 +901,43 @@ function iterateMechanics(timeChange){
     //fourth car camera
     carInfo4.posOld = carInfo4.pos.map(xx=>xx);
     carCamera4QuatOld = carCamera4Quat;
-    carCamera4Quat = carInfo4.quat.map( (xx, ii) => 0.1*xx+ carCamera4Quat[ii]);    //exponential decay towards car orientation
+
+
+
+    //blend car orientation with orientation of frame aligned with car velocity, with influence of latter 0 when car not moving
+    //just consider velocity in 2d plane
+    var car4_2dspeed = Math.sqrt(carInfo4.vel[0]*carInfo4.vel[0] + carInfo4.vel[2]*carInfo4.vel[2]);
+    var car4_speedAngle = Math.atan2(carInfo4.vel[0], carInfo4.vel[2]);
+    var half_speedAngle = car4_speedAngle/2;
+    var velFrameQuat = [0,-Math.cos(half_speedAngle),0,Math.sin(half_speedAngle)];   //guess.
+
+    //double cover - opposite quaternions represent same object orientation. this is a problem when averaging quaternions- want to find orientation between
+    //2 quaternions the short way around. to do this, flip one quat if dot product of the quats is -ve
+    if (dotProd4(carInfo4.quat, velFrameQuat)<0){
+        velFrameQuat=velFrameQuat.map(x=>-x);
+    }
+    //NOTE this is still a bit crap because switches when reversing, so result is flippingbetween looking left and right. 
+    // TODO replace with system that handles this. perhaps just calculate velocity in frame of car and turn to side using that.
+
+    var critSpeed = 10;
+    var amountToTakeOfVelQuat = Math.min(0.7, car4_2dspeed/critSpeed);           //basic. TODO smoother blend
+    var modifiedQuat = carInfo4.quat.map( (xx,ii) => xx + amountToTakeOfVelQuat*velFrameQuat[ii]);
+        //behaves poorly. guess bug
+        //TODO check what carInfo4.quat typically is. what are 0th, 2nd vals? are these actually zeros? - hope/expect that when car is level 0th, 2nd component are 0s
+        // and that velquat and standard car orientation quat look pretty similar and have same sign
+        //TODO draw quats on screen - 2x 2d markers per quat?
+        //todo put a test point on screen displaced reletive to car in velocity direction
+
+    amountToTakeOfVelQuatGlobal = amountToTakeOfVelQuat;
+    car4QuatTest1 = velFrameQuat;
+    car4QuatTest2 = carInfo4.quat.map(x=>x);
+
+
+    carCamera4Quat = modifiedQuat.map( (xx, ii) => 0.1*xx+ carCamera4Quat[ii]);    //exponential decay towards car orientation
+
+    normalise_quat(carCamera4Quat);
+
+
     //make camera more upright. suspect way to do this is to scale 2 quat components towards zero and normalise
     carCamera4Quat[0]*=0.2;
     carCamera4Quat[2]*=0.2;
@@ -1382,7 +1421,7 @@ function processCar4Mechanics(timeChange){
         wheelRollSpeeds.push(wheelRollSpeed);
 
         var accelerationFactorThisWheel = ww>1 ? accelerator : 0;   //TODO limit to engine power
-        var rollSpeedAccountingForBraking = wheelRollSpeed * (1- 0.13*brake + 0.13*accelerationFactorThisWheel);    //simple braking. tuned so just enough to get 1g deceleration
+        var rollSpeedAccountingForBraking = wheelRollSpeed * (1- 0.13*brake + 0.2*accelerationFactorThisWheel);    //simple braking. tuned so just enough to get 1g deceleration
             //since grip force prop to displacement, and displacement max prop to wheel loading, adding brake balance so that more heavily loaded wheels brake harder might be useful
 
         var velToSubtract = steerDir3d.map(xx=>xx*rollSpeedAccountingForBraking);  //TODO check sign

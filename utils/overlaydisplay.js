@@ -228,6 +228,26 @@ var overlaydisplay = (function(){
 
             overlaycontext.fillText(car4AccMagGees.toFixed(2)+"G", 500,500);
 
+
+            overlaycontext.fillText((amountToTakeOfVelQuatGlobal*100).toFixed(2)+"%", 300,500);
+
+
+            //show quats used for car4 camera 
+            displayTestLine("red",[400,400], [car4QuatTest1[0],car4QuatTest1[2]].map(xx=>xx*50));
+            displayTestLine("green",[400,400], [car4QuatTest1[1],car4QuatTest1[3]].map(xx=>xx*50));
+            overlaycontext.fillText("velframe", 400,400);
+
+            displayTestLine("red",[500,400], [car4QuatTest2[0],car4QuatTest2[2]].map(xx=>xx*50));
+            displayTestLine("green",[500,400], [car4QuatTest2[1],car4QuatTest2[3]].map(xx=>xx*50));
+
+
+            function displayTestLine(color, centre, displacement){
+                overlaycontext.strokeStyle = color
+                overlaycontext.beginPath();
+                overlaycontext.moveTo(centre[0], centre[1]);
+                overlaycontext.lineTo(centre[0]+displacement[0], centre[1]+displacement[1]);
+                overlaycontext.stroke();
+            }  
         }
     }
 
