@@ -619,6 +619,7 @@ var cameraZoom = -1;
 var xMoveSmooth=0;
 var zMoveSmooth=0;
 
+var amountToTakeOfVelQuatGlobal=0;
 function iterateMechanics(timeChange){
     //TODO take inputs more frequently?
 
