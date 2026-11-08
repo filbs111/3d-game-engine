@@ -620,6 +620,8 @@ var xMoveSmooth=0;
 var zMoveSmooth=0;
 
 var amountToTakeOfVelQuatGlobal=0;
+var gunToTargetDistanceGlobal=0;
+
 function iterateMechanics(timeChange){
     //TODO take inputs more frequently?
 
@@ -735,12 +737,20 @@ function iterateMechanics(timeChange){
     var roundsPerMin = 1200;
     var haveReloaded = timeSinceLastShot> 60_000/roundsPerMin;
 
-    if (fireButtonDepressedNow && haveReloaded && (haveUnclickedFire || guiParams.gun.autofire)){
 
-        //raycast from gun forwards
-        var gunPos = tempGunMat.slice(12,15);
-        mat4.translate(tempGunMat, [0,0,-100]);
-        var rayEndPos = tempGunMat.slice(12,15);
+    //raycast from gun forwards
+    var gunPos = tempGunMat.slice(12,15);
+    var rayCastLength = 100;
+    mat4.translate(tempGunMat, [0,0,-rayCastLength]);
+    var rayEndPos = tempGunMat.slice(12,15);
+
+    if (guiParams.carMode == "walk"){   //TODO put all walk logic in if
+        //always do a raycast for distance measurement.
+        var collisionResult = rayBvhTriangleCollisionTopLevel(gunPos, rayEndPos, cityBvh, cityPosition, cityScale, 0.05);   //NOTE sphere rad small because testing with small balls
+        gunToTargetDistanceGlobal = rayCastLength*collisionResult.fractionAlongRay;
+    }
+
+    if (fireButtonDepressedNow && haveReloaded && (haveUnclickedFire || guiParams.gun.autofire)){
 
         //var collisionResult = lineSphereCollision(gunPos, rayEndPos, sphereStatue.matrix.slice(12,15), 1);
 

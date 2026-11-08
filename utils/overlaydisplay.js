@@ -71,7 +71,10 @@ var overlaydisplay = (function(){
 
         var steeringAngleIndicatorLen = 20;
 
-        if (guiParams.carMode == "walk"){return;}
+        if (guiParams.carMode == "walk"){
+            overlaycontext.fillText("RANGE:"+gunToTargetDistanceGlobal.toFixed(1)+"M", 400,400);
+            return;
+        }
 
         //gee meter background
         overlaycontext.beginPath()
