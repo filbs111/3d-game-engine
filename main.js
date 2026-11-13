@@ -511,7 +511,7 @@ var numPhysUpdates = 0;
 var playerPos=[0,0,5];
 var playerPosOld=[0,0,5];
 var playerEyePosFromNeck=[0,0.18,-0.15]; //18cm above and ahead of neck, so 1.68m above ground, 15cm forwards
-var thirdPersonEyePosFromNeck=[0.2,0.2+0.15,0.8]; //3rd person ish. last number is how far back
+var thirdPersonEyePosFromNeck=[0.2,0.2+0.15,1]; //3rd person ish. last number is how far back
 
 
 var playerNeckPos=[0,0.53,0.03];  //relative to player centre which is 1m above ground.  1.53m above ground, 3cm back
@@ -1350,7 +1350,8 @@ function drawScene(frameTime){
     var thirdPersonCameraMat = mat4.create(eyeMat);
 
     mat4.translate(eyeMat, playerEyePosFromNeck);
-    mat4.translate(thirdPersonCameraMat, thirdPersonEyePosFromNeck);
+
+    moveMatWithCollision(thirdPersonCameraMat, thirdPersonEyePosFromNeck, 0.25);
 
     if (guiParams.externalCamFollowsPlayer){
         mat4.identity(staticCamera);
@@ -1398,7 +1399,15 @@ function drawScene(frameTime){
         var cameraPos = guiParams.camera.interpolate ? vectorInterpolation(carInfo4.pos, carInfo4.posOld, interpolationFactor) : carInfo4.pos;
         var mat = matFromPosAndQuat(cameraPos, cameraQuat);
         //mat4.rotateY(mat, Math.PI/6);   //turn a bit to inspect wheels
-        mat4.translate(mat, [0,2,4]);   //above and behind car
+
+        var car4Cam = guiParams.camera.car4Cam;
+        var toMoveCameraInCarFrame = [0,car4Cam.height,car4Cam.behind];
+        
+        //var toMoveCameraInCarFrame = [0,1.55,3.1];  //above and behind car
+        // var toMoveCameraInCarFrame = [0,0.7,-0.4];  //above and behind car
+        // var toMoveCameraInCarFrame = [0.2,0.5,0];   //driving position
+        moveMatWithCollision(mat, toMoveCameraInCarFrame, 0.25);
+
         mat4.set(mat, unmirroredCameraMat);
     }else if(useThirdPersonCam){
         mat4.set(thirdPersonCameraMat, unmirroredCameraMat);

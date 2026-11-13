@@ -3,7 +3,7 @@ var guiParams={
     finalStageFxaa:true,
     useExperimentalProjectionMatrix:true,
     drawBody:true,
-    carMode:"walk",
+    carMode:"car4",
     camera:{
         interpolate:true,
         type:"first person",
@@ -12,7 +12,11 @@ var guiParams={
         thobyK2: 0.75,
         tanKThetaK: 0.75,
         specialK: 0.75,
-        zoom: .9
+        zoom: .9,
+        car4Cam:{
+            height:1.55,
+            behind:3.1
+        }
     },
     gun:{
         double:false,
@@ -56,7 +60,12 @@ function setupGui(){
     cameraFolder.add(guiParams.camera, "tanKThetaK", 0.05, 1, 0.05);
     cameraFolder.add(guiParams.camera, "specialK", 0, 1, 0.05);
 
-    cameraFolder.add(guiParams.camera, "zoom", .4, 4, .05);
+    cameraFolder.add(guiParams.camera, "zoom", .4, 2, .05);
+
+
+    var car4CamFolder = cameraFolder.addFolder("car4Cam");3
+    car4CamFolder.add(guiParams.camera.car4Cam, "height", .1, 5, .05);
+    car4CamFolder.add(guiParams.camera.car4Cam, "behind", .1, 5, .05);
 
     var gunFolder = gui.addFolder('gun');
     gunFolder.add(guiParams.gun, "double");
