@@ -433,7 +433,16 @@ function prepBuffersForDrawing(bufferObj, shaderProg){
         gl.uniform1i(shaderProg.uniforms.uSamplerCubeFisheye, 1);
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapView.cubemapTexture);
 //        		gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+    }
 
+    if (shaderProg.uniforms.uLightDirection){
+        //TODO only calculalate this vector when ui changes
+        var degsToRads = Math.PI/180;
+        var elev = degsToRads*guiParams.sun.elevation;
+        var turn = degsToRads*guiParams.sun.turn;
+        var cosElev = Math.cos(elev);
+        var sunLightDir = [cosElev*Math.sin(turn), Math.sin(elev), cosElev*Math.cos(turn)];
+        gl.uniform3fv(shaderProg.uniforms.uLightDirection, sunLightDir);
     }
 
 }

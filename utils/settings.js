@@ -24,6 +24,10 @@ var guiParams={
         gravity:true,
         angularDrag:true
     },
+    sun:{
+        elevation:60,
+        turn:60
+    },
     debug:{
         showFramerate:true,
         showSpeedInfo:false
@@ -63,6 +67,10 @@ function setupGui(){
     carFolder.add(guiParams.car, "brakeBias", .3, .7, .01);
     carFolder.add(guiParams.car, "gravity");
     carFolder.add(guiParams.car, "angularDrag");
+
+    var sunFolder = gui.addFolder('sun');
+    sunFolder.add(guiParams.sun, "elevation", -90, 90, 1);
+    sunFolder.add(guiParams.sun, "turn", 0, 360, 1);
 
     var debugFolder = gui.addFolder('debug');
     debugFolder.add(guiParams.debug, "showFramerate");

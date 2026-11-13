@@ -7,6 +7,7 @@ uniform mat4 uMMatrix;
 uniform mat4 uPMatrix;
 
 uniform vec3 uFlatColor;
+uniform vec3 uLightDirection;
 out vec3 vLightTimesColor;
 
 void main(void) {
@@ -20,7 +21,7 @@ void main(void) {
     float halfColorRange = .5*(1. - baselineBrightness);
     float colorMiddle = baselineBrightness + halfColorRange;
 
-    float light = colorMiddle+halfColorRange*dot(normalize(transformedNormal), vec4(0.,1.,0.,0.));
+    float light = colorMiddle+halfColorRange*dot(normalize(transformedNormal.xyz), uLightDirection);
 
     vLightTimesColor = uFlatColor * vec3(light);
 }

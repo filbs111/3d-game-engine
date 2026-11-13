@@ -8,6 +8,8 @@ uniform mat4 uVMatrix;
 uniform mat4 uMMatrix;
 uniform mat4 uPMatrix;
 
+uniform vec3 uLightDirection;
+
 void main(void) {
     gl_Position = uPMatrix * uVMatrix*uMMatrix* vec4(aVertexPosition, 1.0);
     vTextureCoord = aTextureCoord;
@@ -15,6 +17,6 @@ void main(void) {
     //NOTE this is wierd because model matrix includes scale!
     // NOTE normalizing vector maybe is wrong for non-unifoprmly scaled objects. TODO fix, or just use unscaled objects.
     vec4 transformedNormal = (uMMatrix * vec4(aVertexNormal, 0.0));
-    float vLightScalar = 0.5+0.5*dot(normalize(transformedNormal), vec4(0.,1.,0.,0.));
+    float vLightScalar = 0.5+0.5*dot(normalize(transformedNormal.xyz), uLightDirection);
     vLight = vec3(vLightScalar);
 }
