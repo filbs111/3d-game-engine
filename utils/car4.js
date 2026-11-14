@@ -114,7 +114,7 @@ function processCar4Mechanics(timeChange){
         var wheelStartPos = vectorSum( vectorSum( backDirection.map(x=>x*wheelOffset[2]), sideDirection.map(x=>x*wheelOffset[0])), vectorSum(upDirection.map(x=>x*wheelOffset[1]), carPos));    //NOTE could write as matrix methods.
 
         var wheelEndPos =  vectorSum( wheelStartPos, upDirection.map(x=>x*-sphereCastLength));
-        var wheelCollision = rayBvhTriangleCollisionTopLevel(wheelStartPos, wheelEndPos, cityBvh, cityPosition, cityScale, sphereCastSphereRad);
+        var wheelCollision = raySphereCollisionAllObjects(wheelStartPos, wheelEndPos, sphereCastSphereRad);
     
         newWheelExtensions[ww] = sphereCastLength*Math.min(wheelCollision.fractionAlongRay, 1);
 

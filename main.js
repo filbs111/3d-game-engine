@@ -632,7 +632,7 @@ function iterateMechanics(timeChange){
     playerPos[0]+=playerVel[0]*timeChange;
 
     //simple height- shoot vertical ray at this position.
-    var verticalCollision = rayBvhTriangleCollisionTopLevel([playerPos[0], playerPos[1]+1, playerPos[2]], [playerPos[0], -1000, playerPos[2]], cityBvh, cityPosition, cityScale, 1);
+    var verticalCollision = raySphereCollisionAllObjects([playerPos[0], playerPos[1]+1, playerPos[2]], [playerPos[0], -1000, playerPos[2]], 1);
     if (verticalCollision.fractionAlongRay<1){
         playerOnFloorHeight = verticalCollision.collisionPos[1];
         //playerPos = verticalCollision.collisionPos;
@@ -701,8 +701,9 @@ function iterateMechanics(timeChange){
 
     if (guiParams.carMode == "walk"){   //TODO put all walk logic in if
         //always do a raycast for distance measurement.
-        var collisionResult = rayBvhTriangleCollisionTopLevel(gunPos, rayEndPos, cityBvh, cityPosition, cityScale, 0.05);   //NOTE sphere rad small because testing with small balls
-        gunToTargetDistanceGlobal = rayCastLength*collisionResult.fractionAlongRay;
+
+        var collisionResult = raySphereCollisionAllObjects(gunPos, rayEndPos, 0.05);  //NOTE sphere rad small because testing with small balls
+
     }
 
     if (fireButtonDepressedNow && haveReloaded && (haveUnclickedFire || guiParams.gun.autofire)){
@@ -716,10 +717,9 @@ function iterateMechanics(timeChange){
         var numberOfTimes = 5;
         for (var ii=0;ii<numberOfTimes;ii++){
             var adjustedRayEnd = rayEndPos.map(xx=> xx+500*(Math.random()-0.5));
-            //var collisionResult = lineFatTriangleCollision(gunPos, adjustedRayEnd, bodgeTriangle, 1);
-
-            var collisionResult = rayBvhTriangleCollisionTopLevel(gunPos, adjustedRayEnd, cityBvh, cityPosition, cityScale, 0.05);   //NOTE sphere rad small because testing with small balls
             
+            var collisionResult = raySphereCollisionAllObjects(gunPos, adjustedRayEnd, 0.05);   //NOTE sphere rad small because testing with small balls)
+
             if (collisionResult.fractionAlongRay<=1){
                 lastGunRayHitPositions.push(collisionResult.collisionPos);
             }

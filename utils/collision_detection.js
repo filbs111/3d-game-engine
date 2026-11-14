@@ -410,3 +410,13 @@ function moveMatWithCollision(matToMove, amountToMove, sphereRadius){
 
     mat4.translate(matToMove, toMoveBack);
 }
+
+
+function raySphereCollisionAllObjects(gunPos, rayEndPos, sphereRad){
+        
+    var result1 = lineFatTriangleCollision(gunPos, rayEndPos, bodgeTriangle, 1+sphereRad);
+    var result2 = rayBvhTriangleCollisionTopLevel(gunPos, rayEndPos, cityBvh, cityPosition, cityScale, sphereRad);
+
+    return result1.fractionAlongRay < result2.fractionAlongRay ? result1 : result2;
+        //TODO check this works if fractionAlongRay is negative for either.
+}
