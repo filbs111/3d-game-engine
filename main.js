@@ -445,13 +445,15 @@ function prepBuffersForDrawing(bufferObj, shaderProg){
         gl.uniform3fv(shaderProg.uniforms.uLightDirection, sunLightDir);
     }
 
+    if (shaderProg.uniforms.uVMatrix){
+        gl.uniformMatrix4fv(shaderProg.uniforms.uVMatrix, false, cameraMat);
+    }
 }
 function drawObjectFromPreppedBuffers(bufferObj, shaderProg){
     if (shaderProg.uniforms.uMVMatrix){
 	    gl.uniformMatrix4fv(shaderProg.uniforms.uMVMatrix, false, mvMatrix);
     }else if (shaderProg.uniforms.uMMatrix){
         gl.uniformMatrix4fv(shaderProg.uniforms.uMMatrix, false, mMatrix);
-        gl.uniformMatrix4fv(shaderProg.uniforms.uVMatrix, false, cameraMat);  //TODO set less frequently
     }
 
     gl.drawElements(gl.TRIANGLES, bufferObj.vertexIndexBuffer.numItems, bufferObj.use32BitIndices? gl.UNSIGNED_INT: gl.UNSIGNED_SHORT, 0);
@@ -2135,20 +2137,22 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
     drawObjectFromBuffers(cubeBuffers, activeProg);
 
     if (sphereStatue.buffers.isLoaded){
+        prepBuffersForDrawing(sphereStatue.buffers, activeProg);
+
         mat4.set(sphereStatue.matrix, mMatrix);
-        drawObjectFromBuffers(sphereStatue.buffers, activeProg);
+        drawObjectFromPreppedBuffers(sphereStatue.buffers, activeProg);
 
         //draw ray collision test marker (position set on firing gun)
         gl.uniform3fv(activeProg.uniforms.uFlatColor, [1,1,0]);
         for (var ii=0;ii<lastGunRayHitPositions.length;ii++){
             setupDrawMatrixForObjectAtPosition(lastGunRayHitPositions[ii]);
             mat4.scale(mMatrix,[1,1,1].map(xx=>xx*0.05));
-            drawObjectFromBuffers(sphereStatue.buffers, activeProg);
+            drawObjectFromPreppedBuffers(sphereStatue.buffers, activeProg);
         }
         gl.uniform3fv(activeProg.uniforms.uFlatColor, [1,0,1]);
         setupDrawMatrixForObjectAtPosition(lastRaycastHitPosition);
         mat4.scale(mMatrix,[1,1,1].map(xx=>xx*0.05));
-        drawObjectFromBuffers(sphereStatue.buffers, activeProg);
+        drawObjectFromPreppedBuffers(sphereStatue.buffers, activeProg);
 
 
         //draw a capsule quick and nasty way by drawing many spheres
@@ -2158,7 +2162,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
             var oneMinusX = 1-xx;
             var pos = bodgeCapsule.start.map((yy,ii)=> yy*oneMinusX + bodgeCapsule.end[ii]*xx);
             setupDrawMatrixForObjectAtPosition(pos);
-            drawObjectFromBuffers(sphereStatue.buffers, activeProg);
+            drawObjectFromPreppedBuffers(sphereStatue.buffers, activeProg);
         }
 
         //draw a fat triangle in a quick and nasty way
@@ -2175,7 +2179,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
                 var pos = vectorSum(vectorSum(from0,from1),from2);
 
                 setupDrawMatrixForObjectAtPosition(pos);
-                drawObjectFromBuffers(sphereStatue.buffers, activeProg);
+                drawObjectFromPreppedBuffers(sphereStatue.buffers, activeProg);
             }
         }
 
@@ -2186,7 +2190,7 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
                 gl.uniform3fv(activeProg.uniforms.uFlatColor, testPoint.color);
                 setupDrawMatrixForObjectAtPosition(testPoint.pos);
                 mat4.scale(mMatrix,[1,1,1].map(xx=>xx*0.2));
-                drawObjectFromBuffers(sphereStatue.buffers, activeProg);
+                drawObjectFromPreppedBuffers(sphereStatue.buffers, activeProg);
             }
         }
     }
@@ -2410,13 +2414,14 @@ function drawBiovisionAnimation(anim, currentTime, activeProg){
     mat4.translate(cameraMat, animWorldPosition);
     mat4.scale(cameraMat, [1,1,1].map(x=>x*correctiveScaleFactor));
 
+   	prepBuffersForDrawing(cubeBuffers, activeProg);
+
     animatedMats.forEach(matWithInfo => {
         //a bone with matrices ends matWithInfo.mat , matWithInfo.from
 
         mat4.set(matWithInfo.mat, mMatrix);
         mat4.scale(mMatrix,[1,1,1].map(x=>x*0.5));
 
-       	prepBuffersForDrawing(cubeBuffers, activeProg);
         drawObjectFromPreppedBuffers(cubeBuffers, activeProg);
 
         //draw a dotted line taking rotation of end bone and translation along path from "from" mat to "mat" mat
