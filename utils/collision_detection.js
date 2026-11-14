@@ -151,7 +151,13 @@ function coarseLineFatTriangleCollision(rayStart, rayEnd, triangleCorners, spher
     return coarseRayAabbCollision(rayStart, rayEnd, aabb, sphereRad);
 }
 
+var globalCoarseRayChecks = 0;
+var globalTriTests = 0;
+
 function coarseRayAabbCollision(rayStart, rayEnd, aabb, sphereRad){
+
+    globalCoarseRayChecks++
+
      //could do something better here (ray vs box expanded by sphereRad), but simple alternative should do to discard ray vs most triangles
     // just wrap the bounding box in a sphere, test infinte extended ray
     // TODO check start, end if using a short ray, or perhaps for short rays just wrap whole ray in AABB so simple ray AABB vs triangle AABB test
@@ -194,6 +200,7 @@ function coarseRayAabbCollision(rayStart, rayEnd, aabb, sphereRad){
 
 function lineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad, doCoarseCheck = true){
 
+    globalTriTests++;
     if (doCoarseCheck && !coarseLineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad)){
         return {fractionAlongRay:Number.MAX_VALUE};    //no collision 
     }
@@ -257,7 +264,9 @@ function lineFatTriangleCollision(rayStart, rayEnd, triangleCorners, sphereRad, 
             edgeTestResult += Math.sign(difference);
         }
 
-        if (Math.abs(edgeTestResult) == 3){
+
+        if (Math.abs(edgeTestResult) == 3 && fractionAlongRay>0){   //fractionAlongRay>0 added when noticed that could return ~-0.99 . TODO figure out why why? Because edgeTestResult sign imprecision?? Suspect occurs near to edge
+            
             return {
                 fractionAlongRay,
                 collisionPos
@@ -413,10 +422,20 @@ function moveMatWithCollision(matToMove, amountToMove, sphereRadius){
 
 
 function raySphereCollisionAllObjects(gunPos, rayEndPos, sphereRad){
-        
+    
+    globalCoarseRayChecks = 0;
+    globalTriTests = 0;
+
     var result1 = lineFatTriangleCollision(gunPos, rayEndPos, bodgeTriangle, 1+sphereRad);
     var result2 = rayBvhTriangleCollisionTopLevel(gunPos, rayEndPos, cityBvh, cityPosition, cityScale, sphereRad);
 
-    return result1.fractionAlongRay < result2.fractionAlongRay ? result1 : result2;
+    var combinedResult = result1.fractionAlongRay < result2.fractionAlongRay ? result1 : result2;
         //TODO check this works if fractionAlongRay is negative for either.
+
+    //var combinedResult = result2;
+
+    combinedResult.checkCount = globalCoarseRayChecks;
+    combinedResult.triTests = globalTriTests;
+
+    return combinedResult;
 }

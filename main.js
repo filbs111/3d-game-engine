@@ -62,7 +62,7 @@ var bodgeTriangle = [
     [15,1,-15]
 ];
 
-
+var lastRaycastHitPosition = [0,0,0];
 var lastGunRayHitPositions = [[0,0,0]];
 
 
@@ -694,16 +694,21 @@ function iterateMechanics(timeChange){
 
 
     //raycast from gun forwards
-    var gunPos = tempGunMat.slice(12,15);
+    var tempGunMat2 = mat4.create(tempGunMat);  //otherwise get a bug if doing multiple phys updates between frames! 
+    var gunPos = tempGunMat2.slice(12,15);
     var rayCastLength = 10_000;
-    mat4.translate(tempGunMat, [0,0,-rayCastLength]);
-    var rayEndPos = tempGunMat.slice(12,15);
+    mat4.translate(tempGunMat2, [0,0,-rayCastLength]);
+    var rayEndPos = tempGunMat2.slice(12,15);
 
     if (guiParams.carMode == "walk"){   //TODO put all walk logic in if
         //always do a raycast for distance measurement.
 
         var collisionResult = raySphereCollisionAllObjects(gunPos, rayEndPos, 0.05);  //NOTE sphere rad small because testing with small balls
 
+        gunToTargetDistanceGlobal = rayCastLength*collisionResult.fractionAlongRay;
+
+        raycastCollisionTypeGlobal = collisionResult.collidedWith;
+        lastRaycastHitPosition = collisionResult.collisionPos;
     }
 
     if (fireButtonDepressedNow && haveReloaded && (haveUnclickedFire || guiParams.gun.autofire)){
@@ -2140,6 +2145,11 @@ function drawSingleScene(unmirroredCameraMat, mirrorInGroundPlane, eyeMat, third
             mat4.scale(mMatrix,[1,1,1].map(xx=>xx*0.05));
             drawObjectFromBuffers(sphereStatue.buffers, activeProg);
         }
+        gl.uniform3fv(activeProg.uniforms.uFlatColor, [1,0,1]);
+        setupDrawMatrixForObjectAtPosition(lastRaycastHitPosition);
+        mat4.scale(mMatrix,[1,1,1].map(xx=>xx*0.05));
+        drawObjectFromBuffers(sphereStatue.buffers, activeProg);
+
 
         //draw a capsule quick and nasty way by drawing many spheres
         gl.uniform3fv(activeProg.uniforms.uFlatColor, [0.5,0.5,0.5]);
