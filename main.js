@@ -695,7 +695,7 @@ function iterateMechanics(timeChange){
 
     //raycast from gun forwards
     var gunPos = tempGunMat.slice(12,15);
-    var rayCastLength = 100;
+    var rayCastLength = 10_000;
     mat4.translate(tempGunMat, [0,0,-rayCastLength]);
     var rayEndPos = tempGunMat.slice(12,15);
 
@@ -715,7 +715,7 @@ function iterateMechanics(timeChange){
         var startTime = performance.now();
         var numberOfTimes = 5;
         for (var ii=0;ii<numberOfTimes;ii++){
-            var adjustedRayEnd = rayEndPos.map(xx=> xx+5*(Math.random()-0.5));
+            var adjustedRayEnd = rayEndPos.map(xx=> xx+500*(Math.random()-0.5));
             //var collisionResult = lineFatTriangleCollision(gunPos, adjustedRayEnd, bodgeTriangle, 1);
 
             var collisionResult = rayBvhTriangleCollisionTopLevel(gunPos, adjustedRayEnd, cityBvh, cityPosition, cityScale, 0.05);   //NOTE sphere rad small because testing with small balls

@@ -158,11 +158,29 @@ function coarseRayAabbCollision(rayStart, rayEnd, aabb, sphereRad){
     var boxHalfDimensions = [0,1,2].map(ii=> (aabb[1][ii] - aabb[0][ii])/2);
     var boxCentre = [0,1,2].map(ii=> (aabb[1][ii] + aabb[0][ii])/2);
     var boundingSphereRadSq = boxHalfDimensions.reduce((sum, current) => sum+current*current, 0);
-    var totalRad = Math.sqrt(boundingSphereRadSq) + sphereRad;
+    var boundingSphereRad = Math.sqrt(boundingSphereRadSq);
+
+    var ray = vectorDifference(rayEnd, rayStart);
+    var toSphere = vectorDifference(rayStart, boxCentre);
+
+    //first check that bounding sphere intersects volume between planes made by extending endpoints of ray perpendicular to ray 
+    //NOTE this could also be tighter by considering box instead of bounding sphere.
+    var rayLen = Math.sqrt(dotProduct(ray, ray));
+    //var rayDir = ray.map(x=>x/rayLen);
+    var dotStart = dotProduct(ray, rayStart);
+    var dotSphere = dotProduct(ray, boxCentre); //TODO simplify using toSphere?
+    if (dotStart-sphereRad*rayLen > dotSphere + boundingSphereRad*rayLen){  //actually might be able to remove -sphereRad*rayLen because back of sphere at start point wont collide with geometry.
+        return false;   //ray expanded by sphereRad starts after passed bounding sphere
+    }
+    var dotEnd = dotProduct(ray, rayEnd);
+    if (dotEnd+sphereRad*rayLen < dotSphere - boundingSphereRad*rayLen){ 
+        return false;   //ray expanded by sphereRad ends before bounding sphere
+    }
+
+    var totalRad = boundingSphereRad + sphereRad;
 
     //what is closest approach of extended line to sphere?
-    var ray = vectorDifference(rayStart, rayEnd);
-    var toSphere = vectorDifference(rayStart, boxCentre);
+    
     var crossRayWithToSphere = crossProduct(ray, toSphere);    //what if these are parallel? does this still work?
     var crossAgain = crossProduct(crossRayWithToSphere, ray);  //vector between sphere and point of closest approach of ray to sphere
     var lenSqToNormalise = dotProduct(crossAgain, crossAgain);
@@ -355,4 +373,40 @@ function rayBvhTriangleCollisionTopLevel(rayStart, rayEnd, bvh, bvhPosition, bvh
     //console.log(collisionResult);
 
     return collisionResult;
+}
+
+function moveMatWithCollision(matToMove, amountToMove, sphereRadius){
+
+    //quick and nasty code
+    // makes unnecessary matrix create and move.
+    // 
+    // 
+    // movement vec is in frame of rotated object
+
+    //version of this without collision is just 
+    // mat4.translate(mat, amountToMove);
+    // return;
+
+    var initialPosition = matToMove.slice(12,15);
+    mat4.translate(matToMove, amountToMove);
+    var destinationPosition = matToMove.slice(12,15);
+
+    var collisionResult = rayBvhTriangleCollisionTopLevel(initialPosition, destinationPosition, cityBvh, cityPosition, cityScale, sphereRadius);
+
+    if (collisionResult.fractionAlongRay>1){
+        return;
+    }
+
+    var fractionToMoveBack = collisionResult.fractionAlongRay - 1;
+    
+    var toMoveBack = amountToMove.map(xx=>xx*fractionToMoveBack);
+
+    // console.log({
+    //     initialPosition,
+    //     destinationPosition,
+    //     collisionResult,
+    //     toMoveWithCollision
+    // });
+
+    mat4.translate(matToMove, toMoveBack);
 }
