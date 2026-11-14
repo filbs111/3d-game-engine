@@ -99,7 +99,7 @@ function createBvhFrom3dObjectData(sourceData, bvhToPopulate, vertAttrs=3){
     //bvhToPopulate.triCollisionData4dBvh = {};   //per scale bvh. NOTE bvh structure may as well be same for all scales, but for simplicity, 
                                                 //just create a bvh for level in question. (in practice so far only 1 scale anyway)
 
-    bvhToPopulate.tris = generateBvh(trisWithAABB, temp3vec, 16);
+    bvhToPopulate.tris = generateBvh(trisWithAABB, temp3vec, 8);
     bvhToPopulate.isLoaded = true;
     return;
 }
