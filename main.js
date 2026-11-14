@@ -336,7 +336,9 @@ function initTextures(){
     //concreteTex = makeTexture("img/ash_uvgrid01.jpg",gl.RGB,gl.UNSIGNED_SHORT_5_6_5);
 
     //cubemapTexture = loadCubeMap("img/skyboxes/sp2/sp2_");
-    cubemapTexture = loadCubeMap("img/skyboxes/sh/sh_");
+    //cubemapTexture = loadCubeMap("img/skyboxes/sh/sh_");
+    cubemapTexture = loadCubeMap("img/skyboxes/penguins (44)/yonder_","jpg");   //https://opengameart.org/content/skiingpenguins-skybox-pack?page=7
+
         //NOTE skyboxes have detail in lower hemisphere which looks bad (reflection seen when moving)
         //TODO blur out or darken bottom of skybox
 }

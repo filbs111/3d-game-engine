@@ -362,7 +362,7 @@ var timeMeasure = (function(){
 
 
 //cube map code from http://www.humus.name/cubemapviewer.js (relatively unmodified)
-function loadCubeMap(base)
+function loadCubeMap(base, fileExt="png")
 {
 	var texture  = gl.createTexture();
 
@@ -386,13 +386,13 @@ function loadCubeMap(base)
 	// 			 ["planet.jpg", gl.TEXTURE_CUBE_MAP_POSITIVE_Z],
 	// 			 ["lf.jpg", gl.TEXTURE_CUBE_MAP_NEGATIVE_Z]];
 
-
-	var faces = [["ft.png", gl.TEXTURE_CUBE_MAP_POSITIVE_X],
-				["bk.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_X],
-				["up.png", gl.TEXTURE_CUBE_MAP_POSITIVE_Y],
-				["dn.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_Y],
-				["rt.png", gl.TEXTURE_CUBE_MAP_POSITIVE_Z],
-				["lf.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_Z]];
+    
+	var faces = [["ft."+fileExt, gl.TEXTURE_CUBE_MAP_POSITIVE_X],
+				["bk."+fileExt, gl.TEXTURE_CUBE_MAP_NEGATIVE_X],
+				["up."+fileExt, gl.TEXTURE_CUBE_MAP_POSITIVE_Y],
+				["dn."+fileExt, gl.TEXTURE_CUBE_MAP_NEGATIVE_Y],
+				["rt."+fileExt, gl.TEXTURE_CUBE_MAP_POSITIVE_Z],
+				["lf."+fileExt, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z]];
 
 	//var image_counter=0;
 	for (var i = 0; i < faces.length; i++)
