@@ -926,11 +926,14 @@ function iterateMechanics(timeChange){
     mat4.set(carInfo4.matrix, carInfo4.matrixOld);  //used for graphical interpolation
 
     carInfo4.steeringAngle *= 0.95;
-    var steeringAngleTarget=0;
-    var steeringStrength = 1;   //TODO speed dependence like car2
-    steeringStrength = Math.min(0.7, steeringStrength); //max out steering angle at low speed.
-    steeringAngleTarget = 0.02*leftRight*steeringStrength;
-    carInfo4.steeringAngle += steeringAngleTarget;
+
+    if (guiParams.carMode == "car4"){
+        var steeringAngleTarget=0;
+        var steeringStrength = 1;   //TODO speed dependence like car2
+        steeringStrength = Math.min(0.7, steeringStrength); //max out steering angle at low speed.
+        steeringAngleTarget = 0.03*leftRight*steeringStrength;
+        carInfo4.steeringAngle += steeringAngleTarget;
+    }
 
     var car4NumSubsteps = 5;
     var car4SubstepsTimeChange = timeChange/car4NumSubsteps;
